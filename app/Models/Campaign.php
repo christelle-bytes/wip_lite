@@ -4,16 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PlanningAssignment extends Model
+class Campaign extends Model
 {
-    protected $fillable = [
-        'planning_model_id',
-        'employee_id',
-        'start_date',
-        'status',
-        'validated_by',
-        'validated_at'
-    ];
+    protected $fillable = ['name', 'description', 'start_date', 'end_date', 'status'];
 
     public function logs()
     {

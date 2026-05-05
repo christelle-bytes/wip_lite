@@ -17,4 +17,14 @@ class PlanningModel extends Model
         'total_hours',
         'created_by'
     ];
+
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
 }

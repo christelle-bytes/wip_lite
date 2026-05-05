@@ -20,4 +20,14 @@ class Position extends Model
     {
         return $this->hasMany(employee::class);
     }
+
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
 }
