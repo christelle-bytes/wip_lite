@@ -13,10 +13,6 @@ return new class extends Migration
     {
         Schema::create('planning_histories', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
-        });
-        Schema::create('planning_histories', function (Blueprint $table) {
-            $table->id();
             $table->foreignId('planning_assignment_id')->constrained('planning_assignments')->cascadeOnDelete();
             $table->string('old_status')->nullable();
             $table->string('new_status');

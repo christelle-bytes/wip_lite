@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('new_position_id')->constrained('positions');
             $table->string('old_status');
             $table->string('new_status');
-            $table->foreignId('changed_by')->constrained('user');
+            $table->foreignId('changed_by')->constrained('users');
             $table->string('reason');
             $table->timestamps();
         });

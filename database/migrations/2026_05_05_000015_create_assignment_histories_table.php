@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('assignment_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('assignment_id')->constrained('assignment');
-            $table->foreignId('employee_id')->constrained('employee');
-            $table->foreignId('old_manager_id')->constrained('employee');
-            $table->foreignId('new_manager_id')->constrained('employee');
-            $table->foreignId('old_campaign_id')->constrained('campaign');
-            $table->foreignId('new_campaign_id')->constrained('campaign');
+            $table->foreignId('assignment_id')->constrained('assignments');
+            $table->foreignId('employee_id')->constrained('employees');
+            $table->foreignId('old_manager_id')->constrained('employees');
+            $table->foreignId('new_manager_id')->constrained('employees');
+            $table->foreignId('old_campaign_id')->constrained('campaigns');
+            $table->foreignId('new_campaign_id')->constrained('campaigns');
             $table->enum('action_type', ['assign', 'release', 'transfer']);
-            $table->foreignId('changed_by')->constrained('employee');
+            $table->foreignId('changed_by')->constrained('employees');
             $table->string('reason');
             $table->timestamps();
         });
