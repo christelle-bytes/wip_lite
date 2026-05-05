@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Positions extends Model
+class Position extends Model
 {
     use HasFactory;
 
@@ -18,6 +18,6 @@ class Positions extends Model
 
     public function employees(): HasMany
     {
-        return $this->hasMany(employees::class);
+        return $this->hasMany(employee::class);
     }
 }

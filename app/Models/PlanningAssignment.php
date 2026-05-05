@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Planning_assignments extends Model
+class PlanningAssignment extends Model
 {
     protected $fillable = [
         'planning_model_id',
