@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('assignment_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('assignment_id')->constrained('assignments');
+            $table->foreignId('assignment_id')->constrained('assignment');
             $table->foreignId('employee_id')->constrained('employees');
             $table->foreignId('old_manager_id')->constrained('employees');
             $table->foreignId('new_manager_id')->constrained('employees');

@@ -45,4 +45,13 @@ class Timesheet extends Model
     {
         return $query->where('employee_id', $employee->id);
     }
+
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
 }

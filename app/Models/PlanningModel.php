@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Planning_models extends Model
+class PlanningModel extends Model
 {
     protected $fillable = [
         'name',
@@ -17,4 +17,14 @@ class Planning_models extends Model
         'total_hours',
         'created_by'
     ];
+
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
 }

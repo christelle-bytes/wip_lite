@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Planning_assignments extends Model
+class PlanningAssignment extends Model
 {
     protected $fillable = [
         'planning_model_id',
@@ -14,4 +14,14 @@ class Planning_assignments extends Model
         'validated_by',
         'validated_at'
     ];
+
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
 }
