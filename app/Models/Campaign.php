@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Campaigns extends Model
+class Campaign extends Model
 {
     protected $fillable = ['name','description','start_date','end_date','status'];
 
@@ -12,5 +12,5 @@ class Campaigns extends Model
 {
     return $this->morphMany(ActivityLog::class, 'model');
 }
-    
+
 }
