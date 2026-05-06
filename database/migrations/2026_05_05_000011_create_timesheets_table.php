@@ -30,7 +30,7 @@ return new class extends Migration
             // Indexes and constraints
             $table->unique(['employee_id', 'period_start']);
             $table->index('status');
-            $table->check('period_end > period_start', 'period_end_after_start');
+            // $table->check('period_end > period_start', 'period_end_after_start');
         });
     }
 

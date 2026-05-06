@@ -2,11 +2,14 @@
 
 namespace App\Models;
 use App\Traits\RecordsActivity;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PlanningAssignment extends Model
 {
     use RecordsActivity;
+    use HasFactory;
     protected $fillable = [
         'planning_model_id',
         'employee_id',
