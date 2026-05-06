@@ -38,7 +38,9 @@ class User extends Authenticatable
 
     public function role()
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class)->withDefault([
+            'name' => 'Invité'
+        ]);
     }
 
     public function hasRole(string $role): bool
@@ -48,22 +50,22 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->hasRole('Admin');
     }
 
     public function isCP(): bool
     {
-        return $this->hasRole('cp');
+        return $this->hasRole('CP');
     }
 
     public function isSUP(): bool
     {
-        return $this->hasRole('sup');
+        return $this->hasRole('SUP');
     }
 
     public function isTC(): bool
     {
-        return $this->hasRole('tc');
+        return $this->hasRole('TC');
     }
     public function notif()
     {

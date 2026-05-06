@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -29,5 +31,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
 });
+
+Route::resource('campaigns', CampaignController::class);
 
 require __DIR__.'/auth.php';
