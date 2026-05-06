@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Role;
 use App\Models\User;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -15,46 +14,22 @@ class UsersSeeder extends Seeder
 
     public function run(): void
     {
-        $password = Hash::make('password123');
-
-        $users = [
-            'admin' => [
-                'name' => 'RH Admin',
-                'email' => 'admin@rh.com',
-                'role_name' => 'admin',
-            ],
-            'cp' => [
-                'name' => 'Chef Plateau',
-                'email' => 'cp@rh.com',
-                'role_name' => 'cp',
-            ],
-            'sup' => [
-                'name' => 'Superviseur',
-                'email' => 'sup@rh.com',
-                'role_name' => 'sup',
-            ],
-            'tc' => [
-                'name' => 'Employé TC',
-                'email' => 'tc@rh.com',
-                'role_name' => 'tc',
-            ],
-        ];
-
-        foreach ($users as $key => $data) {
-            $role = Role::where('name', $data['role_name'])->first();
-            if (! $role) {
-                continue;
-            }
-
-            User::updateOrCreate(
-                ['email' => $data['email']],
-                [
-                    'name' => $data['name'],
-                    'password' => $password,
-                    'role_id' => $role->id,
-                ]
-            );
-        }
+        // 1. On crée les rôles fixes
+        $roles = collect(['Admin', 'CP', 'SUP', 'TC'])->map(function ($name) {
+            return Role::create(['name' => $name]);
+        });
+ 
+        // 2. Créer un Admin spécifique pour se connecter
+        User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@test.com',
+            'role_id' => $roles->where('name', 'Admin')->first()->id,
+        ]);
+ 
+        // 3. Créer 300 utilisateurs aléatoires répartis sur les rôles existants
+        User::factory(300)->create([
+            'role_id' => fn() => $roles->random()->id,
+        ]);
     }
 }
 

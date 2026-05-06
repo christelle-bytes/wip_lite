@@ -17,8 +17,10 @@ class AssignmentSeeder extends Seeder
 
         // On récupère les positions par leur code (plus sûr que l'ID)
         $posCP = Position::where('code', 'CP')->first();
-        $posSUP = Position::where('code', 'SUP')->first();
         $posTC = Position::where('code', 'TC')->first();
+        $posSUP = Position::where('code', 'SUP')->first();
+
+        // dd($posTC);
 
         if (!$campaign || !$posCP) return;
 
@@ -33,7 +35,8 @@ class AssignmentSeeder extends Seeder
         ]);
 
         // 3. Créer 2 Superviseurs pour ce CP
-        Employee::factory(2)->create()->each(function ($sup) use ($campaign, $cp, $posSUP) {
+        Employee::factory(2)->create()->each(function ($sup) use ($campaign, $cp, $posSUP,$posTC) {
+            // dd($posSUP);
             Assignment::factory()->create([
                 'employee_id' => $sup->id,
                 'campaign_id' => $campaign->id,

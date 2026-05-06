@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PlanningAssignment extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'planning_model_id',
         'employee_id',
