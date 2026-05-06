@@ -43,6 +43,11 @@ class TimesheetEntry extends Model
         return $this->morphMany(ActivityLog::class, 'model');
     }
 
+    public function scopeForTimesheet($query, Timesheet $timesheet)
+    {
+        return $query->where('timesheet_id', $timesheet->id);
+    }
+
     public function notif()
     {
         return $this->morphMany(Notification::class, 'model');

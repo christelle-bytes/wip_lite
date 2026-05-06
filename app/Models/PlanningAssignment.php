@@ -15,6 +15,13 @@ class PlanningAssignment extends Model
         'validated_at'
     ];
 
+    public function planningModel() {
+        return $this->belongsTo(PlanningModel::class);
+    }
+    public function employee() {
+        return $this->hasMany(Employee::class);
+    }
+
     public function logs()
     {
         return $this->morphMany(ActivityLog::class, 'model');
