@@ -2,23 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Position extends Model
+class PlanningModel extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'name',
-        'code',
         'description',
+        'monday_hours',
+        'tuesday_hours',
+        'wednesday_hours',
+        'thursday_hours',
+        'friday_hours',
+        'saturday_hours',
+        'sunday_hours',
+        'total_hours',
+        'created_by'
     ];
 
-    public function employees(): HasMany
-    {
-        return $this->hasMany(employee::class);
+    public function planningAssignment(): HasMany{
+        return $this->hasMany(PlanningAssignment::class);
     }
 
     public function logs()

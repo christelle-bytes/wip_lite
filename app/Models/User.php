@@ -29,9 +29,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
- public function logs()
-{
-    return $this->morphMany(ActivityLog::class, 'model');
-}
-    
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
 }

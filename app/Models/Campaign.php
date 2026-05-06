@@ -24,10 +24,17 @@ class Campaign extends Model
             'id',
             'employee_id'
         );
+
     }
-    public function logs()
+     public function logs()
     {
         return $this->morphMany(ActivityLog::class, 'model');
     }
+
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
+
 
 }

@@ -12,7 +12,7 @@ class Timesheet extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'employee_id',
         'period_start',
         'period_end',
         'status',
@@ -28,12 +28,12 @@ class Timesheet extends Model
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Employee::class, 'user_id');
     }
 
     public function validator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'validated_by');
+        return $this->belongsTo(Employee::class, 'validated_by');
     }
 
     public function entries(): HasMany
@@ -41,8 +41,17 @@ class Timesheet extends Model
         return $this->hasMany(TimesheetEntry::class);
     }
 
-    public function scopeForUser($query, User $user)
+    public function scopeForEmployee($query, Employee $employee)
     {
-        return $query->where('user_id', $user->id);
+        return $query->where('employee_id', $employee->id);
+    }
+
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
     }
 }

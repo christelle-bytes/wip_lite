@@ -57,4 +57,15 @@ class Assignment extends Model
     {
         return $this->hasMany(AssignmentHistory::class, 'assignment_id');
     }
+    
+
+     public function logs()
+     {
+          return $this->morphMany(ActivityLog::class, 'model');
+     }
+
+     public function notif()
+     {
+          return $this->morphMany(Notification::class, 'model');
+     }
 }
