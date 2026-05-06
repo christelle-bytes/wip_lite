@@ -1,11 +1,12 @@
 <?php
 
 namespace App\Models;
-
+use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class PlanningAssignment extends Model
 {
+    use RecordsActivity;
     protected $fillable = [
         'planning_model_id',
         'employee_id',
