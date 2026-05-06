@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'role_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -30,8 +30,37 @@ class User extends Authenticatable
         ];
     }
  public function logs()
-{
-    return $this->morphMany(ActivityLog::class, 'model');
-}
-    
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return optional($this->role)->name === $role;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function isCP(): bool
+    {
+        return $this->hasRole('cp');
+    }
+
+    public function isSUP(): bool
+    {
+        return $this->hasRole('sup');
+    }
+
+    public function isTC(): bool
+    {
+        return $this->hasRole('tc');
+    }
 }
