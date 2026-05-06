@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('employee_id')
                 ->constrained('employees')
                 ->onDelete('cascade')
-                ->after('id'); // employee_id
+                ->after('id'); 
             $table->date('period_start');
             $table->date('period_end');
             $table->enum('status', ['draft', 'submitted', 'validated'])->default('draft');
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes and constraints
-            $table->unique(['employee_id', 'period_start']);
+            // $table->unique(['employee_id', 'period_start']);
             $table->index('status');
             // $table->check('period_end > period_start', 'period_end_after_start');
         });
