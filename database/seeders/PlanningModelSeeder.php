@@ -2,16 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Models\PlanningModel;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class Planning_assignments extends Seeder
+class PlanningModelSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        //
+        PlanningModel::factory(15)->create();
     }
 }

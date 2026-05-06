@@ -19,7 +19,7 @@ return new class extends Migration
                   ->cascadeOnDelete();
 
             $table->foreignId('employee_id')
-                  ->constrained('users')
+                  ->constrained('employees')
                   ->cascadeOnDelete();
 
             $table->date('start_date');
@@ -30,7 +30,7 @@ return new class extends Migration
 
             $table->foreignId('validated_by')
                   ->nullable()
-                  ->constrained('users')
+                  ->constrained('employees')
                   ->nullOnDelete();
 
             $table->timestamp('validated_at')->nullable();
