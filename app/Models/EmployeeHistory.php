@@ -9,4 +9,6 @@ class EmployeeHistory extends Model
 {
     /** @use HasFactory<\Database\Factories\EmployeeHistoryFactory> */
     use HasFactory;
+
+
 }

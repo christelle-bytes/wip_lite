@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class employees extends Model
+class Employee extends Model
 {
     use HasFactory;
     protected $fillable = [
@@ -29,7 +29,16 @@ class employees extends Model
 
     public function position(): BelongsTo
     {
-        return $this->belongsTo(positions::class);
+        return $this->belongsTo(position::class);
     }
 
+    public function logs()
+    {
+        return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
+    }
 }

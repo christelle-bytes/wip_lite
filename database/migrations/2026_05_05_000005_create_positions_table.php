@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('positions', function (Blueprint $table) {
           $table->id();
-            $table->string('name'); 
-            $table->string('code')->unique();
+            $table->enum('name', ['RH','CP', 'SUP', 'TC']);
+            $table->enum('code', ['RH','CP', 'SUP', 'TC'])->unique();
             $table->text('description')->nullable();
             $table->timestamps();
         });

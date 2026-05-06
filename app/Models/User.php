@@ -29,7 +29,7 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
- public function logs()
+    public function logs()
     {
         return $this->morphMany(ActivityLog::class, 'model');
     }
@@ -62,5 +62,9 @@ class User extends Authenticatable
     public function isTC(): bool
     {
         return $this->hasRole('tc');
+    }
+    public function notif()
+    {
+        return $this->morphMany(Notification::class, 'model');
     }
 }
