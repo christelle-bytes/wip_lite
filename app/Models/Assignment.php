@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Assignment extends Model
 {
     use HasFactory;
+    use RecordsActivity;
     protected $fillable = ['employee_id', 'campaign_id', 'position_id', 'status', 'start_date', 'end_date'];
     public function campaign(): BelongsTo
     {
