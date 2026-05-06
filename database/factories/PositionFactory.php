@@ -17,8 +17,8 @@ class PositionFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->jobTitle(),
-            'code' => strtoupper(Str::random(6)),
+            'name' => fake()->randomElement(['Ressource Humaine','Chef Plateau', 'Superviseur', 'Teleconseiller']),
+            'code' => fake()->randomElement(['RH','CP', 'SUP', 'TC']),
             'description' => fake()->sentence(10),
         ];
     }
