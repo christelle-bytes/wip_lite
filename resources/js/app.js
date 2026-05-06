@@ -1,4 +1,17 @@
 import '../css/app.css';
+// import 'primevue/resources/themes/lara-light-blue/theme.css';
+// le chemin de thème peut ne pas exister dans votre version PrimeVue.
+// On garde le thème fourni par PrimeUIX (Aura) plus le CSS de base PrimeVue.
+
+// import 'primevue/resources/primevue.min.css';
+// PrimeVue 4.5.x n’expose pas forcément ce fichier minifié dans resources.
+// import 'primevue/resources/primevue.css';
+// Chemin CSS primevue peut ne pas exister selon la version/pack.
+// On utilise PrimeUIX (Aura) + primeicons + Tailwind.
+
+import 'primeicons/primeicons.css';
+import 'primevue/config';
+
 // import './bootstrap';
  
 import { createInertiaApp } from '@inertiajs/vue3';
