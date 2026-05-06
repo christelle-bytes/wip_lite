@@ -14,14 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // seed ordre important : rôles -> positions -> users
-        $roles = ['admin', 'cp', 'sup', 'tc'];
-        foreach ($roles as $roleName) {
-            \App\Models\Role::updateOrCreate(['name' => $roleName], ['name' => $roleName]);
-        }
-
-        $this->call(PositionsSeeder::class);
-        $this->call(UsersSeeder::class);
+       
     }
 }
 

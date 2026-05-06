@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\positions;
+use App\Models\Position;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<positions>
+ * @extends Factory<Position>
  */
 class PositionFactory extends Factory
 {
