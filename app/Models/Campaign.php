@@ -10,12 +10,16 @@ class Campaign extends Model
 {
     use HasFactory;
     use RecordsActivity;
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
     protected $fillable = ['name', 'description', 'start_date', 'end_date', 'status'];
     public function assignments()
     {
         return $this->hasMany(Assignment::class);
     }
-   public function employees(): HasManyThrough
+    public function employees(): HasManyThrough
     {
         return $this->hasManyThrough(
             Employee::class,
@@ -27,7 +31,7 @@ class Campaign extends Model
         );
 
     }
-     public function logs()
+    public function logs()
     {
         return $this->morphMany(ActivityLog::class, 'model');
     }
