@@ -18,7 +18,23 @@ Route::get('/', function () {
     ]);
 });
 
-// Route::get('/dashboard', [PlanningModelController::class, 'index'])->name('dashboard');
+
+use Illuminate\Support\Facades\Auth;
+
+
+Route::get('/dashboard', function () {
+    $user = Auth::user();
+    $roleName = $user?->role?->name;
+
+    return match ($roleName) {
+        'Admin' => Inertia::render('DashboardAdmin'),
+        'CP' => Inertia::render('DashboardCp'),
+        'SUP' => Inertia::render('DashboardSup'),
+        'TC' => Inertia::render('DashboardTc'),
+        default => Inertia::render('DashboardAdmin'),
+    };
+})->middleware(['auth', 'verified'])->name('dashboard');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
