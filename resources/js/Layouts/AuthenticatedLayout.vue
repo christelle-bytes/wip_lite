@@ -66,15 +66,25 @@ const showLogoutButton = computed(() => {
                 </div>
 
                 <!-- Menu dropdown à droite avec bouton de déconnexion conditionnel -->
-                <Dropdown v-if="showLogoutButton" align="right" width="48">
-                    <template #trigger>
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="ml-2">{{ user?.name || 'Utilisateur' }}</span>
-                        </button>
-                    </template>
+                <div v-if="showLogoutButton" class="flex items-center space-x-3">
+                    <!-- Avatar et nom de l'utilisateur toujours visibles -->
+                    <div class="flex items-center space-x-2">
+                        <svg class="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700">{{ user?.name }}</span>
+                        <span class="text-xs text-gray-500">({{ user?.role?.name }})</span>
+                    </div>
+                    
+                    <!-- Dropdown pour les options -->
+                    <Dropdown align="right" width="48">
+                        <template #trigger>
+                            <button class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded-md text-gray-400 hover:text-gray-600 focus:outline-none transition ease-in-out duration-150">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </template>
 
                     <template #content>
                         <div class="block px-4 py-2 text-xs text-gray-700 border-b border-gray-200">
@@ -96,6 +106,7 @@ const showLogoutButton = computed(() => {
                         </DropdownLink>
                     </template>
                 </Dropdown>
+                </div>
 
                 <!-- Bouton de connexion simple si non authentifié -->
                 <Link v-else :href="route('login')" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring focus:ring-blue-300 disabled:opacity-25 transition">
