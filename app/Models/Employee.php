@@ -1,10 +1,12 @@
 <?php
 
 namespace App\Models;
+
 use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
@@ -31,6 +33,15 @@ class Employee extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(position::class);
+    }
+    public function timesheet(): HasMany
+    {
+        return $this->hasMany(Timesheet::class);
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
     }
 
     public function logs()

@@ -13,21 +13,20 @@ import Tag from "primevue/tag"; // Pour un rendu pro du status
 import MultiSelect from "primevue/multiselect";
 
 import DatePicker from "primevue/datepicker";
-import { useForm } from "@inertiajs/vue3";
+import { router, useForm } from "@inertiajs/vue3";
 import { computed } from "vue";
-
-const formattedCP = computed(() => {
-    return props.cp.map((item) => ({
-        ...item,
-        fullName: `${item.first_name} ${item.last_name}`,
-    }));
-});
 
 const props = defineProps({
     timesheets: Array,
-    cp: Array,
+    sup: Array,
     planning: Array,
     auth: Object,
+});
+const formattedSup = computed(() => {
+    return props.sup.map((item) => ({
+        ...item,
+        fullName: `${item.first_name} ${item.last_name}`,
+    }));
 });
 
 const visible = ref(false);
@@ -71,8 +70,6 @@ const initFilters = () => {
 };
 initFilters();
 onMounted(() => {
-    console.log(props.cp);
-    console.log(props.planning);
     initFilters();
 });
 
@@ -95,15 +92,22 @@ const getStatusSeverity = (status) => {
 };
 
 const validation = (id) => {
-    form.status = 'validated';
-    form.patch(route('timesheet.update', id))
-}
+    const offset = new Date().getTimezoneOffset() * 60000;
+    const localISOTime = new Date(Date.now() - offset)
+        .toISOString()
+        .split("T")[0];
+    const data = {
+        status: "validated",
+        validated_by: props.auth.user.id,
 
-
+        validated_at: localISOTime,
+    };
+    router.patch(route("timesheet.update", id), data);
+};
 </script>
 
 <template>
-    <h2>Registre des feuilles d'heures (CP)</h2>
+    <h2>Registre des feuilles d'heures (SUPERVISEUR)</h2>
     <div class="card p-4">
         <DataTable
             v-model:filters="filters"
@@ -193,7 +197,8 @@ const validation = (id) => {
             </Column>
 
             <!-- Colonne Validé par (Relation) -->
-            <Column header="Validé par" style="min-width: 12rem">
+
+            <Column header="Validé par" sortable style="min-width: 12rem">
                 <template #body="{ data }">
                     <div
                         v-if="data.validated_by"
@@ -233,11 +238,6 @@ const validation = (id) => {
                         class="mr-2"
                         @click="validation(data.id)"
                     />
-                    <span
-                        v-if="!data.validated_by && data.status != 'validated'"
-                        class="text-gray-400 italic animate-pulse"
-                        >Pending</span
-                    >
                 </template>
             </Column>
         </DataTable>
@@ -257,16 +257,16 @@ const validation = (id) => {
 
             <div class="flex items-center gap-4 mb-8">
                 <label for="email" class="font-semibold w-24"
-                    >Selectionnez un CP</label
+                    >Selectionnez un Sup</label
                 >
                 <MultiSelect
-                    v-model="selectedCities"
+                    v-model="form.employee_id"
                     display="chip"
-                    :options="formattedCP"
+                    :options="formattedSup"
                     optionLabel="fullName"
                     optionValue="id"
                     filter
-                    placeholder="Select a CP"
+                    placeholder="Select a Superior"
                     class="w-full md:w-80"
                 >
                     <!-- Slot pour personnaliser l'affichage dans la liste déroulante -->
@@ -287,6 +287,7 @@ const validation = (id) => {
                     fluid
                     period_start="input"
                     inputId="period_start"
+                    dateFormat="dd/mm/yy"
                 />
             </div>
             <div class="flex-auto">
@@ -299,6 +300,7 @@ const validation = (id) => {
                     fluid
                     period_end="input"
                     inputId="period_end"
+                    dateFormat="dd/mm/yy"
                 />
             </div>
         </div>
@@ -309,11 +311,7 @@ const validation = (id) => {
                 text
                 @click="visible = false"
             />
-            <Button
-                label="Enregistrer"
-                icon="pi pi-check"
-                @click="submit"
-            />
+            <Button label="Enregistrer" icon="pi pi-check" @click="submit" />
         </template>
     </Dialog>
 </template>

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\PlanningAssignment;
 use App\Models\Timesheet;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Ramsey\Collection\Collection;
 
 class TimesheetController extends Controller
 {
@@ -17,30 +19,24 @@ class TimesheetController extends Controller
     // les heures des chef plateau
     public function index()
     {
-        // $timesheets = Timesheet::with(['employee', 'validator'])->latest()->get();
-        // return  inertia('Timesheets/Index', ['timesheets'=> $timesheets]);
-
-        // $timesheets = Timesheet::with(['employee', 'validator']) // Charge les relations
-        // ->latest()
-        // ->get();
-        $cp = Employee::with('position')->whereHas('position', function ($query) {
-            $query->where('code', 'CP');
+        $sup = Employee::with('position')->whereHas('position', function ($query) {
+            $query->where('code', 'SUP');
         })
             ->get();
         $planning = PlanningAssignment::with(['employee', 'planningModel'])->whereHas('employee.position', function ($query) {
-            $query->where('code', 'CP');
+            $query->where('code', 'SUP');
         })
             ->get();
         $timesheets = Timesheet::with(['employee', 'validator'])
             ->whereHas('employee.position', function ($query) {
-                $query->where('code', 'CP');
+                $query->where('code', 'SUP');
             })
             ->latest()
             ->get();
 
         return Inertia::render('Timesheets/Index', [
             'timesheets' => $timesheets,
-            'cp' => $cp,
+            'sup' => $sup,
             'planning' => $planning,
         ]);
     }
@@ -80,14 +76,23 @@ class TimesheetController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
+            'employee_id' => 'required|array',
+            'employee_id.*' => 'exists:employees,id',
             'period_start' => 'required|date',
             'period_end' => 'required|date',
             'status' => 'nullable',
-            'validated_by' => 'nullable|exists:employees,id',
         ]);
-
-        Timesheet::create($validated);
+        $data = collect($validated['employee_id'])->map(function ($id) use ($validated) {
+            return [
+                'employee_id'  => $id,
+                'period_start' => Carbon::parse($validated['period_start'])->format('Y-m-d'),
+                'period_end'   => Carbon::parse($validated['period_end'])->format('Y-m-d'),
+                'status'       => $validated['status'] ?? 'draft',
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ];
+        })->toArray();
+        Timesheet::insert($data);
         return redirect()->route('timesheet.index');
     }
 
@@ -110,7 +115,7 @@ class TimesheetController extends Controller
      */
     public function update(Request $request, Timesheet $timesheet)
     {
-        $timesheet->update($request->only(['period_start', 'period_end', 'status', 'validated_by', 'validated_at']));
+        $timesheet->update($request->only(['status', 'validated_by', 'validated_at']));
         return redirect()->route('timesheet.index');
     }
 

@@ -28,7 +28,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes and constraints
-            // $table->unique(['employee_id', 'period_start']);
+            $table->unique(['employee_id', 'period_start']);
             $table->index('status');
             // $table->check('period_end > period_start', 'period_end_after_start');
         });
