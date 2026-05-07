@@ -20,9 +20,22 @@ class TimesheetEntryController extends Controller
      */
 
     // index sup
-    public function indexSup()
+    public function indexSup(Request $request)
     {
-        $superior = Employee::with('position', 'timesheet')
+        // Optionnel : Récupérer le mois depuis la requête (ex: 2026-05)
+        // Si vide, on peut décider de prendre le mois en cours ou tous les mois
+        $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
+
+        $supervisor = Employee::with([
+            'position',
+            'timesheet' => function ($query) use ($targetMonth) {
+                // On peut filtrer les feuilles de temps qui chevauchent le mois
+                $query->with(['entries' => function ($entryQuery) use ($targetMonth) {
+                    // On filtre les entrées précises pour le mois choisi
+                    $entryQuery->where('date', 'like', "$targetMonth%");
+                }]);
+            }
+        ])
             ->whereHas('position', function ($query) {
                 $query->where('code', 'SUP');
             })
@@ -31,7 +44,8 @@ class TimesheetEntryController extends Controller
             ->get();
 
         return Inertia::render('TimesheetsEntry/IndexSup', [
-            'superior' => $superior,
+            'supervisor' => $supervisor,
+            'currentMonth' => $targetMonth
         ]);
     }
 
@@ -304,7 +318,6 @@ class TimesheetEntryController extends Controller
             return redirect()->back()->with('success', count($entries) . ' entrées générées pour les téléconseillers.');
         }
         return redirect()->back()->with('error', 'La date entrée ne fais pas partie de la fiche d\'heure.');
-
     }
 
     /**

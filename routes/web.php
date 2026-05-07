@@ -25,9 +25,9 @@ Route::get('/dashboard', function () {
 Route::resource('/timesheet', TimesheetController::class);
 Route::resource('/timesheetEntry', TimesheetEntryController::class);
 // saisie heure sup
-Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->name('index.sup');
+Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->name('entry.sup');
 // vue recap saisie sup
-Route::get('/timesheetEntry_sup', [TimesheetEntryController::class, 'indexSup'])->name('entry.sup');
+Route::get('/timesheetEntry_sup', [TimesheetEntryController::class, 'indexSup'])->name('index.sup');
 
 // vue recap saisie telecon
 Route::get('/timesheetEntry_telecon', [TimesheetEntryController::class, 'indexTelecon'])->name('index.telecon');
