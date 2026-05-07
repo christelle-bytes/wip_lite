@@ -14,7 +14,7 @@ class UsersSeeder extends Seeder
 
     public function run(): void
     {
-       $roleNames = ['Admin', 'CP', 'SUP', 'TC'];
+    $roleNames = ['Admin', 'CP', 'SUP', 'TC'];
     $roles = [];
 
     foreach ($roleNames as $name) {
@@ -25,7 +25,7 @@ class UsersSeeder extends Seeder
     User::updateOrCreate(
         ['email' => 'admin@test.com'],
         [
-            'name' => 'Admin User',
+            // 'name' => 'Admin User',
             'password' => Hash::make('password'), // Toujours mieux de définir un mot de passe
             'role_id' => $roles['Admin']->id,
         ]

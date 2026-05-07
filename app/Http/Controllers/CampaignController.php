@@ -24,22 +24,19 @@ class CampaignController extends Controller
 
         // 2. Récupération des campagnes avec compteurs
         $campaigns = Campaign::withCount([
-            // Compte les CP
-            'employees as cp_count' => function ($query) {
-                $query->whereHas('user.role', function ($q) {
-                    $q->where('name', 'CP'); // Assure-toi que le nom en base est 'CP'
+            'assignments as cp_count' => function ($query) {
+                $query->whereHas('position', function ($q) {
+                    $q->where('name', 'Chef Plateau');
                 });
             },
-            // Compte les SUP
-            'employees as sup_count' => function ($query) {
-                $query->whereHas('user.role', function ($q) {
-                    $q->where('name', 'SUP');
+            'assignments as sup_count' => function ($query) {
+                $query->whereHas('position', function ($q) {
+                    $q->where('name', 'Superviseur');
                 });
             },
-            // Compte les TC
-            'employees as tc_count' => function ($query) {
-                $query->whereHas('user.role', function ($q) {
-                    $q->where('name', 'TC');
+            'assignments as tc_count' => function ($query) {
+                $query->whereHas('position', function ($q) {
+                    $q->where('name', 'Teleconseiller');
                 });
             }
         ])->get();
@@ -62,7 +59,7 @@ class CampaignController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated= $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'start_date' => 'required|date',
@@ -70,7 +67,7 @@ class CampaignController extends Controller
             'status' => 'required|in:active,inactive,terminée',
         ]);
 
-        Campaign::create($request->all());
+        Campaign::create($validated);
 
         return redirect()->route('campaigns.index')->with('success', 'Campagne créée avec succès.');
     }
@@ -80,10 +77,45 @@ class CampaignController extends Controller
      */
     public function show(string $id)
     {
-        $campaign = Campaign::with(['assignments.employee', 'assignments.position'])->findOrFail($id);
+        $campaign = Campaign::with(['assignments.employee.user.role', 'assignments.position'])->findOrFail($id);
+
+        $assignments = $campaign->assignments;
+
+        $summary = [
+            'total_resources' => $assignments->count(),
+            'cp_count' => $assignments->filter(function ($assignment) {
+                return optional($assignment->position)->name === 'Chef Plateau';
+            })->count(),
+            'sup_count' => $assignments->filter(function ($assignment) {
+                return optional($assignment->position)->name === 'Superviseur';
+            })->count(),
+            'tc_count' => $assignments->filter(function ($assignment) {
+                return optional($assignment->position)->name === 'Teleconseiller';
+            })->count(),
+        ];
+
+        $assignments->each(function ($assignment) {
+            $assignment->setAttribute('tree_children', []);
+        });
+
+        $assignmentsByEmployee = $assignments->keyBy('employee_id');
+        $hierarchy = [];
+
+        foreach ($assignments as $assignment) {
+            if ($assignment->manager_id && $assignmentsByEmployee->has($assignment->manager_id)) {
+                $manager = $assignmentsByEmployee[$assignment->manager_id];
+                $children = $manager->tree_children;
+                $children[] = $assignment;
+                $manager->setAttribute('tree_children', $children);
+            } else {
+                $hierarchy[] = $assignment;
+            }
+        }
 
         return Inertia::render('Campaigns/Show', [
             'campaign' => $campaign,
+            'summary' => $summary,
+            'hierarchy' => $hierarchy,
         ]);
     }
 
@@ -106,7 +138,7 @@ class CampaignController extends Controller
     {
         $campaign = Campaign::findOrFail($id);
 
-        $request->validate([
+       $validated= $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'start_date' => 'required|date',
@@ -114,7 +146,7 @@ class CampaignController extends Controller
             'status' => 'required|in:active,inactive,terminée',
         ]);
 
-        $campaign->update($request->all());
+        $campaign->update($validated);
 
         return redirect()->route('campaigns.index')->with('success', 'Campagne mise à jour avec succès.');
     }

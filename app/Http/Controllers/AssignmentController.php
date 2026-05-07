@@ -23,9 +23,9 @@ class AssignmentController extends Controller
         }
 
         $assignments = Assignment::with(['employee.user', 'campaign', 'position', 'manager'])->get();
-        $employees = \App\Models\Employee::with('user')->get();
-        $campaigns = \App\Models\Campaign::all();
-        $positions = \App\Models\Position::all();
+        $employees = Employee::with('user')->get();
+        $campaigns = Campaign::all();
+        $positions = Position::all();
 
         return Inertia::render('Assignments/Index', [
             'assignments' => $assignments,

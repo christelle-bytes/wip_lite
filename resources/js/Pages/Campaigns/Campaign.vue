@@ -2,10 +2,7 @@
 import { ref } from 'vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import Button from 'primevue/button'
-import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
@@ -45,17 +42,25 @@ const statusOptions = [
     { label: 'Terminée', value: 'terminée' }
 ]
 
-const getStatusSeverity = (status) => {
+const getStatusClass = (status) => {
     switch (status) {
         case 'active':
-            return 'success'
+            return 'bg-emerald-100 text-emerald-700'
         case 'inactive':
-            return 'warning'
+            return 'bg-slate-100 text-slate-700'
         case 'terminée':
-            return 'info'
+            return 'bg-sky-100 text-sky-700'
         default:
-            return 'info'
+            return 'bg-slate-100 text-slate-700'
     }
+}
+
+const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    })
 }
 
 const openCreateDialog = () => {
@@ -93,56 +98,62 @@ const submitEdit = () => {
 <template>
     <Head title="Campagnes" />
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-gray-50 p-8">
-            <!-- Header & Filtres -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                <div class="flex flex-wrap gap-2">
-                    <button v-for="filter in filters" :key="filter" @click="activeFilter = filter" :class="[
-                        'px-4 py-2 rounded-full text-sm font-medium transition-colors',
-                        activeFilter === filter ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                    ]">
-                        {{ filter }} <span class="ml-1 opacity-70">({{ campaigns.length }})</span>
-                    </button>
+        <div class="min-h-screen bg-slate-50 p-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900">Campagnes</h1>
+                    <p class="mt-2 text-slate-500">Gestion des campagnes et suivi des ressources affectées.</p>
                 </div>
-
-                <Button @click="openCreateDialog" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center font-medium transition-shadow shadow-sm">
+                <Button @click="openCreateDialog" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-sm">
                     <span class="mr-2 text-xl">+</span> Créer une campagne
                 </Button>
             </div>
 
-            <!-- DataTable -->
-            <DataTable :value="campaigns" paginator :rows="10" :rowsPerPageOptions="[5, 10, 25]" tableStyle="min-width: 50rem">
-                <Column field="name" header="Nom" sortable style="width: 25%"></Column>
-                <Column field="description" header="Description" style="width: 30%"></Column>
-                <Column field="start_date" header="Date début" sortable style="width: 15%">
-                    <template #body="slotProps">
-                        {{ new Date(slotProps.data.start_date).toLocaleDateString('fr-FR') }}
-                    </template>
-                </Column>
-                <Column field="end_date" header="Date fin" sortable style="width: 15%">
-                    <template #body="slotProps">
-                        {{ new Date(slotProps.data.end_date).toLocaleDateString('fr-FR') }}
-                    </template>
-                </Column>
-                <Column field="status" header="Statut" style="width: 10%">
-                    <template #body="slotProps">
-                        <Tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)" />
-                    </template>
-                </Column>
-                <Column header="Actions" style="width: 15%">
-                    <template #body="slotProps">
-                        <div class="flex gap-2">
-                            <Link :href="route('campaigns.show', slotProps.data.id)">
-                                <Button icon="pi pi-eye" severity="info" size="small" />
-                            </Link>
-                            <Button @click="openEditDialog(slotProps.data)" icon="pi pi-pencil" severity="warning" size="small" />
-                            <Link :href="route('campaigns.destroy', slotProps.data.id)" method="delete" as="button">
-                                <Button icon="pi pi-ban" severity="danger" size="small" />
-                            </Link>
+            <div class="grid gap-6 xl:grid-cols-3 lg:grid-cols-2">
+                <div v-for="campaign in campaigns" :key="campaign.id" class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-semibold text-slate-900">{{ campaign.name }}</h2>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">{{ campaign.description }}</p>
                         </div>
-                    </template>
-                </Column>
-            </DataTable>
+                        <span :class="['rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide', getStatusClass(campaign.status)]">
+                            {{ campaign.status }}
+                        </span>
+                    </div>
+
+                    <div class="mt-6 text-sm text-slate-500 space-y-2">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-calendar text-slate-400"></i>
+                            {{ formatDate(campaign.start_date) }} - {{ formatDate(campaign.end_date) }}
+                        </div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-3 gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        <div class="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                            <span class="h-2 w-2 rounded-full bg-slate-900"></span>
+                            {{ campaign.cp_count }} CP
+                        </div>
+                        <div class="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                            <span class="h-2 w-2 rounded-full bg-blue-600"></span>
+                            {{ campaign.sup_count }} SUP
+                        </div>
+                        <div class="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                            <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+                            {{ campaign.tc_count }} TC
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <Link :href="route('campaigns.show', campaign.id)" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                            Voir
+                        </Link>
+                        <Button @click="openEditDialog(campaign)" label="Modifier" severity="warning" class="rounded-xl px-4 py-2 text-sm" />
+                        <Link :href="route('campaigns.destroy', campaign.id)" method="delete" as="button" class="inline-flex items-center justify-center rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">
+                            Désactiver
+                        </Link>
+                    </div>
+                </div>
+            </div>
 
             <!-- Create Dialog -->
             <Dialog v-model:visible="createDialogVisible" modal header="Créer une campagne" :style="{ width: '50rem' }">

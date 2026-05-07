@@ -8,10 +8,11 @@ use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role_id'])]
+#[Fillable(['email', 'password', 'role_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -35,6 +36,9 @@ class User extends Authenticatable
     {
         return $this->morphMany(ActivityLog::class, 'model');
     }
+    public function employee():HasOne{
+      return $this->hasOne(Employee::class);
+    }
 
     public function role()
     {
@@ -53,7 +57,7 @@ class User extends Authenticatable
         return $this->hasRole('Admin');
     }
 
-  
+
 
     public function isCP(): bool
     {
