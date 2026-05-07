@@ -65,7 +65,7 @@ class AssignmentController extends Controller
             $cps = $assignments->where('position_id', $cpPosition->id)->values();
             $sups = $assignments->where('position_id', $supPosition->id)->values();
             $tcs = $assignments->where('position_id', $tcPosition->id)->values();
-
+            
             // Construire la hiérarchie CP > SUP > TC
             $tree = $cps->map(function ($cp) use ($sups, $tcs) {
                 $cpSups = $sups->where('manager_id', $cp->employee_id)->values();
@@ -83,6 +83,23 @@ class AssignmentController extends Controller
                 'tree'   => $tree,
             ];
         });
+        $unassignedEmployees = Employee::where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->with([
+                    'position',
+                    'user',
+                    // Dernière affectation terminée
+                    'assignments' => fn($q) => $q->where('status', 'terminé')
+                        ->latest('end_date')
+                        ->limit(1)
+                        ->with('campaign'),
+                ])
+                ->get()
+                ->map(function ($employee) {
+                    $employee->last_assignment = $employee->assignments->first();
+                    unset($employee->assignments);
+                    return $employee;
+                });
 
         return Inertia::render('Assignments/Index', [
             'activeCampaigns' => $activeCampaigns,
@@ -91,6 +108,7 @@ class AssignmentController extends Controller
             'unassignedTCs'   => $unassignedTCs,
             'assignedCPs'     => $assignedCPs,
             'assignedSUPs'    => $assignedSUPs,
+            'unassignedEmployees' => $unassignedEmployees,
             'campaigns'       => $campaigns,
         ]);
     }
