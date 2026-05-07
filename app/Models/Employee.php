@@ -27,9 +27,14 @@ class Employee extends Model
         'salary_base' => 'decimal:2',
     ];
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function position(): BelongsTo
     {
-        return $this->belongsTo(position::class);
+        return $this->belongsTo(Position::class);
     }
 
     public function logs()

@@ -25,8 +25,8 @@ class TimesheetEntry extends Model
 
     protected $casts = [
         'date' => 'date',
-        'check_in' => 'time:H:i',
-        'check_out' => 'time:H:i',
+        'check_in' => 'datetime:H:i',
+        'check_out' => 'datetime:H:i',
         'break_duration' => 'integer',
         'total_hours' => 'decimal:2',
         'planned_hours' => 'decimal:2',
@@ -41,6 +41,11 @@ class TimesheetEntry extends Model
     public function logs()
     {
         return $this->morphMany(ActivityLog::class, 'model');
+    }
+
+    public function scopeForTimesheet($query, Timesheet $timesheet)
+    {
+        return $query->where('timesheet_id', $timesheet->id);
     }
 
     public function notif()

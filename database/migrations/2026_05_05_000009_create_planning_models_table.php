@@ -28,7 +28,7 @@ return new class extends Migration
             $table->decimal('total_hours', 6, 2)->default(0);
 
             $table->foreignId('created_by')
-                  ->constrained('users')
+                  ->constrained('employees')
                   ->cascadeOnDelete();
 
             $table->timestamps();

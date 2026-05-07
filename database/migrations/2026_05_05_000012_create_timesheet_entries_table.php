@@ -28,7 +28,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes
-            $table->index(['timesheet_id', 'date']);
+            $table->index(['timesheet_id']);
 // $table->check('(check_out > check_in OR (check_in IS NULL AND check_out IS NULL))', 'valid_check_times');
         });
     }

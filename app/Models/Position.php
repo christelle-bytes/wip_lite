@@ -18,7 +18,7 @@ class Position extends Model
 
     public function employees(): HasMany
     {
-        return $this->hasMany(employee::class);
+        return $this->hasMany(Employee::class);
     }
 
     public function logs()
