@@ -16,23 +16,6 @@ class CampaignController extends Controller
 
     public function index()
     {
-        $campaign = Campaign::with('employees.user.role')->first();
-        // Ceci va afficher le nom du rôle du premier employé de la campagne
-        $emp = $campaign->employees->first();
-
-        if (!$emp) {
-            dd("Erreur : La campagne n'a aucun employé assigné.");
-        }
-
-        if (!$emp->user) {
-            dd("Erreur : L'employé (ID: {$emp->id}) n'a pas de 'user_id' valide ou la relation user() est mal définie.");
-        }
-
-        if (!$emp->user->role) {
-            dd("Erreur : L'utilisateur (ID: {$emp->user->id}) n'a aucun 'role_id' assigné dans la table users.");
-        }
-
-        dd("Tout est bon, le rôle est : " . $emp->user->role->name);
         $user = Auth::user();
         // 1. Validation du rôle Admin
         if (!$user || !$user->isAdmin()) {
@@ -71,7 +54,7 @@ class CampaignController extends Controller
      */
     public function create()
     {
-        //
+        return Inertia::render('Campaigns/Create');
     }
 
     /**
@@ -79,7 +62,17 @@ class CampaignController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'status' => 'required|in:active,inactive,terminée',
+        ]);
+
+        Campaign::create($request->all());
+
+        return redirect()->route('campaigns.index')->with('success', 'Campagne créée avec succès.');
     }
 
     /**
@@ -87,7 +80,11 @@ class CampaignController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $campaign = Campaign::with(['assignments.employee', 'assignments.position'])->findOrFail($id);
+
+        return Inertia::render('Campaigns/Show', [
+            'campaign' => $campaign,
+        ]);
     }
 
     /**
@@ -95,7 +92,11 @@ class CampaignController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $campaign = Campaign::findOrFail($id);
+
+        return Inertia::render('Campaigns/Edit', [
+            'campaign' => $campaign,
+        ]);
     }
 
     /**
@@ -103,7 +104,19 @@ class CampaignController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $campaign = Campaign::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'status' => 'required|in:active,inactive,terminée',
+        ]);
+
+        $campaign->update($request->all());
+
+        return redirect()->route('campaigns.index')->with('success', 'Campagne mise à jour avec succès.');
     }
 
     /**
@@ -111,6 +124,9 @@ class CampaignController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $campaign = Campaign::findOrFail($id);
+        $campaign->update(['status' => 'inactive']);
+
+        return redirect()->route('campaigns.index')->with('success', 'Campagne désactivée avec succès.');
     }
 }
