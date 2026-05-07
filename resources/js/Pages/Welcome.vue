@@ -71,6 +71,9 @@ function handleImageError() {
                                 Log in
                             </Link>
 
+
+                            
+
                             <Link
                                 v-if="canRegister"
                                 :href="route('register')"
