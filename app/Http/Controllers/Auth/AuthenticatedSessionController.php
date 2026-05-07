@@ -34,14 +34,21 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = auth()->user();
+        
+        // dd($user);
 
-        $redirect = match (true) {
-            $user->isAdmin() => route('users.index'),
-            $user->isCP() => '/planning',  
-            $user->isSUP() => '/timesheets',
-            $user->isTC() => '/dashboard',
-            default => route('dashboard'),
-        };
+        $roleName = $user->role->name ?? null;
+        // dd($roleName);
+
+        if ($roleName === 'Admin') {
+            $redirect = route('dashboard');
+        } elseif ($roleName === 'CP') {
+            $redirect = route('dashboard');
+        } elseif ($roleName === 'SUP') {
+            $redirect = route('dashboard');
+        } elseif ($roleName === 'TC') {
+            $redirect = route('dashboard');
+        }
 
         return redirect()->intended($redirect);
     }
