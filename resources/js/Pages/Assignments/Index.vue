@@ -150,11 +150,11 @@ const submitEdit = () => {
                 <Column header="Actions">
                     <template #body="slotProps">
                         <div class="flex gap-2">
-                            <Link :href="route('assignments.show', slotProps.data.id)">
+                            <Link :href="route('assignments.show', slotProps.data.id)" class="inline-block">
                                 <Button icon="pi pi-eye" severity="info" size="small" />
                             </Link>
                             <Button @click="openEditDialog(slotProps.data)" icon="pi pi-pencil" severity="warning" size="small" />
-                            <Link :href="route('assignments.destroy', slotProps.data.id)" method="delete" as="button">
+                            <Link :href="route('assignments.destroy', slotProps.data.id)" method="delete" as="button" class="inline-block">
                                 <Button icon="pi pi-ban" severity="danger" size="small" />
                             </Link>
                         </div>

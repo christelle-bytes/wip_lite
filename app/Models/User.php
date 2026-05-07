@@ -53,6 +53,8 @@ class User extends Authenticatable
         return $this->hasRole('Admin');
     }
 
+  
+
     public function isCP(): bool
     {
         return $this->hasRole('CP');

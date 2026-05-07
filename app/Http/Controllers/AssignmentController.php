@@ -40,6 +40,11 @@ class AssignmentController extends Controller
      */
     public function create()
     {
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        }
+
         $employees = Employee::with('user')->get();
         $campaigns = Campaign::all();
         $positions = Position::all();
@@ -56,6 +61,11 @@ class AssignmentController extends Controller
      */
     public function store(Request $request)
     {
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        }
+
         $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'campaign_id' => 'required|exists:campaigns,id',
@@ -76,6 +86,11 @@ class AssignmentController extends Controller
      */
     public function show(string $id)
     {
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        }
+
         $assignment = Assignment::with(['employee.user', 'campaign', 'position', 'manager'])->findOrFail($id);
 
         return Inertia::render('Assignments/Show', [
@@ -88,6 +103,11 @@ class AssignmentController extends Controller
      */
     public function edit(string $id)
     {
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        }
+
         $assignment = Assignment::findOrFail($id);
         $employees = Employee::with('user')->get();
         $campaigns = Campaign::all();
@@ -106,6 +126,11 @@ class AssignmentController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        }
+
         $assignment = Assignment::findOrFail($id);
 
         $request->validate([
@@ -128,6 +153,11 @@ class AssignmentController extends Controller
      */
     public function destroy(string $id)
     {
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        }
+
         $assignment = Assignment::findOrFail($id);
         $assignment->update(['status' => 'suspendu']);
 
