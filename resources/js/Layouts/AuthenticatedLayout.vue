@@ -10,10 +10,11 @@ const showingNavigationDropdown = ref(false);
 
 // Calcul du rôle pour afficher les liens conditionnels
 const user = computed(() => page.props.auth.user);
+const roleName = computed(() => user.value?.role?.name?.toUpperCase() || '');
 
 // Fonction pour déterminer si on doit afficher le menu de navigation complet
 const showFullNavigation = computed(() => {
-    return user.value && user.value.role;
+    return !!roleName.value;
 });
 
 // Fonction pour déterminer si on doit afficher le bouton de déconnexion
@@ -30,29 +31,26 @@ const showLogoutButton = computed(() => {
             </div>
 
             <nav class="flex-1 px-4 space-y-2">
-                <Link :href="route('dashboard')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
+                <Link v-if="user" :href="route('dashboard')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
                  
-                <template v-if="user?.role?.name === 'Admin'">
+                <template v-if="roleName === 'ADMIN'">
                     <Link href="" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="campaigns" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="assignments" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
+                    <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Heures</Link>
                 </template>
-                <template v-else-if="user?.role?.name === 'CP'">
+                <template v-else-if="roleName === 'CP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="campaigns" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="assignments" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                      <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                 </template>
-                <template v-else-if="user?.role?.name === 'SUP'">
+                <template v-else-if="roleName === 'SUP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="campaigns" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="assignments" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                 </template>
-                <template v-else-if="user?.role?.name === 'TC'">
-                    <Link href="campaigns" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="assignments" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                <template v-else-if="roleName === 'TC'">
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                 </template>
             </nav>
         </aside>
@@ -72,7 +70,9 @@ const showLogoutButton = computed(() => {
                         <svg class="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
                         </svg>
-                        <span class="text-sm font-medium text-gray-700">{{ user?.name }}</span>
+                        <span class="text-sm font-medium text-gray-700">
+                            {{ user?.employee ? `${user.employee.first_name} ${user.employee.last_name}` : user?.email }}
+                        </span>
                         <span class="text-xs text-gray-500">({{ user?.role?.name }})</span>
                     </div>
 

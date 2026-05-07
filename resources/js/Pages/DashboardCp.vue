@@ -15,7 +15,7 @@ const userRole = computed(() => {
     return page.props?.auth?.user?.role;
 });
 
-const isAuthorized = computed(() => userRole.value === 'CP');
+const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'CP');
 
 onMounted(() => {
     toast.add({

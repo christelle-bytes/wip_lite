@@ -49,7 +49,7 @@ class User extends Authenticatable
 
     public function hasRole(string $role): bool
     {
-        return optional($this->role)->name === strtoupper($role);
+        return strtoupper(optional($this->role)->name) === strtoupper($role);
     }
 
     public function isAdmin(): bool

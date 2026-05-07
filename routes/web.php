@@ -21,16 +21,17 @@ use Illuminate\Support\Facades\Auth;
 
 Route::get('/dashboard', function () {
     $user = Auth::user();
-    $roleName = $user?->role?->name;
+    $role = $user?->role;
+    $roleName = $role ? strtoupper($role->name) : 'ADMIN';
 
     return match ($roleName) {
-        'Admin' => Inertia::render('DashboardAdmin'),
+        'ADMIN' => Inertia::render('DashboardAdmin'),
         'CP' => Inertia::render('DashboardCp'),
         'SUP' => Inertia::render('DashboardSup'),
         'TC' => Inertia::render('DashboardTc'),
         default => Inertia::render('DashboardAdmin'),
     };
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
 
 Route::middleware('auth')->group(function () {
@@ -48,6 +49,10 @@ Route::middleware('auth')->group(function () {
 
 Route::resource('campaigns', CampaignController::class);
 
-Route::resource('assignments', AssignmentController::class);
+Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+Route::post('/assignments/cp', [AssignmentController::class, 'assignCP'])->name('assignments.assignCP');
+Route::post('/assignments/sup', [AssignmentController::class, 'assignSUP'])->name('assignments.assignSUP');
+Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name('assignments.assignTC');
+Route::patch('/assignments/{assignment}/release', [AssignmentController::class, 'release'])->name('assignments.release');
 
 require __DIR__.'/auth.php';
