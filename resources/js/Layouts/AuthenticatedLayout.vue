@@ -10,7 +10,16 @@ const showingNavigationDropdown = ref(false);
 
 // Calcul du rôle pour afficher les liens conditionnels
 const user = computed(() => page.props.auth.user);
-const isAdmin = computed(() => user.value?.role?.name === 'admin');
+
+// Fonction pour déterminer si on doit afficher le menu de navigation complet
+const showFullNavigation = computed(() => {
+    return user.value && user.value.role;
+});
+
+// Fonction pour déterminer si on doit afficher le bouton de déconnexion
+const showLogoutButton = computed(() => {
+    return user.value && page.props.auth; // Afficher si l'utilisateur est authentifié
+});
 </script>
 
 <template>
@@ -23,25 +32,25 @@ const isAdmin = computed(() => user.value?.role?.name === 'admin');
             <nav class="flex-1 px-4 space-y-2">
                 <Link :href="route('dashboard')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
 
-                <template v-if="user?.role?.name === 'Admin' || isAdmin">
+                <template v-if="user?.role?.name === 'Admin'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Heures</Link>
                 </template>
-                <template v-else-if ="user?.role?.name === 'CP' || isAdmin">
+                <template v-else-if="user?.role?.name === 'CP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
                      <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                 </template>
-                <template v-else-if ="user?.role?.name === 'SUP' || isAdmin">
+                <template v-else-if="user?.role?.name === 'SUP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
                 </template>
-                <template v-else-if ="user?.role?.name === 'TC' || isAdmin">
+                <template v-else-if="user?.role?.name === 'TC'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
                 </template>
@@ -49,18 +58,49 @@ const isAdmin = computed(() => user.value?.role?.name === 'admin');
         </aside>
 
         <div class="flex-1 flex flex-col">
-            <nav class="bg-white border-b border-gray-100 h-16 flex items-center justify-end px-8">
-                <Dropdown align="right" width="48">
+            
+            <nav class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-8">
+                <!-- Espace vide à gauche pour équilibre -->
+                <div class="flex items-center space-x-4">
+                    <!-- Logo ou titre pourrait aller ici -->
+                </div>
+
+                <!-- Menu dropdown à droite avec bouton de déconnexion conditionnel -->
+                <Dropdown v-if="showLogoutButton" align="right" width="48">
                     <template #trigger>
-                        <button class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                            {{ user.name }}
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="ml-2">{{ user?.name || 'Utilisateur' }}</span>
                         </button>
                     </template>
+
                     <template #content>
-                        <DropdownLink :href="route('profile.edit')">Profile</DropdownLink>
-                        <DropdownLink :href="route('logout')" method="post" as="button">Log Out</DropdownLink>
+                        <div class="block px-4 py-2 text-xs text-gray-700 border-b border-gray-200">
+                            Connecté en tant que <strong>{{ user?.role?.name || 'Invité' }}</strong>
+                        </div>
+                        <DropdownLink :href="route('profile.edit')" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                            Profil
+                        </DropdownLink>
+                        
+                        <!-- Bouton de déconnexion - visible selon le niveau -->
+                        <DropdownLink 
+                            v-if="showLogoutButton"
+                            :href="route('logout')" 
+                            method="post" 
+                            as="button"
+                            class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                        >
+                            Déconnexion
+                        </DropdownLink>
                     </template>
                 </Dropdown>
+
+                <!-- Bouton de connexion simple si non authentifié -->
+                <Link v-else :href="route('login')" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring focus:ring-blue-300 disabled:opacity-25 transition">
+                    Se connecter
+                </Link>
             </nav>
 
             <header v-if="$slots.header" class="bg-white shadow">
