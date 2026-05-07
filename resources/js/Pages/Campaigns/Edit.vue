@@ -7,12 +7,16 @@ import Textarea from 'primevue/textarea'
 import Calendar from 'primevue/calendar'
 import Dropdown from 'primevue/dropdown'
 
+const props = defineProps({
+    campaign: Object
+})
+
 const form = useForm({
-    name: '',
-    description: '',
-    start_date: null,
-    end_date: null,
-    status: 'active'
+    name: props.campaign.name,
+    description: props.campaign.description,
+    start_date: new Date(props.campaign.start_date),
+    end_date: new Date(props.campaign.end_date),
+    status: props.campaign.status
 })
 
 const statusOptions = [
@@ -22,15 +26,15 @@ const statusOptions = [
 ]
 
 const submit = () => {
-    form.post(route('campaigns.store'))
+    form.put(route('campaigns.update', props.campaign.id))
 }
 </script>
 
 <template>
-    <Head title="Créer une campagne" />
+    <Head title="Modifier la campagne" />
     <AuthenticatedLayout>
         <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow">
-            <h1 class="text-2xl font-bold mb-6">Créer une campagne</h1>
+            <h1 class="text-2xl font-bold mb-6">Modifier la campagne</h1>
 
             <form @submit.prevent="submit" class="space-y-6">
                 <div>
@@ -64,7 +68,7 @@ const submit = () => {
                 </div>
 
                 <div class="flex gap-4">
-                    <Button type="submit" label="Créer" :loading="form.processing" />
+                    <Button type="submit" label="Mettre à jour" :loading="form.processing" />
                     <Button type="button" label="Annuler" severity="secondary" @click="$inertia.visit(route('campaigns.index'))" />
                 </div>
             </form>

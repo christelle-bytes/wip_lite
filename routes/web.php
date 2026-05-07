@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
@@ -32,8 +33,8 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::resource('campaigns', CampaignController::class);
 
-Route::get('/Dashboard/Admin' ,[DashboardController::class , 'index']);
-
+Route::resource('assignments', AssignmentController::class);
 
 require __DIR__.'/auth.php';
