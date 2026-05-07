@@ -17,10 +17,10 @@ class AssignmentController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
-        if (!$user || !$user->isAdmin()) {
-            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
-        }
+        // $user = Auth::user();
+        // if (!$user || !$user->isAdmin()) {
+        //     abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        // }
 
         $assignments = Assignment::with(['employee.user', 'campaign', 'position', 'manager'])->get();
         $employees = Employee::with('user')->get();

@@ -17,10 +17,11 @@ class CampaignController extends Controller
     public function index()
     {
         $user = Auth::user();
+        // dd(!$user->isAdmin());
         // 1. Validation du rôle Admin
-        if (!$user || !$user->isAdmin()) {
-            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
-        }
+        // if (!$user || !$user->isAdmin()) {
+        //     abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        // }
 
         // 2. Récupération des campagnes avec compteurs
         $campaigns = Campaign::withCount([
