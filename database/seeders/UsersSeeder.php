@@ -8,6 +8,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+
 class UsersSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -25,7 +26,7 @@ class UsersSeeder extends Seeder
     User::updateOrCreate(
         ['email' => 'admin@test.com'],
         [
-            // 'name' => 'Admin User',
+           
             'password' => Hash::make('password'), // Toujours mieux de définir un mot de passe
             'role_id' => $roles['Admin']->id,
         ]
