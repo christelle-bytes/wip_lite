@@ -25,7 +25,7 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date')->nullable();
 
-            $table->enum('status', ['en attente', 'validé', 'suspendu'])
+            $table->enum('status', ['en attente', 'validé', 'suspendu', 'terminé'])
                   ->default('en attente');
 
             $table->foreignId('validated_by')

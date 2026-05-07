@@ -5,6 +5,8 @@ use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Employee extends Model
 {
@@ -31,6 +33,19 @@ class Employee extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(position::class);
+    }
+
+    public function planningAssignment():BelongsToMany{
+        return $this->BelongsToMany(PlanningAssignment::class);
+    }
+
+    public function user(): BelongsTo{
+        return $this->belongsTo(User::class);
+    }
+
+    public function planningModels()
+    {
+        return $this->hasMany(PlanningModel::class, 'created_by');
     }
 
     public function logs()

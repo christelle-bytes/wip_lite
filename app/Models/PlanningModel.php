@@ -5,6 +5,7 @@ use App\Traits\RecordsActivity;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PlanningModel extends Model
@@ -24,6 +25,11 @@ class PlanningModel extends Model
         'total_hours',
         'created_by'
     ];
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'created_by');
+    }
 
     public function planningAssignment(): HasMany{
         return $this->hasMany(PlanningAssignment::class);

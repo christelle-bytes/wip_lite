@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\PlanningAssignementController;
+use App\Http\Controllers\PlanningModelController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -13,9 +16,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Route::get('/dashboard', [PlanningModelController::class, 'index'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -29,5 +30,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
 });
+
+//Tout ce qui concerne planning chez Breton
+
+//planningModel
+Route::get('/planning', [PlanningModelController::class, 'index'])->name('planning.index');
+Route::post('/planning', [PlanningModelController::class, 'store'])->name('planning.store');
+Route::put('/planning/{planningModel}', [PlanningModelController::class, 'update'])->name('planning.update');
+Route::delete('/planning/{planningModel}', [PlanningModelController::class, 'destroy'])->name('planning.destroy');
+
 
 require __DIR__.'/auth.php';
