@@ -34,7 +34,6 @@ class Employee extends Model
     {
         return $this->belongsTo(position::class);
     }
-<<<<<<< HEAD
     public function timesheet(): HasMany
     {
         return $this->hasMany(Timesheet::class);
@@ -43,11 +42,10 @@ class Employee extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
-=======
+    }
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
->>>>>>> 6a2915617f75ddd293f7bd5918456f39f0fc9be6
     }
 
     public function logs()
