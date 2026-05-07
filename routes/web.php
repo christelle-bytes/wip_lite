@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\PlanningAssignementController;
 use App\Http\Controllers\PlanningModelController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
@@ -32,12 +34,14 @@ Route::middleware('auth')->group(function () {
 });
 
 //Tout ce qui concerne planning chez Breton
-
 //planningModel
 Route::get('/planning', [PlanningModelController::class, 'index'])->name('planning.index');
 Route::post('/planning', [PlanningModelController::class, 'store'])->name('planning.store');
 Route::put('/planning/{planningModel}', [PlanningModelController::class, 'update'])->name('planning.update');
 Route::delete('/planning/{planningModel}', [PlanningModelController::class, 'destroy'])->name('planning.destroy');
 
+Route::resource('campaigns', CampaignController::class);
+
+Route::resource('assignments', AssignmentController::class);
 
 require __DIR__.'/auth.php';

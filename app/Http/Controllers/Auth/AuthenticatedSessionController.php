@@ -37,8 +37,8 @@ class AuthenticatedSessionController extends Controller
 
         $redirect = match (true) {
             $user->isAdmin() => route('users.index'),
-            $user->isCP() => '/planning',  // À implémenter plus tard
-            $user->isSUP() => '/timesheets',  // À implémenter
+            $user->isCP() => '/planning',  
+            $user->isSUP() => '/timesheets',
             $user->isTC() => '/dashboard',
             default => route('dashboard'),
         };
