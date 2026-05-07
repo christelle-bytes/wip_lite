@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\TimesheetEntryController;
@@ -50,5 +52,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
 });
+
+Route::resource('campaigns', CampaignController::class);
+
+Route::resource('assignments', AssignmentController::class);
 
 require __DIR__.'/auth.php';
