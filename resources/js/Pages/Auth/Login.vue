@@ -37,6 +37,11 @@ const submit = () => {
             {{ status }}
         </div>
 
+        <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+            <div class="font-semibold mb-2">Erreur de connexion</div>
+            <div v-for="(message, field) in form.errors" :key="field">{{ message }}</div>
+        </div>
+
         <form @submit.prevent="submit">
             <div>
                 <InputLabel for="email" value="Email" />

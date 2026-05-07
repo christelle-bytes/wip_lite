@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -9,12 +9,17 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 class Campaign extends Model
 {
     use HasFactory;
+    use RecordsActivity;
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
     protected $fillable = ['name', 'description', 'start_date', 'end_date', 'status'];
     public function assignments()
     {
         return $this->hasMany(Assignment::class);
     }
-   public function employees(): HasManyThrough
+    public function employees(): HasManyThrough
     {
         return $this->hasManyThrough(
             Employee::class,
@@ -26,7 +31,7 @@ class Campaign extends Model
         );
 
     }
-     public function logs()
+    public function logs()
     {
         return $this->morphMany(ActivityLog::class, 'model');
     }
