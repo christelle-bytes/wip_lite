@@ -18,8 +18,20 @@ Route::get('/', function () {
     ]);
 });
 
+use Illuminate\Support\Facades\Auth;
+
+
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    $user = Auth::user();
+    $roleName = $user?->role?->name;
+
+    return match ($roleName) {
+        'Admin' => Inertia::render('DashboardAdmin'),
+        'CP' => Inertia::render('DashboardCp'),
+        'SUP' => Inertia::render('DashboardSup'),
+        'TC' => Inertia::render('DashboardTc'),
+        default => Inertia::render('DashboardAdmin'),
+    };
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::resource('/timesheet', TimesheetController::class);
@@ -33,7 +45,6 @@ Route::get('/timesheetEntry_sup', [TimesheetEntryController::class, 'indexSup'])
 Route::get('/timesheetEntry_telecon', [TimesheetEntryController::class, 'indexTelecon'])->name('index.telecon');
 // saisie heure telecon
 Route::get('/timesheetEntry_teleconEntry', [TimesheetEntryController::class, 'entryTelecon'])->name('entry.telecon');
-
 
 // store telecon
 Route::post('/timesheetEntry_teleconStore', [TimesheetEntryController::class, 'storeTelecon'])->name('store.telecon');

@@ -1,118 +1,210 @@
 <script setup>
-import { ref } from 'vue';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Tag from 'primevue/tag';
-import Button from 'primevue/button';
+import { ref, computed } from "vue";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import Tag from "primevue/tag";
+import Select from "primevue/select"; // Ou Dropdown selon votre version de PrimeVue
+import FloatLabel from "primevue/floatlabel";
+import AuthenticatedLayout from "../../Layouts/AuthenticatedLayout.vue";
+import { Link } from "@inertiajs/vue3";
 
 const props = defineProps({
-    supervisor: Array,
+    supervisor: Array, // Reçoit les données groupées/filtrées du contrôleur
     auth: Object,
-    currentMonth: Array,
 });
 
 const expandedRows = ref([]);
 
-// Formater les heures décimales (ex: 8.5 -> 08h30)
-const formatHours = (value) => {
-    if (!value) return '0h00';
-    const hours = Math.floor(value);
-    const minutes = Math.round((value - hours) * 60);
-    return `${hours}h${minutes.toString().padStart(2, '0')}`;
-};
+// 1. Extraire la liste unique des mois présents dans les données pour le filtre
+const monthOptions = computed(() => {
+    const months = new Set();
+    props.supervisor.forEach((sup) => {
+        sup.timesheet.forEach((ts) => {
+            ts.entries.forEach((entry) => {
+                const date = new Date(entry.date);
+                const monthLabel = date.toLocaleDateString("fr-FR", {
+                    month: "long",
+                    year: "numeric",
+                });
+                months.add(monthLabel);
+            });
+        });
+    });
+    return Array.from(months).map((m) => ({ label: m, value: m }));
+});
 
-// Formater la date en français
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
+const selectedMonth = ref(monthOptions.value[0] || null);
+
+// 2. Filtrer les entrées selon le mois sélectionné
+const getFilteredEntries = (employee) => {
+    const allEntries = employee.timesheet.flatMap((ts) => ts.entries);
+    if (!selectedMonth.value) return allEntries;
+
+    return allEntries.filter((entry) => {
+        const dateLabel = new Date(entry.date).toLocaleDateString("fr-FR", {
+            month: "long",
+            year: "numeric",
+        });
+        return dateLabel === selectedMonth.value.value;
     });
 };
-console.log(props.currentMonth)
+
+// Fonctions de formatage
+const formatHours = (v) =>
+    v
+        ? `${Math.floor(v)}h${Math.round((v % 1) * 60)
+              .toString()
+              .padStart(2, "0")}`
+        : "0h00";
+const formatDate = (d) =>
+    new Date(d).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+    });
 </script>
 
 <template>
-    <div class="card p-4">
-        <DataTable 
-            v-model:expandedRows="expandedRows" 
-            :value="props.supervisor" 
-            dataKey="id" 
-            responsiveLayout="scroll"
-            class="p-datatable-sm"
-        >
-            <template #header>
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-xl font-bold">Suivi des Temps - Superviseurs</span>
+    <AuthenticatedLayout>
+        <div class="p-6 space-y-6">
+            <!-- Barre d'outils minimaliste -->
+            <div
+                class="flex justify-between items-end bg-white p-4 rounded-xl shadow-sm border border-gray-100"
+            >
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        Reporting Superviseurs
+                    </h1>
+                    <p class="text-gray-500 text-sm">
+                        Visualisation des heures par période
+                    </p>
+                    <Link :href="route('entry.telecon')" class="block p-2 hover:bg-slate-800 rounded"
+                        >Saisie des heures des téléconseillers</Link
+                    >
+                    <Link :href="route('entry.sup')" class="block p-2 hover:bg-slate-800 rounded"
+                        >Saisie des heures des superviseurs</Link
+                    >
+
                 </div>
-            </template>
 
-            <!-- Colonne d'expansion -->
-            <Column expander style="width: 3rem" />
+                <FloatLabel variant="on">
+                    <Select
+                        v-model="selectedMonth"
+                        :options="monthOptions"
+                        optionLabel="label"
+                        placeholder="Choisir un mois"
+                        class="w-56"
+                    />
+                </FloatLabel>
+            </div>
 
-            <!-- Informations de base -->
-            <Column field="matricule" header="Matricule" sortable />
-            <Column header="Nom Complet">
-                <template #body="{ data }">
-                    {{ data.first_name }} {{ data.last_name }}
-                </template>
-            </Column>
-            <Column field="position.name" header="Poste" />
-            
-            <Column header="Statut">
-                <template #body="{ data }">
-                    <Tag :value="data.status" :severity="data.status === 'actif' ? 'success' : 'danger'" />
-                </template>
-            </Column>
+            <!-- Tableau Principal -->
+            <div
+                class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            >
+                <DataTable
+                    v-model:expandedRows="expandedRows"
+                    :value="props.supervisor"
+                    dataKey="id"
+                    class="p-datatable-sm"
+                    stripedRows
+                >
+                    <Column expander style="width: 3rem" />
 
-            <!-- Contenu détaillé (Expansion) -->
-            <template #expansion="{ data }">
-                <div class="p-4 bg-gray-50 rounded-lg">
-                    <h5 class="mb-3 font-semibold text-blue-600">Entrées de temps pour {{ data.first_name }}</h5>
-                    
-                    <DataTable :value="data.timesheet.flatMap(ts => ts.entries)" class="p-datatable-sm shadow-sm">
-                        <Column field="date" header="Date">
-                            <template #body="slotProps">
-                                {{ formatDate(slotProps.data.date) }}
-                            </template>
-                        </Column>
-                        <Column field="check_in" header="Arrivée" />
-                        <Column field="check_out" header="Départ" />
-                        <Column header="Heures Travail.">
-                            <template #body="slotProps">
-                                <span class="font-medium text-green-600">
-                                    {{ formatHours(slotProps.data.total_hours) }}
-                                </span>
-                            </template>
-                        </Column>
-                        <Column header="Heures Supp.">
-                            <template #body="slotProps">
-                                <Tag 
-                                    v-if="slotProps.data.overtime_hours > 0" 
-                                    :value="formatHours(slotProps.data.overtime_hours)" 
-                                    severity="warning" 
-                                />
-                                <span v-else>-</span>
-                            </template>
-                        </Column>
-                    </DataTable>
-                </div>
-            </template>
-        </DataTable>
-    </div>
+                    <Column header="Collaborateur">
+                        <template #body="{ data }">
+                            <div class="flex flex-col">
+                                <span class="font-semibold text-gray-700"
+                                    >{{ data.first_name }}
+                                    {{ data.last_name }}</span
+                                >
+                                <span class="text-xs text-gray-400">{{
+                                    data.matricule
+                                }}</span>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column field="position.name" header="Poste" />
+
+                    <Column header="Total Mois">
+                        <template #body="{ data }">
+                            <b class="text-blue-600">
+                                {{
+                                    formatHours(
+                                        getFilteredEntries(data).reduce(
+                                            (acc, curr) =>
+                                                acc + curr.total_hours,
+                                            0,
+                                        ),
+                                    )
+                                }}
+                            </b>
+                        </template>
+                    </Column>
+
+                    <!-- Expansion : Détail des journées du mois -->
+                    <template #expansion="{ data }">
+                        <div class="p-4 bg-slate-50 border-y border-gray-200">
+                            <div class="mb-3 flex items-center gap-2">
+                                <i class="pi pi-calendar text-blue-500"></i>
+                                <span class="font-bold text-gray-600"
+                                    >Détails de {{ selectedMonth?.label }}</span
+                                >
+                            </div>
+
+                            <DataTable
+                                :value="getFilteredEntries(data)"
+                                class="p-datatable-sm rounded-lg overflow-hidden border"
+                            >
+                                <Column field="date" header="Date">
+                                    <template #body="sp">{{
+                                        formatDate(sp.data.date)
+                                    }}</template>
+                                </Column>
+                                <Column field="check_in" header="Entrée" />
+                                <Column field="check_out" header="Sortie" />
+                                <Column header="Heures">
+                                    <template #body="sp">{{
+                                        formatHours(sp.data.total_hours)
+                                    }}</template>
+                                </Column>
+                                <Column header="Overtime">
+                                    <template #body="sp">
+                                        <Tag
+                                            v-if="sp.data.overtime_hours > 0"
+                                            :value="
+                                                '+' +
+                                                formatHours(
+                                                    sp.data.overtime_hours,
+                                                )
+                                            "
+                                            severity="warn"
+                                        />
+                                        <span v-else class="text-gray-300"
+                                            >-</span
+                                        >
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </div>
+                    </template>
+                </DataTable>
+            </div>
+        </div>
+    </AuthenticatedLayout>
 </template>
 
 <style scoped>
-/* Ajoute un léger effet de profondeur au tableau */
-.card {
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+:deep(.p-datatable-thead > tr > th) {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
 }
 
-:deep(.p-datatable-header) {
-    background: transparent;
-    border: none;
-    padding-left: 0;
+:deep(.p-tag) {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
 }
 </style>

@@ -50,11 +50,16 @@ class TimesheetEntryController extends Controller
     }
 
     // index telecon
-    public function indexTelecon()
+    public function indexTelecon(Request $request)
     {
+        $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
         $telecon = Employee::with('position', 'timesheet')
-            ->whereHas('position', function ($query) {
-                $query->where('code', 'SUP');
+            ->whereHas('position', function ($query) use ($targetMonth) {
+                
+                $query->with(['entries' => function ($entryQuery) use ($targetMonth) {
+                    // On filtre les entrées précises pour le mois choisi
+                    $entryQuery->where('date', 'like', "$targetMonth%");
+                }])->where('code', 'TC');
             })
             ->whereHas('timesheet')
             ->where('status', 'actif')
@@ -62,6 +67,7 @@ class TimesheetEntryController extends Controller
 
         return Inertia::render('TimesheetsEntry/IndexTelecon', [
             'telecon' => $telecon,
+            'currentMonth' => $targetMonth
         ]);
     }
 
