@@ -9,9 +9,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Assignment extends Model
 {
+
     use HasFactory;
     use RecordsActivity;
-    protected $fillable = ['employee_id', 'campaign_id', 'position_id', 'status', 'start_date', 'end_date'];
+     protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
+    protected $fillable = ['employee_id', 'campaign_id','manager_id', 'position_id', 'status', 'start_date', 'end_date'];
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
