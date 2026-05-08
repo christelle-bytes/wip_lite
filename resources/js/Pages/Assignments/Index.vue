@@ -9,18 +9,25 @@ import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
 import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
-import Tag from 'primevue/tag'
 
 const props = defineProps({
-    activeCampaigns: Array,
-    unassignedCPs:   Array,
-    unassignedSUPs:  Array,
-    unassignedTCs:   Array,
-    assignedCPs:     Array,
-    assignedSUPs:    Array,
-    campaigns:       Array,
-    unassignedEmployees: Array, // ← nouveau
+    activeCampaigns:     Array,
+    unassignedCPs:       Array,
+    unassignedSUPs:      Array,
+    unassignedTCs:       Array,
+    assignedCPs:         Array,
+    assignedSUPs:        Array,
+    campaigns:           Array,
+    unassignedEmployees: Array,
+    myAssignment:        Object,
+    role:                String,
 })
+
+// ── Rôles ─────────────────────────────────────────────────────────────────────
+const isAdmin = computed(() => props.role === 'admin')
+const isCP    = computed(() => props.role === 'cp')
+const isSUP   = computed(() => props.role === 'sup')
+const isTC    = computed(() => props.role === 'tc')
 
 // ── Dialogs ───────────────────────────────────────────────────────────────────
 const cpDialogVisible      = ref(false)
@@ -29,63 +36,57 @@ const tcDialogVisible      = ref(false)
 const releaseDialogVisible = ref(false)
 const assignmentToRelease  = ref(null)
 
-// Pré-remplissage depuis la section "disponibles"
-const prefilledEmployeeId = ref(null)
-
 // ── Forms ─────────────────────────────────────────────────────────────────────
-const cpForm = useForm({ employee_id: null, campaign_ids: [], start_date: null })
+const cpForm  = useForm({ employee_id: null, campaign_ids: [], start_date: null })
 const supForm = useForm({ employee_id: null, cp_assignment_id: null, start_date: null })
-const tcForm = useForm({ employee_ids: [], sup_assignment_id: null, start_date: null })
+const tcForm  = useForm({ employee_ids: [], sup_assignment_id: null, start_date: null })
 
 // ── Options dropdowns ─────────────────────────────────────────────────────────
 const cpOptions = computed(() =>
-    props.unassignedCPs.map(e => ({
+    (props.unassignedCPs ?? []).map(e => ({
         label: `${e.first_name} ${e.last_name} (${e.matricule})`,
         value: e.id
     }))
 )
 const supOptions = computed(() =>
-    props.unassignedSUPs.map(e => ({
+    (props.unassignedSUPs ?? []).map(e => ({
         label: `${e.first_name} ${e.last_name} (${e.matricule})`,
         value: e.id
     }))
 )
 const tcOptions = computed(() =>
-    props.unassignedTCs.map(e => ({
+    (props.unassignedTCs ?? []).map(e => ({
         label: `${e.first_name} ${e.last_name} (${e.matricule})`,
         value: e.id
     }))
 )
 const campaignOptions = computed(() =>
-    props.activeCampaigns.map(c => ({ label: c.name, value: c.id }))
+    (props.activeCampaigns ?? []).map(c => ({ label: c.name, value: c.id }))
 )
 const cpAssignmentOptions = computed(() =>
-    props.assignedCPs.map(a => ({
+    (props.assignedCPs ?? []).map(a => ({
         label: `${a.employee.first_name} ${a.employee.last_name} → ${a.campaign.name}`,
         value: a.id
     }))
 )
 const supAssignmentOptions = computed(() =>
-    props.assignedSUPs.map(a => ({
+    (props.assignedSUPs ?? []).map(a => ({
         label: `${a.employee.first_name} ${a.employee.last_name} → ${a.campaign.name}`,
         value: a.id
     }))
 )
 
-// ── Ouvrir dialog avec pré-remplissage depuis "disponibles" ──────────────────
+// ── Ouvrir dialog depuis carte "disponibles" ──────────────────────────────────
 const openDialogForEmployee = (employee) => {
-    const code = employee.position.code
+    const code = employee.position?.code
     if (code === 'CP') {
-        cpForm.reset()
-        cpForm.employee_id = employee.id
+        cpForm.reset(); cpForm.employee_id = employee.id
         cpDialogVisible.value = true
     } else if (code === 'SUP') {
-        supForm.reset()
-        supForm.employee_id = employee.id
+        supForm.reset(); supForm.employee_id = employee.id
         supDialogVisible.value = true
     } else if (code === 'TC') {
-        tcForm.reset()
-        tcForm.employee_ids = [employee.id]
+        tcForm.reset(); tcForm.employee_ids = [employee.id]
         tcDialogVisible.value = true
     }
 }
@@ -130,10 +131,10 @@ const getStatusBadge = (status) => {
 
 const getPositionStyle = (code) => {
     const map = {
-        CP:  { badge: 'bg-slate-900 text-white',   card: 'border-slate-200 bg-slate-50' },
-        SUP: { badge: 'bg-blue-600 text-white',     card: 'border-blue-100 bg-blue-50' },
-        TC:  { badge: 'bg-emerald-600 text-white',  card: 'border-emerald-100 bg-emerald-50' },
-        RH:  { badge: 'bg-purple-600 text-white',   card: 'border-purple-100 bg-purple-50' },
+        CP:  { badge: 'bg-slate-900 text-white',  card: 'border-slate-200 bg-slate-50' },
+        SUP: { badge: 'bg-blue-600 text-white',    card: 'border-blue-100 bg-blue-50' },
+        TC:  { badge: 'bg-emerald-600 text-white', card: 'border-emerald-100 bg-emerald-50' },
+        RH:  { badge: 'bg-purple-600 text-white',  card: 'border-purple-100 bg-purple-50' },
     }
     return map[code] ?? { badge: 'bg-slate-400 text-white', card: 'border-slate-100 bg-slate-50' }
 }
@@ -169,6 +170,10 @@ const positionOrder = ['CP', 'SUP', 'TC', 'RH']
 const sortedPositionKeys = computed(() =>
     positionOrder.filter(k => unassignedByPosition.value[k])
 )
+
+const totalUnassigned = computed(() =>
+    (props.unassignedEmployees ?? []).length
+)
 </script>
 
 <template>
@@ -176,25 +181,70 @@ const sortedPositionKeys = computed(() =>
     <AuthenticatedLayout>
         <div class="min-h-screen bg-slate-50 p-8">
 
-            <!-- Header -->
+            <!-- ── Header ──────────────────────────────────────────────────── -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-slate-900">Affectations</h1>
-                    <p class="mt-2 text-slate-500">Gérez les affectations hiérarchiques CP → SUP → TC.</p>
+                    <p class="mt-2 text-slate-500">
+                        <template v-if="isAdmin">Gérez les affectations hiérarchiques CP → SUP → TC.</template>
+                        <template v-else-if="isCP">Gérez vos superviseurs et téléconseillers.</template>
+                        <template v-else-if="isSUP">Votre équipe de téléconseillers.</template>
+                        <template v-else>Votre affectation actuelle.</template>
+                    </p>
                 </div>
                 <div class="flex gap-3 flex-wrap">
-                    <Button @click="cpDialogVisible = true"  label="Affecter un CP"  icon="pi pi-plus" class="rounded-xl" />
-                    <Button @click="supDialogVisible = true" label="Affecter un SUP" icon="pi pi-plus" severity="secondary" class="rounded-xl" />
-                    <Button @click="tcDialogVisible = true"  label="Affecter un TC"  icon="pi pi-plus" severity="success" class="rounded-xl" />
+                    <!-- Admin : tout affecter -->
+                    <template v-if="isAdmin">
+                        <Button @click="cpDialogVisible = true"  label="Affecter un CP"  icon="pi pi-plus" class="rounded-xl" />
+                        <Button @click="supDialogVisible = true" label="Affecter un SUP" icon="pi pi-plus" severity="secondary" class="rounded-xl" />
+                        <Button @click="tcDialogVisible = true"  label="Affecter un TC"  icon="pi pi-plus" severity="success" class="rounded-xl" />
+                    </template>
+                    <!-- CP : affecter SUP et TC uniquement -->
+                    <template v-else-if="isCP">
+                        <Button @click="supDialogVisible = true" label="Affecter un SUP" icon="pi pi-plus" severity="secondary" class="rounded-xl" />
+                        <Button @click="tcDialogVisible = true"  label="Affecter un TC"  icon="pi pi-plus" severity="success" class="rounded-xl" />
+                    </template>
                 </div>
             </div>
 
-            <!-- TabView principal -->
-            <TabView>
+            <!-- ── VUE TC : uniquement son affectation ─────────────────────── -->
+            <div v-if="isTC" class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 class="text-lg font-semibold text-slate-800 mb-4">Mon affectation actuelle</h2>
+                <div v-if="myAssignment">
+                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">TC</span>
+                        <div>
+                            <p class="font-semibold text-slate-800 text-lg">{{ myAssignment.campaign?.name }}</p>
+                            <p class="text-sm text-slate-500 mt-1">
+                                <i class="pi pi-user mr-1"></i>
+                                Superviseur : {{ myAssignment.manager?.first_name }} {{ myAssignment.manager?.last_name }}
+                            </p>
+                            <p class="text-xs text-slate-400 mt-1">
+                                <i class="pi pi-calendar mr-1"></i>
+                                Depuis le {{ formatDate(myAssignment.start_date) }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="py-12 text-center text-slate-400">
+                    <i class="pi pi-info-circle text-4xl mb-3 block opacity-30"></i>
+                    <p class="font-medium">Vous n'êtes actuellement affecté à aucune campagne.</p>
+                </div>
+            </div>
 
-                <!-- ═══ ONGLET 1 : Affectations actives ═══════════════════════ -->
+            <!-- ── VUE SUP/CP/ADMIN : TabView ──────────────────────────────── -->
+            <TabView v-else>
+
+                <!-- ═══ ONGLET 1 : Affectations actives ══════════════════════ -->
                 <TabPanel header="Affectations actives">
                     <div class="space-y-6 mt-4">
+
+                        <!-- Vide global -->
+                        <div v-if="!campaigns?.length" class="py-16 text-center text-slate-400">
+                            <i class="pi pi-users text-4xl mb-3 block opacity-30"></i>
+                            <p class="font-medium">Aucune affectation active pour le moment.</p>
+                        </div>
+
                         <div
                             v-for="campaign in campaigns"
                             :key="campaign.id"
@@ -211,7 +261,7 @@ const sortedPositionKeys = computed(() =>
                                 <span class="text-sm text-slate-400">{{ campaign.tree.length }} CP(s)</span>
                             </div>
 
-                            <!-- Vide -->
+                            <!-- Campagne vide -->
                             <div v-if="campaign.tree.length === 0" class="px-6 py-10 text-center text-slate-400 text-sm">
                                 <i class="pi pi-users text-3xl mb-2 block opacity-30"></i>
                                 Aucune ressource affectée à cette campagne.
@@ -232,7 +282,9 @@ const sortedPositionKeys = computed(() =>
                                                 <p class="text-xs text-slate-400">Depuis {{ formatDate(cp.start_date) }}</p>
                                             </div>
                                         </div>
+                                        <!-- Libérer CP : admin seulement -->
                                         <Button
+                                            v-if="isAdmin"
                                             @click="openRelease(cp, `${cp.employee.first_name} ${cp.employee.last_name}`)"
                                             label="Libérer" size="small" severity="danger" outlined class="rounded-xl"
                                         />
@@ -253,7 +305,9 @@ const sortedPositionKeys = computed(() =>
                                                         <p class="text-xs text-slate-400">Depuis {{ formatDate(sup.start_date) }}</p>
                                                     </div>
                                                 </div>
+                                                <!-- Libérer SUP : admin ou CP -->
                                                 <Button
+                                                    v-if="isAdmin || isCP"
                                                     @click="openRelease(sup, `${sup.employee.first_name} ${sup.employee.last_name}`)"
                                                     label="Libérer" size="small" severity="danger" outlined class="rounded-xl"
                                                 />
@@ -270,7 +324,9 @@ const sortedPositionKeys = computed(() =>
                                                     <span class="text-sm font-medium text-slate-700">
                                                         {{ tc.employee.first_name }} {{ tc.employee.last_name }}
                                                     </span>
+                                                    <!-- Libérer TC : admin ou CP -->
                                                     <button
+                                                        v-if="isAdmin || isCP"
                                                         @click="openRelease(tc, `${tc.employee.first_name} ${tc.employee.last_name}`)"
                                                         class="ml-1 text-red-400 hover:text-red-600 transition-colors"
                                                     >
@@ -288,21 +344,20 @@ const sortedPositionKeys = computed(() =>
                     </div>
                 </TabPanel>
 
-                <!-- ═══ ONGLET 2 : Ressources disponibles ════════════════════ -->
-                <TabPanel>
+                <!-- ═══ ONGLET 2 : Ressources disponibles (Admin et CP) ═══════ -->
+                <TabPanel v-if="isAdmin || isCP">
                     <template #header>
                         <div class="flex items-center gap-2">
                             <span>Ressources disponibles</span>
                             <span class="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-                                {{ unassignedEmployees?.length ?? 0 }}
+                                {{ totalUnassigned }}
                             </span>
                         </div>
                     </template>
 
                     <div class="mt-4 space-y-8">
-
                         <!-- Vide global -->
-                        <div v-if="!unassignedEmployees?.length" class="py-16 text-center text-slate-400">
+                        <div v-if="!totalUnassigned" class="py-16 text-center text-slate-400">
                             <i class="pi pi-check-circle text-4xl mb-3 block text-emerald-400"></i>
                             <p class="font-medium">Toutes les ressources sont affectées.</p>
                         </div>
@@ -357,7 +412,6 @@ const sortedPositionKeys = computed(() =>
                                             <i class="pi pi-calendar text-slate-400 w-4"></i>
                                             Embauché le {{ formatDate(employee.created_at) }}
                                         </div>
-                                        <!-- Dernière affectation -->
                                         <div v-if="employee.last_assignment" class="flex items-center gap-2">
                                             <i class="pi pi-history text-slate-400 w-4"></i>
                                             Dernière : {{ employee.last_assignment.campaign?.name }}
@@ -377,7 +431,7 @@ const sortedPositionKeys = computed(() =>
                                             icon="pi pi-plus"
                                             size="small"
                                             class="rounded-xl flex-1"
-                                            :disabled="employee.status !== 'actif' || code === 'RH'"
+                                            :disabled="employee.status !== 'actif' || code === 'RH' || (isCP && code === 'CP')"
                                         />
                                         <Button
                                             icon="pi pi-eye"
@@ -396,9 +450,7 @@ const sortedPositionKeys = computed(() =>
 
             </TabView>
 
-            <!-- ─── Dialogs (inchangés) ──────────────────────────────────────── -->
-
-            <!-- Dialog CP -->
+            <!-- ─── Dialog Affecter CP (Admin uniquement) ──────────────────── -->
             <Dialog v-model:visible="cpDialogVisible" modal header="Affecter un Chef de Plateau" :style="{ width: '40rem' }">
                 <div class="space-y-5">
                     <div>
@@ -423,7 +475,7 @@ const sortedPositionKeys = computed(() =>
                 </template>
             </Dialog>
 
-            <!-- Dialog SUP -->
+            <!-- ─── Dialog Affecter SUP ────────────────────────────────────── -->
             <Dialog v-model:visible="supDialogVisible" modal header="Affecter un Superviseur" :style="{ width: '40rem' }">
                 <div class="space-y-5">
                     <div>
@@ -448,7 +500,7 @@ const sortedPositionKeys = computed(() =>
                 </template>
             </Dialog>
 
-            <!-- Dialog TC -->
+            <!-- ─── Dialog Affecter TC ─────────────────────────────────────── -->
             <Dialog v-model:visible="tcDialogVisible" modal header="Affecter des Téléconseillers" :style="{ width: '40rem' }">
                 <div class="space-y-5">
                     <div>
@@ -473,7 +525,7 @@ const sortedPositionKeys = computed(() =>
                 </template>
             </Dialog>
 
-            <!-- Dialog Libération -->
+            <!-- ─── Dialog Libération ──────────────────────────────────────── -->
             <Dialog v-model:visible="releaseDialogVisible" modal header="Libérer une ressource" :style="{ width: '35rem' }">
                 <div v-if="assignmentToRelease" class="space-y-4">
                     <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">

@@ -7,66 +7,229 @@ use App\Models\Campaign;
 use App\Models\Employee;
 use App\Models\Position;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class AssignmentController extends Controller
 {
     public function index()
     {
-        // Positions
-        $cpPosition    = Position::where('code', 'CP')->first();
-        $supPosition   = Position::where('code', 'SUP')->first();
-        $tcPosition    = Position::where('code', 'TC')->first();
+        $user     = Auth::user();
+        $employee = $user->employee;
 
-        // Campagnes actives
-        $activeCampaigns = Campaign::where('status', 'active')->get();
+        $cpPosition  = Position::where('code', 'CP')->firstOrFail();
+        $supPosition = Position::where('code', 'SUP')->firstOrFail();
+        $tcPosition  = Position::where('code', 'TC')->firstOrFail();
 
-        // CP non affectés (aucun assignment actif)
-        $unassignedCPs = Employee::where('position_id', $cpPosition->id)
-            ->where('status', 'actif')
-            ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
-            ->with('user')
-            ->get();
+        // ── ADMIN : tout voir, tout faire ─────────────────────────────────────
+        if ($user->isAdmin()) {
+            $activeCampaigns = Campaign::where('status', 'active')->get();
 
-        // SUP non affectés
-        $unassignedSUPs = Employee::where('position_id', $supPosition->id)
-            ->where('status', 'actif')
-            ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
-            ->with('user')
-            ->get();
+            $unassignedCPs = Employee::where('position_id', $cpPosition->id)
+                ->where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->with(['user', 'position'])->get();
 
-        // TC non affectés
-        $unassignedTCs = Employee::where('position_id', $tcPosition->id)
-            ->where('status', 'actif')
-            ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
-            ->with('user')
-            ->get();
+            $unassignedSUPs = Employee::where('position_id', $supPosition->id)
+                ->where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->with(['user', 'position'])->get();
 
-        // CP déjà affectés (pour affecter un SUP sous un CP)
-        $assignedCPs = Assignment::where('position_id', $cpPosition->id)
-            ->where('status', 'actif')
-            ->with(['employee.user', 'campaign'])
-            ->get();
+            $unassignedTCs = Employee::where('position_id', $tcPosition->id)
+                ->where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->with(['user', 'position'])->get();
 
-        // SUP déjà affectés (pour affecter un TC sous un SUP)
-        $assignedSUPs = Assignment::where('position_id', $supPosition->id)
-            ->where('status', 'actif')
-            ->with(['employee.user', 'campaign'])
-            ->get();
+            $assignedCPs = Assignment::where('position_id', $cpPosition->id)
+                ->where('status', 'actif')
+                ->with(['employee.user', 'campaign'])->get();
 
-        // Vue arborescente : toutes les campagnes avec leur hiérarchie
-        $campaigns = Campaign::with([
-            'assignments' => fn($q) => $q->where('status', 'actif')
-                ->with(['employee.user', 'position']),
-        ])->get()->map(function ($campaign) use ($cpPosition, $supPosition, $tcPosition) {
+            $assignedSUPs = Assignment::where('position_id', $supPosition->id)
+                ->where('status', 'actif')
+                ->with(['employee.user', 'campaign'])->get();
 
-            $assignments = $campaign->assignments;
+            $unassignedEmployees = Employee::where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->with([
+                    'position', 'user',
+                    'assignments' => fn($q) => $q->where('status', 'terminé')
+                        ->latest('end_date')->limit(1)->with('campaign'),
+                ])
+                ->get()
+                ->map(function ($emp) {
+                    $emp->last_assignment = $emp->assignments->first();
+                    unset($emp->assignments);
+                    return $emp;
+                });
 
-            $cps = $assignments->where('position_id', $cpPosition->id)->values();
+            $campaigns = $this->buildCampaignTree(
+                Campaign::all(),
+                $cpPosition, $supPosition, $tcPosition
+            );
+
+            return Inertia::render('Assignments/Index', [
+                'activeCampaigns'     => $activeCampaigns,
+                'unassignedCPs'       => $unassignedCPs,
+                'unassignedSUPs'      => $unassignedSUPs,
+                'unassignedTCs'       => $unassignedTCs,
+                'assignedCPs'         => $assignedCPs,
+                'assignedSUPs'        => $assignedSUPs,
+                'unassignedEmployees' => $unassignedEmployees,
+                'campaigns'           => $campaigns,
+                'myAssignment'        => null,
+                'role'                => 'admin',
+            ]);
+        }
+
+        // ── CP : voit ses campagnes, peut affecter SUP/TC ─────────────────────
+        if ($employee?->position->code === 'CP') {
+            $myCampaignIds = Assignment::where('employee_id', $employee->id)
+                ->where('position_id', $cpPosition->id)
+                ->where('status', 'actif')
+                ->pluck('campaign_id');
+
+            $activeCampaigns = Campaign::where('status', 'active')
+                ->whereIn('id', $myCampaignIds)
+                ->get();
+
+            $assignedCPs = Assignment::where('employee_id', $employee->id)
+                ->where('position_id', $cpPosition->id)
+                ->where('status', 'actif')
+                ->with(['employee.user', 'campaign'])
+                ->get();
+
+            $assignedSUPs = Assignment::where('manager_id', $employee->id)
+                ->where('position_id', $supPosition->id)
+                ->where('status', 'actif')
+                ->whereIn('campaign_id', $myCampaignIds)
+                ->with(['employee.user', 'campaign'])
+                ->get();
+
+            $unassignedSUPs = Employee::where('position_id', $supPosition->id)
+                ->where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->with(['user', 'position'])->get();
+
+            $unassignedTCs = Employee::where('position_id', $tcPosition->id)
+                ->where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->with(['user', 'position'])->get();
+
+            $unassignedEmployees = Employee::where('status', 'actif')
+                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->whereIn('position_id', [$supPosition->id, $tcPosition->id])
+                ->with([
+                    'position', 'user',
+                    'assignments' => fn($q) => $q->where('status', 'terminé')
+                        ->latest('end_date')->limit(1)->with('campaign'),
+                ])
+                ->get()
+                ->map(function ($emp) {
+                    $emp->last_assignment = $emp->assignments->first();
+                    unset($emp->assignments);
+                    return $emp;
+                });
+
+            $campaigns = $this->buildCampaignTree(
+                Campaign::whereIn('id', $myCampaignIds)->get(),
+                $cpPosition, $supPosition, $tcPosition
+            );
+
+            return Inertia::render('Assignments/Index', [
+                'activeCampaigns'     => $activeCampaigns,
+                'unassignedCPs'       => [],
+                'unassignedSUPs'      => $unassignedSUPs,
+                'unassignedTCs'       => $unassignedTCs,
+                'assignedCPs'         => $assignedCPs,
+                'assignedSUPs'        => $assignedSUPs,
+                'unassignedEmployees' => $unassignedEmployees,
+                'campaigns'           => $campaigns,
+                'myAssignment'        => null,
+                'role'                => 'cp',
+            ]);
+        }
+
+        // ── SUP : voit uniquement sa hiérarchie (ses TC) ──────────────────────
+        if ($employee?->position->code === 'SUP') {
+            $myAssignment = Assignment::where('employee_id', $employee->id)
+                ->where('status', 'actif')
+                ->first();
+
+            $campaigns = [];
+            if ($myAssignment) {
+                $campaigns = $this->buildCampaignTree(
+                    Campaign::where('id', $myAssignment->campaign_id)->get(),
+                    $cpPosition, $supPosition, $tcPosition,
+                    $employee->id
+                );
+            }
+
+            return Inertia::render('Assignments/Index', [
+                'activeCampaigns'     => [],
+                'unassignedCPs'       => [],
+                'unassignedSUPs'      => [],
+                'unassignedTCs'       => [],
+                'assignedCPs'         => [],
+                'assignedSUPs'        => [],
+                'unassignedEmployees' => [],
+                'campaigns'           => $campaigns,
+                'myAssignment'        => null,
+                'role'                => 'sup',
+            ]);
+        }
+
+        // ── TC : voit uniquement son affectation ──────────────────────────────
+        if ($employee?->position->code === 'TC') {
+            $myAssignment = Assignment::where('employee_id', $employee->id)
+                ->where('status', 'actif')
+                ->with([
+                    'campaign',
+                    'manager' => fn($q) => $q->with('user'),
+                ])
+                ->first();
+
+            return Inertia::render('Assignments/Index', [
+                'activeCampaigns'     => [],
+                'unassignedCPs'       => [],
+                'unassignedSUPs'      => [],
+                'unassignedTCs'       => [],
+                'assignedCPs'         => [],
+                'assignedSUPs'        => [],
+                'unassignedEmployees' => [],
+                'campaigns'           => [],
+                'myAssignment'        => $myAssignment,
+                'role'                => 'tc',
+            ]);
+        }
+
+        abort(403);
+    }
+
+    // ── Helper : construire l'arbre CP > SUP > TC ─────────────────────────────
+    private function buildCampaignTree(
+        $campaignCollection,
+        $cpPosition,
+        $supPosition,
+        $tcPosition,
+        $supEmployeeId = null
+    ) {
+        return $campaignCollection->map(function ($campaign) use (
+            $cpPosition, $supPosition, $tcPosition, $supEmployeeId
+        ) {
+            $assignments = $campaign->assignments()
+                ->where('status', 'actif')
+                ->with(['employee.user', 'position'])
+                ->get();
+
+            $cps  = $assignments->where('position_id', $cpPosition->id)->values();
             $sups = $assignments->where('position_id', $supPosition->id)->values();
-            $tcs = $assignments->where('position_id', $tcPosition->id)->values();
-            
-            // Construire la hiérarchie CP > SUP > TC
+            $tcs  = $assignments->where('position_id', $tcPosition->id)->values();
+
+            // Filtrer sur un SUP spécifique si vue SUP
+            if ($supEmployeeId) {
+                $sups = $sups->where('employee_id', $supEmployeeId)->values();
+            }
+
             $tree = $cps->map(function ($cp) use ($sups, $tcs) {
                 $cpSups = $sups->where('manager_id', $cp->employee_id)->values();
                 $cpSups = $cpSups->map(function ($sup) use ($tcs) {
@@ -76,68 +239,51 @@ class AssignmentController extends Controller
                 return array_merge($cp->toArray(), ['children' => $cpSups->toArray()]);
             });
 
+            // Vue SUP : garder uniquement les branches où ce SUP apparaît
+            if ($supEmployeeId) {
+                $tree = $tree->filter(fn($cp) => count($cp['children']) > 0)->values();
+            }
+
             return [
                 'id'     => $campaign->id,
                 'name'   => $campaign->name,
                 'status' => $campaign->status,
                 'tree'   => $tree,
             ];
-        });
-        $unassignedEmployees = Employee::where('status', 'actif')
-                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
-                ->with([
-                    'position',
-                    'user',
-                    // Dernière affectation terminée
-                    'assignments' => fn($q) => $q->where('status', 'terminé')
-                        ->latest('end_date')
-                        ->limit(1)
-                        ->with('campaign'),
-                ])
-                ->get()
-                ->map(function ($employee) {
-                    $employee->last_assignment = $employee->assignments->first();
-                    unset($employee->assignments);
-                    return $employee;
-                });
-
-        return Inertia::render('Assignments/Index', [
-            'activeCampaigns' => $activeCampaigns,
-            'unassignedCPs'   => $unassignedCPs,
-            'unassignedSUPs'  => $unassignedSUPs,
-            'unassignedTCs'   => $unassignedTCs,
-            'assignedCPs'     => $assignedCPs,
-            'assignedSUPs'    => $assignedSUPs,
-            'unassignedEmployees' => $unassignedEmployees,
-            'campaigns'       => $campaigns,
-        ]);
+        })->values();
     }
 
-    // ─── Affecter un CP à une campagne ────────────────────────────────────────
+    // ─── Affecter un CP à une campagne (Admin uniquement) ─────────────────────
     public function assignCP(Request $request)
     {
+        if (!Auth::user()->isAdmin()) {
+            abort(403);
+        }
+
         $data = $request->validate([
-            'employee_id'  => 'required|exists:employees,id',
-            'campaign_ids' => 'required|array|min:1',
+            'employee_id'    => 'required|exists:employees,id',
+            'campaign_ids'   => 'required|array|min:1',
             'campaign_ids.*' => 'exists:campaigns,id',
-            'start_date'   => 'required|date',
+            'start_date'     => 'required|date',
         ]);
 
         $cpPosition = Position::where('code', 'CP')->firstOrFail();
 
-        // Vérifier que toutes les campagnes sélectionnées sont actives
         $campaigns = Campaign::whereIn('id', $data['campaign_ids'])->get();
         foreach ($campaigns as $campaign) {
             if ($campaign->status !== 'active') {
-                return back()->withErrors(['campaign_ids' => "La campagne « {$campaign->name} » n'est pas active."]);
+                return back()->withErrors([
+                    'campaign_ids' => "La campagne « {$campaign->name} » n'est pas active."
+                ]);
             }
-            // Éviter les doublons
             $exists = Assignment::where('employee_id', $data['employee_id'])
                 ->where('campaign_id', $campaign->id)
                 ->where('status', 'actif')
                 ->exists();
             if ($exists) {
-                return back()->withErrors(['employee_id' => "Ce CP est déjà affecté à la campagne « {$campaign->name} »."]);
+                return back()->withErrors([
+                    'employee_id' => "Ce CP est déjà affecté à la campagne « {$campaign->name} »."
+                ]);
             }
         }
 
@@ -155,24 +301,41 @@ class AssignmentController extends Controller
         return back()->with('success', 'Chef de Plateau affecté avec succès.');
     }
 
-    // ─── Affecter un SUP à un CP/campagne ─────────────────────────────────────
+    // ─── Affecter un SUP à un CP/campagne (Admin ou CP) ───────────────────────
     public function assignSUP(Request $request)
     {
+        $user     = Auth::user();
+        $employee = $user->employee;
+
+        if (!$user->isAdmin() && $employee?->position->code !== 'CP') {
+            abort(403);
+        }
+
         $data = $request->validate([
-            'employee_id'    => 'required|exists:employees,id',
+            'employee_id'      => 'required|exists:employees,id',
             'cp_assignment_id' => 'required|exists:assignments,id',
-            'start_date'     => 'required|date',
+            'start_date'       => 'required|date',
         ]);
 
-        $supPosition = Position::where('code', 'SUP')->firstOrFail();
+        $supPosition  = Position::where('code', 'SUP')->firstOrFail();
         $cpAssignment = Assignment::findOrFail($data['cp_assignment_id']);
 
-        // Règle : un SUP ne peut être affecté qu'à une seule campagne à la fois
+        // Si CP connecté : vérifier que le cp_assignment lui appartient bien
+        if (!$user->isAdmin()) {
+            if ($cpAssignment->employee_id !== $employee->id) {
+                return back()->withErrors([
+                    'cp_assignment_id' => "Vous ne pouvez affecter que sous vos propres campagnes."
+                ]);
+            }
+        }
+
         $alreadyAssigned = Assignment::where('employee_id', $data['employee_id'])
             ->where('status', 'actif')
             ->exists();
         if ($alreadyAssigned) {
-            return back()->withErrors(['employee_id' => 'Ce Superviseur est déjà affecté à une campagne.']);
+            return back()->withErrors([
+                'employee_id' => 'Ce Superviseur est déjà affecté à une campagne.'
+            ]);
         }
 
         Assignment::create([
@@ -187,9 +350,16 @@ class AssignmentController extends Controller
         return back()->with('success', 'Superviseur affecté avec succès.');
     }
 
-    // ─── Affecter un ou plusieurs TC à un SUP ─────────────────────────────────
+    // ─── Affecter un ou plusieurs TC à un SUP (Admin ou CP) ───────────────────
     public function assignTC(Request $request)
     {
+        $user     = Auth::user();
+        $employee = $user->employee;
+
+        if (!$user->isAdmin() && $employee?->position->code !== 'CP') {
+            abort(403);
+        }
+
         $data = $request->validate([
             'employee_ids'      => 'required|array|min:1',
             'employee_ids.*'    => 'exists:employees,id',
@@ -197,17 +367,27 @@ class AssignmentController extends Controller
             'start_date'        => 'required|date',
         ]);
 
-        $tcPosition = Position::where('code', 'TC')->firstOrFail();
+        $tcPosition    = Position::where('code', 'TC')->firstOrFail();
         $supAssignment = Assignment::findOrFail($data['sup_assignment_id']);
 
+        // Si CP connecté : vérifier que le SUP est bien sous lui
+        if (!$user->isAdmin()) {
+            if ($supAssignment->manager_id !== $employee->id) {
+                return back()->withErrors([
+                    'sup_assignment_id' => "Ce superviseur n'est pas sous votre hiérarchie."
+                ]);
+            }
+        }
+
         foreach ($data['employee_ids'] as $employeeId) {
-            // Règle : un TC ne peut être affecté qu'à un seul SUP à la fois
             $alreadyAssigned = Assignment::where('employee_id', $employeeId)
                 ->where('status', 'actif')
                 ->exists();
             if ($alreadyAssigned) {
                 $emp = Employee::find($employeeId);
-                return back()->withErrors(['employee_ids' => "Le TC {$emp->first_name} {$emp->last_name} est déjà affecté."]);
+                return back()->withErrors([
+                    'employee_ids' => "Le TC {$emp->first_name} {$emp->last_name} est déjà affecté."
+                ]);
             }
 
             Assignment::create([
@@ -223,51 +403,63 @@ class AssignmentController extends Controller
         return back()->with('success', 'Téléconseiller(s) affecté(s) avec succès.');
     }
 
-    // ─── Libérer une ressource (avec cascade) ─────────────────────────────────
+    // ─── Libérer une ressource avec cascade ───────────────────────────────────
     public function release(Assignment $assignment)
     {
-        $supPosition = Position::where('code', 'SUP')->firstOrFail();
+        $user     = Auth::user();
+        $employee = $user->employee;
+
+        // Seuls admin et CP peuvent libérer
+        if (!$user->isAdmin() && $employee?->position->code !== 'CP') {
+            abort(403);
+        }
+
+        // CP : vérifier qu'il est bien le manager du SUP/TC à libérer
+        if (!$user->isAdmin()) {
+            $isUnderMe = $assignment->manager_id === $employee->id
+                || Assignment::where('employee_id', $assignment->manager_id)
+                    ->where('manager_id', $employee->id)
+                    ->where('status', 'actif')
+                    ->exists();
+
+            if (!$isUnderMe) {
+                abort(403, "Vous ne pouvez libérer que les ressources sous votre hiérarchie.");
+            }
+        }
+
         $cpPosition  = Position::where('code', 'CP')->firstOrFail();
+        $supPosition = Position::where('code', 'SUP')->firstOrFail();
 
-        // Si c'est un SUP, libérer ses TC en cascade
-         if ($assignment->position_id === $cpPosition->id) {
-        // Récupérer les SUPs de ce CP sur cette campagne
-        $sups = Assignment::where('manager_id', $assignment->employee_id)
-            ->where('campaign_id', $assignment->campaign_id)
-            ->where('status', 'actif')
-            ->get();
+        // Cascade si CP
+        if ($assignment->position_id === $cpPosition->id) {
+            $sups = Assignment::where('manager_id', $assignment->employee_id)
+                ->where('campaign_id', $assignment->campaign_id)
+                ->where('status', 'actif')
+                ->get();
 
-        foreach ($sups as $sup) {
-            // Libérer les TC de chaque SUP
-            Assignment::where('manager_id', $sup->employee_id)
+            foreach ($sups as $sup) {
+                Assignment::where('manager_id', $sup->employee_id)
+                    ->where('campaign_id', $assignment->campaign_id)
+                    ->where('status', 'actif')
+                    ->update(['status' => 'terminé', 'end_date' => now()]);
+            }
+
+            Assignment::where('manager_id', $assignment->employee_id)
                 ->where('campaign_id', $assignment->campaign_id)
                 ->where('status', 'actif')
                 ->update(['status' => 'terminé', 'end_date' => now()]);
         }
 
-        // Libérer les SUPs
-        Assignment::where('manager_id', $assignment->employee_id)
-            ->where('campaign_id', $assignment->campaign_id)
-            ->where('status', 'actif')
-            ->update(['status' => 'terminé', 'end_date' => now()]);
-    }
+        // Cascade si SUP
+        if ($assignment->position_id === $supPosition->id) {
+            Assignment::where('manager_id', $assignment->employee_id)
+                ->where('campaign_id', $assignment->campaign_id)
+                ->where('status', 'actif')
+                ->update(['status' => 'terminé', 'end_date' => now()]);
+        }
 
-    if ($assignment->position_id === $supPosition->id) {
-        // Libérer les TC de ce SUP
-        Assignment::where('manager_id', $assignment->employee_id)
-            ->where('campaign_id', $assignment->campaign_id)
-            ->where('status', 'actif')
-            ->update(['status' => 'terminé', 'end_date' => now()]);
-    }
+        $assignment->update(['status' => 'terminé', 'end_date' => now()]);
 
-    $assignment->update(['status' => 'terminé', 'end_date' => now()]);
-
-    // Redirection intelligente : si on vient de la page show d'une campagne
-    $referer = request()->headers->get('referer', '');
-    if (str_contains($referer, '/campaigns/')) {
         return redirect()->back()->with('success', 'Ressource libérée avec succès.');
-    }
-
-    return redirect()->back()->with('success', 'Ressource libérée avec succès.');
     }
 }

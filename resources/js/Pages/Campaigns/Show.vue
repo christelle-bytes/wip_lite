@@ -9,7 +9,6 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Calendar from 'primevue/calendar'
 import Dropdown from 'primevue/dropdown'
-import { useForm } from '@inertiajs/vue3'
 
 // Et ajouter statusOptions dans le script
 const statusOptions = [
