@@ -32,42 +32,37 @@ class TimesheetController extends Controller
 
         // 2. Récupération des feuilles avec calcul de complétude
         $timesheets = Timesheet::with(['employee', 'validator', 'entries'])
-            ->whereHas('employee.position', function ($query) {
-                $query->where('code', 'SUP');
-            })
-            ->latest()
-            ->get()
-            ->map(function ($ts) {
-                // Calcul de la durée théorique
-                $start = Carbon::parse($ts->period_start);
-                $end = Carbon::parse($ts->period_end);
-                $joursTheoriques = $start->diffInDays($end) + 1;
+    ->latest()
+    ->get()
+    ->map(function ($ts) {
+        // 1. Calcul des stats (en mémoire uniquement)
+        $start = Carbon::parse($ts->period_start);
+        $end = Carbon::parse($ts->period_end);
+        $joursTheoriques = $start->diffInDays($end) + 1;
+        $joursSaisis = $ts->entries->pluck('date')->unique()->count();
+        $isComplete = ($joursSaisis >= $joursTheoriques);
 
-                // Nombre d'entrées uniques par date (pour éviter de compter 2 fois le même jour)
-                $joursSaisis = $ts->entries->pluck('date')->unique()->count();
-                $isComplete = ($joursSaisis >= $joursTheoriques);
+        // 2. Mise à jour du statut SEULEMENT
+        if ($ts->status !== 'validated') {
+            $newStatus = $isComplete ? 'submitted' : 'draft';
+            
+            if ($ts->status !== $newStatus) {
+                // On spécifie uniquement la colonne 'status' pour éviter l'erreur
+                $ts->update(['status' => $newStatus]);
+            }
+        }
 
-                
-                // On injecte ces infos dans l'objet pour la vue
-                $ts->stats = [
-                    'total_jours' => $joursTheoriques,
-                    'jours_saisis' => $joursSaisis,
-                    'is_complete' => $isComplete,
-                    'manquant' => max(0, $joursTheoriques - $joursSaisis)
-                    ];
-                    
-                    // On ne change le statut que si la feuille n'est pas encore validée
-                $newStatus = $ts->status;
-                if ($ts->status !== 'validated') {
-                    $newStatus = $isComplete ? 'submitted' : 'draft';
-                    
-                    // 4. Mise à jour en base de données si le statut a changé
-                    if ($ts->status !== $newStatus) {
-                        $ts->update(['status' => $newStatus]);
-                    }
-                }
-                return $ts;
-            });
+        // 3. On injecte 'stats' APRÈS l'update
+        // On utilise l'affectation directe pour que ce soit disponible pour Inertia
+        $ts->stats = [
+            'total_jours' => $joursTheoriques,
+            'jours_saisis' => $joursSaisis,
+            'is_complete' => $isComplete,
+            'manquant' => max(0, $joursTheoriques - $joursSaisis)
+        ];
+
+        return $ts;
+    });
 
         return Inertia::render('Timesheets/Index', [
             'timesheets' => $timesheets,
