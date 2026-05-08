@@ -35,14 +35,16 @@ const showLogoutButton = computed(() => {
                 <template v-if="user?.role?.name === 'Admin'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('planning.affectation')" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('planning.validation')" class="block p-2 hover:bg-slate-800 rounded">Validation</Link>
                     <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Heures</Link>
                 </template>
                 <template v-else-if="user?.role?.name === 'CP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('planning.affectation')" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('planning.validation')" class="block p-2 hover:bg-slate-800 rounded">Validation</Link>
                      <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                 </template>
                 <template v-else-if="user?.role?.name === 'SUP'">

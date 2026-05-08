@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Employee;
 use App\Models\PlanningAssignment;
 use App\Models\PlanningModel;
 use Illuminate\Http\Request;
@@ -94,18 +95,62 @@ class PlanningAssignementController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => 'required|string|in:en attente,validé,rejeté'
+            'status' => 'required|string|in:en attente,validé,suspendu,terminé'
         ]);
 
         $updateData = ['status' => $validated['status']];
 
         if ($validated['status'] === 'validé') {
-            $updateData['validated_by'] = auth()->user()->id;
+            $updateData['validated_by'] = auth()->user()->employee->id;
             $updateData['validated_at'] = now();
         }
 
         $planningAssignment->update($updateData);
 
         return redirect()->back()->with('success', 'Statut mis à jour avec succès.');
+    }
+
+    public function suspend(PlanningModel $planningModel)
+    {
+        if (!auth()->user()->hasRole('CP') && !auth()->user()->hasRole('Admin')) {
+            abort(403, 'Action non autorisée.');
+        }
+
+        // Suspendre tous les assignments validés du planning
+        $planningModel->planningAssignment()
+            ->where('status', 'validé')
+            ->update(['status' => 'suspendu']);
+
+        return redirect()->back()->with('success', 'Planning suspendu avec succès.');
+    }
+
+    public function affectation()
+    {
+        if (!auth()->user()->hasRole('CP') && !auth()->user()->hasRole('Admin')) {
+            abort(403, 'Action non autorisée.');
+        }
+
+        $planningModels = PlanningModel::all();
+        $employees = Employee::all();
+        $assignments = PlanningAssignment::with(['employee', 'planningModel'])->get();
+
+        return Inertia::render('planning/Affectation', [
+            'planningModels' => $planningModels,
+            'employees' => $employees,
+            'assignments' => $assignments,
+        ]);
+    }
+
+    public function validation()
+    {
+        if (!auth()->user()->hasRole('CP') && !auth()->user()->hasRole('Admin')) {
+            abort(403, 'Action non autorisée.');
+        }
+
+        $assignments = PlanningAssignment::with(['employee', 'planningModel'])->get();
+
+        return Inertia::render('planning/Validation', [
+            'assignments' => $assignments
+        ]);
     }
 }

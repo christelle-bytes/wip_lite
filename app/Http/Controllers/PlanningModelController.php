@@ -64,17 +64,32 @@ class PlanningModelController extends Controller
             abort(403, 'Action non autorisée.');
         }
 
-        $status = $planningModel->planningAssignment()
-            ->where('status', '!=', 'en attente')
+        // Vérifier qu'il n'y a pas d'assignments actifs (validé ou suspendu)
+        $hasActive = $planningModel->planningAssignment()
+            ->whereIn('status', ['validé', 'suspendu'])
             ->exists();
 
-        if ($status) {
-            abort(403, 'Suppression impossible : des assignments ne sont pas en attente.');
+        if ($hasActive) {
+            abort(403, 'Suppression impossible : le planning a des assignments actifs.');
         }
 
         $planningModel->delete();
 
         return redirect()->back()->with('success', 'Planning supprimé avec succès.');
+    }
+
+    public function suspend(PlanningModel $planningModel)
+    {
+        if (!auth()->user()->hasRole('CP') && !auth()->user()->hasRole('Admin')) {
+            abort(403, 'Action non autorisée.');
+        }
+
+        // Suspendre tous les assignments validés du planning
+        $planningModel->planningAssignment()
+            ->where('status', 'validé')
+            ->update(['status' => 'suspendu']);
+
+        return redirect()->back()->with('success', 'Planning suspendu avec succès.');
     }
 
     public function update(Request $request, PlanningModel $planningModel)

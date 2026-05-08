@@ -55,6 +55,18 @@ Route::get('/planning', [PlanningModelController::class, 'index'])->name('planni
 Route::post('/planning', [PlanningModelController::class, 'store'])->name('planning.store');
 Route::put('/planning/{planningModel}', [PlanningModelController::class, 'update'])->name('planning.update');
 Route::delete('/planning/{planningModel}', [PlanningModelController::class, 'destroy'])->name('planning.destroy');
+Route::post('/planning/{planningModel}/suspend', [PlanningModelController::class, 'suspend'])->name('planning.suspend');
+
+// Planning Assignments
+Route::post('/planning-assignment', [PlanningAssignementController::class, 'store'])->name('planning-assignment.store');
+Route::put('/planning-assignment/{planningAssignment}', [PlanningAssignementController::class, 'update'])->name('planning-assignment.update');
+Route::delete('/planning-assignment/{planningAssignment}', [PlanningAssignementController::class, 'destroy'])->name('planning-assignment.destroy');
+Route::patch('/planning-assignment/{planningAssignment}/status', [PlanningAssignementController::class, 'changeStatus'])->name('planning-assignment.change-status');
+
+// planning assignment page
+Route::get('/planning/affectation', [PlanningAssignementController::class, 'affectation'])->name('planning.affectation');
+Route::get('/planning/validation', [PlanningAssignementController::class, 'validation'])
+    ->name('planning.validation');
 
 //planningAssignment
 Route::post('/planning-assignments', [PlanningAssignementController::class, 'store'])->name('planning-assignments.store');
@@ -62,6 +74,8 @@ Route::put('/planning-assignments/{planningAssignment}', [PlanningAssignementCon
 Route::delete('/planning-assignments/{planningAssignment}', [PlanningAssignementController::class, 'destroy'])->name('planning-assignments.destroy');
 Route::patch('/planning-assignments/{planningAssignment}/status', [PlanningAssignementController::class, 'changeStatus'])->name('planning-assignments.changeStatus');
 
+
+    
 Route::resource('campaigns', CampaignController::class);
 
 Route::resource('assignments', AssignmentController::class);
