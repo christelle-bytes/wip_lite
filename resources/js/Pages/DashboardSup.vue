@@ -37,7 +37,7 @@ const gapData = computed(() => {
     };
 });
 
-<<<<<<< HEAD
+
 // ── Graphe 2 : Évolution heures réelles vs planifiées par mois (Line) ─────────
 const hoursEvolutionData = computed(() => {
     const items = props.charts?.hoursByMonth ?? [];
@@ -73,7 +73,7 @@ const hoursEvolutionData = computed(() => {
             },
         ],
     };
-=======
+});
 const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'SUP');
 
 onMounted(() => {
@@ -83,7 +83,7 @@ onMounted(() => {
         detail: 'Connecté en tant que Superviseur',
         life: 3000,
     });
->>>>>>> 9781550fa90c83bb4fd7e25de8355e3cb638af32
+
 });
 
 const gapOptions = {

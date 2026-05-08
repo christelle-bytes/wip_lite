@@ -37,7 +37,7 @@ const weekData = computed(() => {
     };
 });
 
-<<<<<<< HEAD
+
 // ── Graphe 2 : Évolution de mes heures sur 6 mois (Line) ─────────────────────
 const evolutionData = computed(() => {
     const items = props.charts?.hoursEvolution ?? [];
@@ -71,7 +71,7 @@ const evolutionData = computed(() => {
             },
         ],
     };
-=======
+});
 const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'TC');
 
 onMounted(() => {
@@ -81,7 +81,7 @@ onMounted(() => {
         detail: 'Connecté en tant que Technicien',
         life: 3000,
     });
->>>>>>> 9781550fa90c83bb4fd7e25de8355e3cb638af32
+
 });
 
 const weekOptions = {
