@@ -56,6 +56,12 @@ Route::post('/planning', [PlanningModelController::class, 'store'])->name('plann
 Route::put('/planning/{planningModel}', [PlanningModelController::class, 'update'])->name('planning.update');
 Route::delete('/planning/{planningModel}', [PlanningModelController::class, 'destroy'])->name('planning.destroy');
 
+//planningAssignment
+Route::post('/planning-assignments', [PlanningAssignementController::class, 'store'])->name('planning-assignments.store');
+Route::put('/planning-assignments/{planningAssignment}', [PlanningAssignementController::class, 'update'])->name('planning-assignments.update');
+Route::delete('/planning-assignments/{planningAssignment}', [PlanningAssignementController::class, 'destroy'])->name('planning-assignments.destroy');
+Route::patch('/planning-assignments/{planningAssignment}/status', [PlanningAssignementController::class, 'changeStatus'])->name('planning-assignments.changeStatus');
+
 Route::resource('campaigns', CampaignController::class);
 
 Route::resource('assignments', AssignmentController::class);

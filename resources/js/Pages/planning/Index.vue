@@ -7,7 +7,7 @@ defineProps({
     auth: Object,
 });
 
-const isEditing = ref(false);
+const enModif = ref(false);
 const editingId = ref(null);
 
 const form = useForm({
@@ -23,11 +23,11 @@ const form = useForm({
 });
 
 function submit() {
-    if (isEditing.value) {
+    if (enModif.value) {
         form.put(`/planning/${editingId.value}`, {
             onSuccess: () => {
                 form.reset();
-                isEditing.value = false;
+                enModif.value = false;
                 editingId.value = null;
             },
             onError: (errors) => {
@@ -47,7 +47,7 @@ function submit() {
 }
 
 function startEdit(planningModel) {
-    isEditing.value = true;
+    enModif.value = true;
     editingId.value = planningModel.id;
     form.name = planningModel.name;
     form.description = planningModel.description;
@@ -62,7 +62,7 @@ function startEdit(planningModel) {
 
 function cancelEdit() {
     form.reset();
-    isEditing.value = false;
+    enModif.value = false;
     editingId.value = null;
 }
 
@@ -135,8 +135,8 @@ const deletePlanning = (planningModel) => {
             type="text"
             name="sunday_hours"
         /><br />
-        <button style="color: green" type="submit">{{ isEditing ? 'Confirmer' : 'Créer' }}</button>
-        <button v-if="isEditing" style="color: orange; margin-left: 10px" type="button" @click="cancelEdit">Annuler</button>
+        <button style="color: green" type="submit">{{ enModif ? 'Confirmer' : 'Créer' }}</button>
+        <button v-if="enModif" style="color: orange; margin-left: 10px" type="button" @click="cancelEdit">Annuler</button>
     </form>
 
     <div v-if="planningModels.length === 0">
