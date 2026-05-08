@@ -1,5 +1,6 @@
 <?php
 namespace App\Models;
+
 use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,7 +35,15 @@ class Employee extends Model
     {
         return $this->belongsTo(Position::class); // ← majuscule corrigée
     }
+    public function timesheet(): HasMany
+    {
+        return $this->hasMany(Timesheet::class);
+    }
 
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
