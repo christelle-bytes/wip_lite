@@ -12,7 +12,7 @@ trait RecordsActivity
     {
         foreach (['created', 'updated', 'deleted'] as $event) {
             static::$event(function ($model) use ($event) {
-                if (method_exists($model, 'logs')) {
+                if (method_exists($model, 'logs') && Auth::check()) {
                     $model->logs()->create([
                         'user_id'     => Auth::id(),
                         'action'      => $event,

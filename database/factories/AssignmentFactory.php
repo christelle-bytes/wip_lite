@@ -25,7 +25,7 @@ class AssignmentFactory extends Factory
             'campaign_id' => Campaign::factory(),
             'manager_id' => null,
             'position_id' => Position::factory(),
-            'status' => $this->faker->randomElement(['actif', 'terminé', 'suspendu']),
+            'status' => $this->faker->randomElement(['actif', 'suspendu', 'inactif']),
             'start_date' => now(),
             'end_date' => $this->faker->optional()->dateTimeBetween('now', '+1 year'),
         ];

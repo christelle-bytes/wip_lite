@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { router, route, useForm } from "@inertiajs/vue3";
+import { router, useForm } from "@inertiajs/vue3";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
@@ -39,12 +39,6 @@ const countAll      = computed(() => props.planningModels?.length ?? 0);
 const countActifs   = computed(() => props.planningModels?.filter((m) => m.status === "actif").length ?? 0);
 const countInactifs = computed(() => props.planningModels?.filter((m) => m.status !== "actif").length ?? 0);
 
-// Vérifier si l'utilisateur est CP ou Admin
-const isAdminOrCP = computed(() => {
-    const userRole = props.auth?.user?.role?.name;
-    return userRole === 'CP' || userRole === 'Admin';
-});
-
 const days      = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 const dayLabels = ["L", "M", "M", "J", "V", "S", "D"];
 
@@ -54,14 +48,6 @@ function deletePlanning(model) {
     if (confirm("Supprimer ce planning ?")) {
         router.delete(`/planning/${model.id}`, {
             onError: () => alert("Suppression impossible."),
-        });
-    }
-}
-
-function suspendPlanning(model) {
-    if (confirm("Suspendre ce planning ? Tous les assignments validés seront suspendus.")) {
-        router.post(`/planning/${model.id}/suspend`, {}, {
-            onError: () => alert("Impossible de suspendre le planning."),
         });
     }
 }
@@ -147,15 +133,15 @@ function submit() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                         <input v-model="search" placeholder="Rechercher..." />
                     </div>
-                    <button v-if="isAdminOrCP" class="btn-ghost" @click="router.get(route('planning.validation'))">
+                    <button class="btn-ghost" @click="router.get(route('planning.validation'))">
                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                           Validation
                     </button>
-                    <button v-if="isAdminOrCP" class="btn-ghost">
+                    <button class="btn-ghost" @click="router.get(route('planning.affectation'))">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
                         Affecter un planning
                     </button>
-                    <button v-if="isAdminOrCP" class="btn-primary" @click="openCreate">
+                    <button class="btn-primary" @click="openCreate">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                         Créer un modèle
                     </button>
@@ -216,13 +202,10 @@ function submit() {
                                 </span>
                             </td>
                             <td class="col-actions">
-                                <button v-if="isAdminOrCP" class="icon-btn" @click="openEdit(model)" title="Modifier">
+                                <button class="icon-btn" @click="openEdit(model)" title="Modifier">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
-                                <button v-if="isAdminOrCP" class="icon-btn warning" @click="suspendPlanning(model)" title="Suspendre">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                </button>
-                                <button v-if="isAdminOrCP" class="icon-btn danger" @click="deletePlanning(model)" title="Supprimer">
+                                <button class="icon-btn danger" @click="deletePlanning(model)" title="Supprimer">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                                 </button>
                             </td>

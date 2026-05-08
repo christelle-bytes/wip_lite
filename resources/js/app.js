@@ -1,4 +1,5 @@
 import '../css/app.css';
+import axios from 'axios';
 // import 'primevue/resources/themes/lara-light-blue/theme.css';
 // le chemin de thème peut ne pas exister dans votre version PrimeVue.
 // On garde le thème fourni par PrimeUIX (Aura) plus le CSS de base PrimeVue.
@@ -11,6 +12,14 @@ import '../css/app.css';
 
 import 'primeicons/primeicons.css';
 import 'primevue/config';
+
+window.axios = axios;
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+const token = document.head.querySelector('meta[name="csrf-token"]');
+if (token) {
+    axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
+}
 
 // import './bootstrap';
  

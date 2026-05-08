@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('employee_id')
                 ->constrained('employees')
                 ->onDelete('cascade')
-                ->after('id'); // employee_id
+                ->after('id'); 
             $table->date('period_start');
             $table->date('period_end');
             $table->enum('status', ['draft', 'submitted', 'validated'])->default('draft');
