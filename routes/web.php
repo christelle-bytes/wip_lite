@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -16,9 +18,22 @@ Route::get('/', function () {
     ]);
 });
 
+use Illuminate\Support\Facades\Auth;
+
+
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    $user = Auth::user();
+    $roleName = $user?->role?->name;
+
+    return match ($roleName) {
+        'Admin' => Inertia::render('DashboardAdmin'),
+        'CP' => Inertia::render('DashboardCp'),
+        'SUP' => Inertia::render('DashboardSup'),
+        'TC' => Inertia::render('DashboardTc'),
+        default => Inertia::render('DashboardAdmin'),
+    };
 })->middleware(['auth', 'verified'])->name('dashboard');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -47,5 +62,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
 });
+
+Route::resource('campaigns', CampaignController::class);
+
+Route::resource('assignments', AssignmentController::class);
 
 require __DIR__.'/auth.php';

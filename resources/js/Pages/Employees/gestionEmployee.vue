@@ -11,6 +11,7 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Dropdown from 'primevue/dropdown';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const toast = useToast();
 const dt = ref(null);
@@ -250,6 +251,8 @@ const getStatusText = (status) => {
 }
 </style>
 <template>
+    <AuthenticatedLayout>
+
   <div class="card p-4">
     <Toast />
 
@@ -434,5 +437,7 @@ const getStatusText = (status) => {
       </template>
     </Dialog>
   </div>
+</AuthenticatedLayout>
+
 </template>
 

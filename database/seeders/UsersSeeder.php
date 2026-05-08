@@ -8,28 +8,39 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+
 class UsersSeeder extends Seeder
 {
     use WithoutModelEvents;
 
     public function run(): void
     {
-        // 1. On crée les rôles fixes
-        $roles = collect(['Admin', 'CP', 'SUP', 'TC'])->map(function ($name) {
-            return Role::create(['name' => $name]);
-        });
- 
-        // 2. Créer un Admin spécifique pour se connecter
-        User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@test.com',
-            'role_id' => $roles->where('name', 'Admin')->first()->id,
-        ]);
- 
-        // 3. Créer 300 utilisateurs aléatoires répartis sur les rôles existants
-        User::factory(300)->create([
-            'role_id' => fn() => $roles->random()->id,
-        ]);
+    $roleNames = ['Admin', 'CP', 'SUP', 'TC'];
+    $roles = [];
+
+    foreach ($roleNames as $name) {
+        $roles[$name] = Role::firstOrCreate(['name' => $name]);
+    }
+
+    // 2. Créer l'Admin (On utilise updateOrCreate pour pouvoir relancer le seeder sans doublon)
+    User::updateOrCreate(
+        ['email' => 'admin@test.com'],
+        [
+           
+            'password' => Hash::make('password'), // Toujours mieux de définir un mot de passe
+            'role_id' => $roles['Admin']->id,
+        ]
+    );
+
+    // 3. Créer les 300 utilisateurs
+    // On transforme la liste des rôles en collection pour utiliser random()
+    $rolesCollection = collect($roles);
+
+    User::factory(299)->create([
+        'role_id' => function () use ($rolesCollection) {
+            return $rolesCollection->random()->id;
+        },
+    ]);;
     }
 }
 

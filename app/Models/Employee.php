@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Employee extends Model
 {
     use HasFactory;
+    use RecordsActivity;
     protected $fillable = [
         'user_id',
         'matricule',
@@ -36,6 +37,10 @@ class Employee extends Model
     {
         return $this->belongsTo(Position::class);
     }
+    // public function user(): BelongsTo
+    // {
+    //     return $this->belongsTo(User::class);
+    // }
 
     public function logs()
     {
