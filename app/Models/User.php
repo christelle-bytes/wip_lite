@@ -48,6 +48,10 @@ class User extends Authenticatable
         ]);
     }
 
+    // public function employee():HasOne{
+    //     return $this->hasOne(Employee::class);
+    // }
+
     public function hasRole(string $role): bool
     {
         return strtoupper(optional($this->role)->name) === strtoupper($role);
