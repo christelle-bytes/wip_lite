@@ -2,16 +2,22 @@
 
 namespace Database\Seeders;
 
+
 use App\Models\Position;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class PositionSeeder extends Seeder
 {
-    use WithoutModelEvents;
 
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
+        //
+
+
         $positions = [
             ['name' => 'Ressource Humaine', 'code' => 'RH'],
             ['name' => 'Chef Plateau', 'code' => 'CP'],
@@ -22,5 +28,6 @@ class PositionSeeder extends Seeder
         foreach ($positions as $pos) {
             Position::firstOrCreate(['code' => $pos['code']], $pos);
         }
+
     }
 }

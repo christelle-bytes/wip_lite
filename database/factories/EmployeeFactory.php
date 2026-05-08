@@ -7,6 +7,11 @@ use App\Models\Position;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * @extends Factory<Employee>
+ */
+
+
 class EmployeeFactory extends Factory
 {
     protected $model = Employee::class;

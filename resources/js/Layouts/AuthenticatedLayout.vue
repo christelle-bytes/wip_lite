@@ -63,25 +63,16 @@ watch(
             </div>
 
             <nav class="flex-1 px-4 space-y-2">
-                <Link
-                    :href="route('dashboard')"
-                    class="block p-2 hover:bg-slate-800 rounded"
-                    >Tableau de bord</Link
-                >
 
+
+               
+                <Link v-if="user" :href="route('dashboard')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
+                 
                 <template v-if="user?.role?.name === 'Admin'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
-                        >Employés</Link
-                    >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
-                        >Campagnes</Link
-                    >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
-                        >Affectations</Link
-                    >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
-                        >Plannings</Link
-                    >
+                    <Link href="/gestion-employees" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
+                    <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                     <Link
                         :href="route('index.sup')"
                         class="block p-2 hover:bg-slate-800 rounded"
@@ -90,15 +81,16 @@ watch(
                     <Link :href="route('timesheet.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Feuille d'heures</Link
                     >
+                
                 </template>
                 <template v-else-if="user?.role?.name === 'CP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
                         >Employés</Link
                     >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Campagnes</Link
                     >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Affectations</Link
                     >
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
@@ -115,10 +107,10 @@ watch(
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
                         >Employés</Link
                     >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Campagnes</Link
                     >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Affectations</Link
                     >
                     <Link :href="route('index.telecon')" class="block p-2 hover:bg-slate-800 rounded"
@@ -126,10 +118,10 @@ watch(
                     >
                 </template>
                 <template v-else-if="user?.role?.name === 'TC'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Campagnes</Link
                     >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Affectations</Link
                     >
                 </template>

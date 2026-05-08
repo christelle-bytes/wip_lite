@@ -31,6 +31,7 @@ class Employee extends Model
         'salary_base' => 'decimal:2',
     ];
 
+
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class); // ← majuscule corrigée
@@ -40,14 +41,12 @@ class Employee extends Model
         return $this->hasMany(Timesheet::class);
     }
 
-    public function assignments(): HasMany
-    {
-        return $this->hasMany(Assignment::class);
-    }
+   
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
+
 
     // ── Relation assignments ──────────────────────────────────────────────────
     public function assignments(): HasMany
