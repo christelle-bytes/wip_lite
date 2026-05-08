@@ -79,6 +79,7 @@ const initFilters = () => {
 };
 
 onMounted(() => {
+    console.log(props.timesheets);
     initFilters();
 });
 
@@ -109,13 +110,17 @@ const validation = (id) => {
 
 <template>
     <AuthenticatedLayout>
-        <template #header> Registre des feuilles d'heures </template>
+        <template #header>
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-semibold text-slate-800">
+                    Registre des feuilles d'heures
+                </h1>
+            </div>
+        </template>
 
         <div class="space-y-6">
-            <!-- Carte principale du Tableau -->
-            <div
-                class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
-            >
+            <!-- Carte principale -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <DataTable
                     v-if="filters"
                     v-model:filters="filters"
@@ -132,47 +137,44 @@ const validation = (id) => {
                     ]"
                     class="p-datatable-sm"
                     stripedRows
+                    showGridlines
                 >
-                    <!-- Toolbar de la table -->
+                    <!-- Toolbar -->
                     <template #header>
-                        <div
-                            class="flex flex-wrap justify-between items-center gap-4 p-2"
-                        >
+                        <div class="flex flex-wrap justify-between items-center gap-4 p-5 border-b border-slate-100 bg-slate-50">
                             <div class="flex items-center gap-3">
                                 <Button
                                     label="Nouvelle feuille"
                                     icon="pi pi-plus"
                                     severity="primary"
                                     @click="visible = true"
-                                    class="shadow-sm"
+                                    class="shadow-sm hover:shadow-md transition-all"
                                 />
                                 <Button
                                     type="button"
                                     icon="pi pi-filter-slash"
-                                    label="Effacer"
+                                    label="Effacer les filtres"
                                     outlined
                                     severity="secondary"
                                     @click="clearFilter()"
                                 />
                             </div>
 
-                            <IconField iconPosition="left">
-                                <InputIcon class="pi pi-search" />
+                            <IconField iconPosition="left" class="w-full max-w-md">
+                                <InputIcon class="pi pi-search text-slate-400" />
                                 <InputText
                                     v-model="filters['global'].value"
                                     placeholder="Rechercher un collaborateur..."
-                                    class="w-full md:w-80"
+                                    class="w-full"
                                 />
                             </IconField>
                         </div>
                     </template>
 
                     <template #empty>
-                        <div class="py-8 text-center text-slate-500">
-                            <i
-                                class="pi pi-folder-open text-4xl mb-3 block"
-                            ></i>
-                            Aucune feuille de temps trouvée.
+                        <div class="py-16 text-center text-slate-500">
+                            <i class="pi pi-folder-open text-5xl mb-4 text-slate-300 block"></i>
+                            <p class="text-lg">Aucune feuille de temps trouvée</p>
                         </div>
                     </template>
 
@@ -181,108 +183,117 @@ const validation = (id) => {
                         header="Collaborateur"
                         sortable
                         field="employee.last_name"
-                        style="min-width: 16rem"
+                        style="min-width: 18rem"
                     >
                         <template #body="{ data }">
                             <div class="flex items-center gap-3">
-                                <div
-                                    class="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs border border-slate-200"
-                                >
-                                    {{ data.employee.first_name[0]
-                                    }}{{ data.employee.last_name[0] }}
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-slate-100 text-slate-700 flex items-center justify-center font-semibold text-sm border border-slate-200 shadow-sm">
+                                    {{ data.employee.first_name[0] }}{{ data.employee.last_name[0] }}
                                 </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="font-semibold text-slate-700 leading-tight"
-                                    >
-                                        {{ data.employee.first_name }}
-                                        {{ data.employee.last_name }}
-                                    </span>
-                                    <small class="text-slate-500"
-                                        >Superviseur</small
-                                    >
+                                <div>
+                                    <p class="font-semibold text-slate-800">
+                                        {{ data.employee.first_name }} {{ data.employee.last_name }}
+                                    </p>
+                                    <p class="text-xs text-slate-500">Superviseur</p>
                                 </div>
                             </div>
                         </template>
                     </Column>
 
                     <!-- Période -->
-                    <Column header="Période" style="min-width: 14rem">
+                    <Column header="Période" style="min-width: 15rem">
                         <template #body="{ data }">
-                            <div class="flex items-center text-slate-600">
-                                <span class="font-medium">{{
-                                    formatDate(data.period_start)
-                                }}</span>
-                                <i
-                                    class="pi pi-arrow-right mx-2 text-[10px] text-slate-400"
-                                ></i>
-                                <span class="font-medium">{{
-                                    formatDate(data.period_end)
-                                }}</span>
+                            <div class="flex items-center text-slate-600 font-medium">
+                                <span>{{ formatDate(data.period_start) }}</span>
+                                <i class="pi pi-arrow-right mx-3 text-slate-300"></i>
+                                <span>{{ formatDate(data.period_end) }}</span>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <!-- Saisie -->
+                    <Column header="Saisie" style="min-width: 12rem">
+                        <template #body="{ data }">
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2.5">
+                                    <i
+                                        v-if="data.stats?.is_complete"
+                                        class="pi pi-check-circle text-emerald-500 text-lg"
+                                    ></i>
+                                    <i
+                                        v-else
+                                        class="pi pi-clock text-amber-500 text-lg"
+                                    ></i>
+                                    <span
+                                        :class="data.stats?.is_complete ? 'text-emerald-700 font-semibold' : 'text-slate-700'"
+                                    >
+                                        {{ data.stats?.jours_saisis }} / {{ data.stats?.total_jours }} jours
+                                    </span>
+                                </div>
+
+                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                    <div
+                                        class="h-full rounded-full transition-all duration-300"
+                                        :class="data.stats?.is_complete ? 'bg-emerald-500' : 'bg-amber-400'"
+                                        :style="{ width: data.stats?.is_complete ? '100%' : '65%' }"
+                                    ></div>
+                                </div>
                             </div>
                         </template>
                     </Column>
 
                     <!-- Statut -->
-                    <Column
-                        field="status"
-                        header="Statut"
-                        sortable
-                        style="min-width: 10rem"
-                    >
+                    <Column field="status" header="Statut" sortable style="min-width: 10rem">
                         <template #body="{ data }">
                             <Tag
                                 :value="data.status"
                                 :severity="getStatusSeverity(data.status)"
-                                class="uppercase text-[10px] px-3"
+                                class="text-xs font-semibold px-3 py-1.5 rounded-lg"
                             />
                         </template>
                     </Column>
 
-                    <!-- Validé par -->
-                    <Column header="Validation" style="min-width: 14rem">
+                    <!-- Validation -->
+                    <Column header="Validation" style="min-width: 15rem">
                         <template #body="{ data }">
-                            <div
-                                v-if="data.validated_by"
-                                class="flex items-center gap-2 text-green-700"
-                            >
-                                <i class="pi pi-check-circle"></i>
-                                <div class="flex flex-col leading-tight">
-                                    <span class="text-sm font-medium"
-                                        >{{ data.validator?.first_name }}
-                                        {{ data.validator?.last_name }}</span
-                                    >
-                                    <small class="text-[10px] opacity-75"
-                                        >Validé le
-                                        {{
-                                            formatDate(data.validated_at)
-                                        }}</small
-                                    >
+                            <div v-if="data.validated_by" class="flex items-center gap-3 text-emerald-700">
+                                <i class="pi pi-check-circle text-xl"></i>
+                                <div>
+                                    <p class="font-medium text-sm">
+                                        {{ data.validator?.first_name }} {{ data.validator?.last_name }}
+                                    </p>
+                                    <p class="text-xs text-emerald-600/75">
+                                        {{ formatDate(data.validated_at) }}
+                                    </p>
                                 </div>
                             </div>
-                            <span v-else class="text-slate-400 italic text-sm"
-                                >En attente...</span
-                            >
+                            <span v-else class="text-slate-400 text-sm italic">
+                                En attente de validation
+                            </span>
                         </template>
                     </Column>
 
                     <!-- Actions -->
-                    <Column
-                        :exportable="false"
-                        style="min-width: 8rem"
-                        alignFrozen="right"
-                        frozen
-                    >
+                    <Column :exportable="false" style="min-width: 9rem" alignFrozen="right" frozen>
                         <template #body="{ data }">
                             <div class="flex justify-end gap-2">
                                 <Button
-                                    v-if="!data.validated_by"
+                                    v-if="!data.validated_by && data.status == 'submitted'"
                                     icon="pi pi-shield"
                                     label="Approuver"
                                     size="small"
                                     severity="success"
-                                    text
+                                    class="shadow-sm hover:shadow"
                                     @click="validation(data.id)"
+                                />
+                                <Button
+                                    v-else-if="!data.validated_by && data.status == 'draft'"
+                                    icon="pi pi-clock"
+                                    label="Brouillon"
+                                    size="small"
+                                    severity="secondary"
+                                    text
+                                    disabled
                                 />
                                 <Button
                                     v-else
@@ -291,12 +302,6 @@ const validation = (id) => {
                                     text
                                     disabled
                                 />
-                                <Button
-                                    icon="pi pi-ellipsis-v"
-                                    severity="secondary"
-                                    text
-                                    rounded
-                                />
                             </div>
                         </template>
                     </Column>
@@ -304,55 +309,48 @@ const validation = (id) => {
             </div>
         </div>
 
-        <!-- Dialog : Nouvelle Feuille -->
+        <!-- Dialog Nouvelle Feuille -->
         <Dialog
             v-model:visible="visible"
             modal
-            header="Créer une feuille d'heures"
-            :style="{ width: '30rem' }"
-            class="p-fluid"
+            header="Créer une nouvelle feuille d'heures"
+            :style="{ width: '32rem' }"
+            class="p-fluid rounded-2xl"
         >
-            <div class="space-y-5 pt-4">
+            <div class="space-y-6 py-4">
                 <div class="flex flex-col gap-2">
-                    <label for="sup" class="font-semibold text-slate-700"
-                        >Collaborateurs concernés</label
-                    >
+                    <label class="font-semibold text-slate-700">Collaborateurs concernés</label>
                     <MultiSelect
-                        id="sup"
                         v-model="form.employee_id"
                         :options="formattedSup"
                         optionLabel="fullName"
                         optionValue="id"
-                        placeholder="Choisir les superviseurs"
+                        placeholder="Sélectionner les superviseurs"
                         display="chip"
                         filter
                         class="w-full"
                     />
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-5">
                     <div class="flex flex-col gap-2">
-                        <label for="start" class="font-semibold text-slate-700"
-                            >Date de début</label
-                        >
+                        <label class="font-semibold text-slate-700">Date de début</label>
                         <DatePicker
                             v-model="form.period_start"
-                            inputId="start"
                             showIcon
                             dateFormat="dd/mm/yy"
                             placeholder="Choisir"
+                            class="w-full"
                         />
                     </div>
                     <div class="flex flex-col gap-2">
-                        <label for="end" class="font-semibold text-slate-700"
-                            >Date de fin</label
-                        >
+                        <label class="font-semibold text-slate-700">Date de fin</label>
                         <DatePicker
                             v-model="form.period_end"
-                            inputId="end"
                             showIcon
                             dateFormat="dd/mm/yy"
                             placeholder="Choisir"
+                            class="w-full"
                         />
                     </div>
                 </div>
@@ -367,7 +365,7 @@ const validation = (id) => {
                     @click="visible = false"
                 />
                 <Button
-                    label="Enregistrer"
+                    label="Créer la feuille"
                     icon="pi pi-check"
                     severity="primary"
                     @click="submit"
@@ -378,19 +376,40 @@ const validation = (id) => {
     </AuthenticatedLayout>
 </template>
 
-<style>
-/* Optionnel : Ajustements pour un look plus "SaaS" */
+<style scoped>
+/* Styles affinés */
 .p-datatable .p-datatable-thead > tr > th {
     background-color: #f8fafc;
-    color: #64748b;
+    color: #475569;
     font-size: 0.75rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.025em;
-    padding: 1rem;
+    letter-spacing: 0.04em;
+    padding: 1.1rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+    transition: all 0.2s;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+    background-color: #f8fafc;
 }
 
 .p-tag {
-    border-radius: 6px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
     font-weight: 600;
+}
+
+/* Amélioration du Dialog */
+.p-dialog .p-dialog-header {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.25rem 1.75rem;
+}
+
+.p-dialog .p-dialog-content {
+    padding: 1.5rem 1.75rem;
 }
 </style>

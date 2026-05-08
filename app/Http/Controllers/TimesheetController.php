@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\PlanningAssignment;
 use App\Models\Timesheet;
+use App\Models\TimesheetEntry;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,20 +20,54 @@ class TimesheetController extends Controller
     // les heures des chef plateau
     public function index()
     {
+        // 1. Récupération de base
         $sup = Employee::with('position')->whereHas('position', function ($query) {
             $query->where('code', 'SUP');
-        })
-            ->get();
-        $planning = PlanningAssignment::with(['employee', 'planningModel'])->whereHas('employee.position', function ($query) {
-            $query->where('code', 'SUP');
-        })
-            ->get();
-        $timesheets = Timesheet::with(['employee', 'validator'])
+        })->get();
+
+        $planning = PlanningAssignment::with(['employee', 'planningModel'])
+            ->whereHas('employee.position', function ($query) {
+                $query->where('code', 'SUP');
+            })->get();
+
+        // 2. Récupération des feuilles avec calcul de complétude
+        $timesheets = Timesheet::with(['employee', 'validator', 'entries'])
             ->whereHas('employee.position', function ($query) {
                 $query->where('code', 'SUP');
             })
             ->latest()
-            ->get();
+            ->get()
+            ->map(function ($ts) {
+                // Calcul de la durée théorique
+                $start = Carbon::parse($ts->period_start);
+                $end = Carbon::parse($ts->period_end);
+                $joursTheoriques = $start->diffInDays($end) + 1;
+
+                // Nombre d'entrées uniques par date (pour éviter de compter 2 fois le même jour)
+                $joursSaisis = $ts->entries->pluck('date')->unique()->count();
+                $isComplete = ($joursSaisis >= $joursTheoriques);
+
+                
+                // On injecte ces infos dans l'objet pour la vue
+                $ts->stats = [
+                    'total_jours' => $joursTheoriques,
+                    'jours_saisis' => $joursSaisis,
+                    'is_complete' => $isComplete,
+                    'manquant' => max(0, $joursTheoriques - $joursSaisis)
+                    ];
+                    
+                    // On ne change le statut que si la feuille n'est pas encore validée
+                $newStatus = $ts->status;
+                if ($ts->status !== 'validated') {
+                    $newStatus = $isComplete ? 'submitted' : 'draft';
+                    
+                    // 4. Mise à jour en base de données si le statut a changé
+                    if ($ts->status !== $newStatus) {
+                        $ts->update(['status' => $newStatus]);
+                    }
+                }
+                return $ts;
+            });
 
         return Inertia::render('Timesheets/Index', [
             'timesheets' => $timesheets,
@@ -40,27 +75,6 @@ class TimesheetController extends Controller
             'planning' => $planning,
         ]);
     }
-
-    // les heures des superviseurs
-    // public function indexSUP()
-    // {
-    //     // $timesheets = Timesheet::with(['employee', 'validator'])->latest()->get();
-    //     // return  inertia('Timesheets/Index', ['timesheets'=> $timesheets]);
-
-    //     // $timesheets = Timesheet::with(['employee', 'validator']) // Charge les relations
-    //     // ->latest()
-    //     // ->get();
-    //     $timesheets = Timesheet::with(['employee', 'validator'])
-    //     ->whereHas('employee.position', function ($query){
-    //         $query->where('code', 'SUP');
-    //     })
-    //     ->latest()
-    //     ->get();
-
-    // return Inertia::render('Timesheets/Index', [
-    //     'timesheets' => $timesheets
-    // ]);
-    // }
 
     /**
      * Show the form for creating a new resource.
@@ -95,6 +109,8 @@ class TimesheetController extends Controller
         Timesheet::insert($data);
         return redirect()->route('timesheet.index');
     }
+
+
 
     /**
      * Display the specified resource.

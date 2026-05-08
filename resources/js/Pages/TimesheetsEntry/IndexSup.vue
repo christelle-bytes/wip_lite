@@ -3,13 +3,13 @@ import { ref, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
-import Select from "primevue/select"; // Ou Dropdown selon votre version de PrimeVue
+import Select from "primevue/select";
 import FloatLabel from "primevue/floatlabel";
 import AuthenticatedLayout from "../../Layouts/AuthenticatedLayout.vue";
 import { Link } from "@inertiajs/vue3";
 
 const props = defineProps({
-    supervisor: Array, // Reçoit les données groupées/filtrées du contrôleur
+    supervisor: Array,
     auth: Object,
 });
 
@@ -66,123 +66,138 @@ const formatDate = (d) =>
 <template>
     <AuthenticatedLayout>
         <div class="p-6 space-y-6">
-            <!-- Barre d'outils minimaliste -->
-            <div
-                class="flex justify-between items-end bg-white p-4 rounded-xl shadow-sm border border-gray-100"
-            >
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">
-                        Reporting Superviseurs
-                    </h1>
-                    <p class="text-gray-500 text-sm">
-                        Visualisation des heures par période
-                    </p>
-                    <Link :href="route('entry.telecon')" class="block p-2 hover:bg-slate-800 rounded"
-                        >Saisie des heures des téléconseillers</Link
-                    >
-                    <Link :href="route('entry.sup')" class="block p-2 hover:bg-slate-800 rounded"
-                        >Saisie des heures des superviseurs</Link
-                    >
+            <!-- Barre d'outils améliorée -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex flex-wrap justify-between items-end gap-6">
+                    <div>
+                        <h1 class="text-3xl font-semibold text-slate-800">
+                            Reporting Superviseurs
+                        </h1>
+                        <p class="text-slate-500 mt-1">
+                            Visualisation détaillée des heures par période
+                        </p>
+                    </div>
 
+                    <div class="flex items-center gap-4">
+                        <!-- <Link
+                            :href="route('entry.telecon')"
+                            class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                            <i class="pi pi-pencil"></i>
+                            Saisie Téléconseillers
+                        </Link> -->
+                        <Link
+                            :href="route('entry.sup')"
+                            class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        >
+                            <i class="pi pi-pencil"></i>
+                            Saisie Superviseurs
+                        </Link>
+
+                        <FloatLabel variant="on" class="min-w-60">
+                            <Select
+                                v-model="selectedMonth"
+                                :options="monthOptions"
+                                optionLabel="label"
+                                placeholder="Filtrer par mois"
+                                class="w-full"
+                            />
+                        </FloatLabel>
+                    </div>
                 </div>
-
-                <FloatLabel variant="on">
-                    <Select
-                        v-model="selectedMonth"
-                        :options="monthOptions"
-                        optionLabel="label"
-                        placeholder="Choisir un mois"
-                        class="w-56"
-                    />
-                </FloatLabel>
             </div>
 
             <!-- Tableau Principal -->
-            <div
-                class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-            >
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <DataTable
                     v-model:expandedRows="expandedRows"
                     :value="props.supervisor"
                     dataKey="id"
                     class="p-datatable-sm"
                     stripedRows
+                    rowHover
                 >
-                    <Column expander style="width: 3rem" />
+                    <Column expander style="width: 4rem" />
 
-                    <Column header="Collaborateur">
+                    <!-- Collaborateur -->
+                    <Column header="Collaborateur" style="min-width: 18rem">
                         <template #body="{ data }">
-                            <div class="flex flex-col">
-                                <span class="font-semibold text-gray-700"
-                                    >{{ data.first_name }}
-                                    {{ data.last_name }}</span
-                                >
-                                <span class="text-xs text-gray-400">{{
-                                    data.matricule
-                                }}</span>
+                            <div class="flex items-center gap-4">
+                                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-100 to-slate-100 flex items-center justify-center font-semibold text-slate-700 border border-slate-200 shadow-sm">
+                                    {{ data.first_name?.[0] }}{{ data.last_name?.[0] }}
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-800 leading-tight">
+                                        {{ data.first_name }} {{ data.last_name }}
+                                    </p>
+                                    <p class="text-xs text-slate-500">
+                                        {{ data.matricule }}
+                                    </p>
+                                </div>
                             </div>
                         </template>
                     </Column>
 
-                    <Column field="position.name" header="Poste" />
+                    <Column field="position.name" header="Poste" style="min-width: 12rem" />
 
-                    <Column header="Total Mois">
+                    <Column header="Total Mois" style="min-width: 10rem">
                         <template #body="{ data }">
-                            <b class="text-blue-600">
+                            <div class="text-lg font-semibold text-blue-600">
                                 {{
                                     formatHours(
                                         getFilteredEntries(data).reduce(
-                                            (acc, curr) =>
-                                                acc + curr.total_hours,
+                                            (acc, curr) => acc + curr.total_hours,
                                             0,
                                         ),
                                     )
                                 }}
-                            </b>
+                            </div>
                         </template>
                     </Column>
 
-                    <!-- Expansion : Détail des journées du mois -->
+                    <!-- Expansion -->
                     <template #expansion="{ data }">
-                        <div class="p-4 bg-slate-50 border-y border-gray-200">
-                            <div class="mb-3 flex items-center gap-2">
-                                <i class="pi pi-calendar text-blue-500"></i>
-                                <span class="font-bold text-gray-600"
-                                    >Détails de {{ selectedMonth?.label }}</span
-                                >
+                        <div class="p-6 bg-slate-50 border-t border-slate-100">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <i class="pi pi-calendar text-blue-600 text-xl"></i>
+                                    <span class="font-semibold text-slate-700">
+                                        Détails de {{ selectedMonth?.label }}
+                                    </span>
+                                </div>
+                                <span class="text-xs text-slate-500">
+                                    {{ getFilteredEntries(data).length }} jour(s) saisis
+                                </span>
                             </div>
 
                             <DataTable
                                 :value="getFilteredEntries(data)"
-                                class="p-datatable-sm rounded-lg overflow-hidden border"
+                                class="p-datatable-sm rounded-xl overflow-hidden border border-slate-200"
+                                stripedRows
                             >
-                                <Column field="date" header="Date">
-                                    <template #body="sp">{{
-                                        formatDate(sp.data.date)
-                                    }}</template>
+                                <Column field="date" header="Date" style="width: 120px">
+                                    <template #body="sp">
+                                        {{ formatDate(sp.data.date) }}
+                                    </template>
                                 </Column>
-                                <Column field="check_in" header="Entrée" />
-                                <Column field="check_out" header="Sortie" />
-                                <Column header="Heures">
-                                    <template #body="sp">{{
-                                        formatHours(sp.data.total_hours)
-                                    }}</template>
+                                <Column field="check_in" header="Heure d'entrée" />
+                                <Column field="check_out" header="Heure de sortie" />
+                                <Column header="Durée" style="width: 130px">
+                                    <template #body="sp">
+                                        <span class="font-medium">
+                                            {{ formatHours(sp.data.total_hours) }}
+                                        </span>
+                                    </template>
                                 </Column>
-                                <Column header="Overtime">
+                                <Column header="Heures supplémentaires">
                                     <template #body="sp">
                                         <Tag
                                             v-if="sp.data.overtime_hours > 0"
-                                            :value="
-                                                '+' +
-                                                formatHours(
-                                                    sp.data.overtime_hours,
-                                                )
-                                            "
+                                            :value="`+${formatHours(sp.data.overtime_hours)}`"
                                             severity="warn"
+                                            class="font-medium"
                                         />
-                                        <span v-else class="text-gray-300"
-                                            >-</span
-                                        >
+                                        <span v-else class="text-slate-300 text-sm">-</span>
                                     </template>
                                 </Column>
                             </DataTable>
@@ -197,14 +212,35 @@ const formatDate = (d) =>
 <style scoped>
 :deep(.p-datatable-thead > tr > th) {
     background-color: #f8fafc;
-    color: #64748b;
-    font-size: 0.85rem;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.025em;
+    letter-spacing: 0.04em;
+    padding: 1.1rem 1rem;
+}
+
+:deep(.p-datatable-tbody > tr) {
+    transition: background-color 0.2s;
+}
+
+:deep(.p-datatable-tbody > tr:hover) {
+    background-color: #f1f5f9;
+}
+
+/* Style de l'expander */
+:deep(.p-datatable .p-row-toggler) {
+    color: #64748b;
 }
 
 :deep(.p-tag) {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+}
+
+/* Amélioration globale des tableaux */
+.p-datatable {
+    border-radius: 16px;
 }
 </style>

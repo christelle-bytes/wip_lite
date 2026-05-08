@@ -103,7 +103,7 @@ watch(
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
                         >Plannings</Link
                     >
-                    <Link :href="route('index.telecon')" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('index.sup')" class="block p-2 hover:bg-slate-800 rounded"
                         >Heures</Link
                     >
                     <Link :href="route('timesheet.index')" class="block p-2 hover:bg-slate-800 rounded"
@@ -119,6 +119,9 @@ watch(
                     >
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
                         >Affectations</Link
+                    >
+                    <Link :href="route('index.telecon')" class="block p-2 hover:bg-slate-800 rounded"
+                        >Feuille d'heures</Link
                     >
                 </template>
                 <template v-else-if="user?.role?.name === 'TC'">
