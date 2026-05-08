@@ -9,6 +9,7 @@ const props = defineProps({
     campaign: Object,
     summary: Object,
     hierarchy: Array,
+    isAdmin: Boolean,
 })
 
 const getStatusSeverity = (status) => {
@@ -104,7 +105,7 @@ const editingCampaign = ref(null)
                             </div>
                         </div>
                     </div>
-                     <Button @click="openEditDialog(campaign)" label="Modifier" severity="warning" class="rounded-xl px-4 py-2 text-sm" />
+                     <Button v-if="isAdmin" @click="openEditDialog(campaign)" label="Modifier" severity="warning" class="rounded-xl px-4 py-2 text-sm" />
                     <div class="flex flex-wrap gap-3">
                         <Dialog v-model:visible="editDialogVisible" modal header="Modifier la campagne"
                             :style="{ width: '50rem' }">
