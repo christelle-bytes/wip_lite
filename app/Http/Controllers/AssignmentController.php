@@ -226,41 +226,48 @@ class AssignmentController extends Controller
     // ─── Libérer une ressource (avec cascade) ─────────────────────────────────
     public function release(Assignment $assignment)
     {
-        $supPosition = Position::where('code', 'SUP')->first();
+        $supPosition = Position::where('code', 'SUP')->firstOrFail();
+        $cpPosition  = Position::where('code', 'CP')->firstOrFail();
 
         // Si c'est un SUP, libérer ses TC en cascade
-        if ($assignment->position_id === $supPosition->id) {
-            Assignment::where('manager_id', $assignment->employee_id)
+         if ($assignment->position_id === $cpPosition->id) {
+        // Récupérer les SUPs de ce CP sur cette campagne
+        $sups = Assignment::where('manager_id', $assignment->employee_id)
+            ->where('campaign_id', $assignment->campaign_id)
+            ->where('status', 'actif')
+            ->get();
+
+        foreach ($sups as $sup) {
+            // Libérer les TC de chaque SUP
+            Assignment::where('manager_id', $sup->employee_id)
                 ->where('campaign_id', $assignment->campaign_id)
                 ->where('status', 'actif')
                 ->update(['status' => 'terminé', 'end_date' => now()]);
         }
 
-        // Si c'est un CP, libérer ses SUP et leurs TC en cascade
-        $cpPosition = Position::where('code', 'CP')->first();
-        if ($assignment->position_id === $cpPosition->id) {
-            $sups = Assignment::where('manager_id', $assignment->employee_id)
-                ->where('campaign_id', $assignment->campaign_id)
-                ->where('status', 'actif')
-                ->get();
+        // Libérer les SUPs
+        Assignment::where('manager_id', $assignment->employee_id)
+            ->where('campaign_id', $assignment->campaign_id)
+            ->where('status', 'actif')
+            ->update(['status' => 'terminé', 'end_date' => now()]);
+    }
 
-            foreach ($sups as $sup) {
-                // Libérer les TC du SUP
-                Assignment::where('manager_id', $sup->employee_id)
-                    ->where('campaign_id', $assignment->campaign_id)
-                    ->where('status', 'actif')
-                    ->update(['status' => 'terminé', 'end_date' => now()]);
-            }
+    if ($assignment->position_id === $supPosition->id) {
+        // Libérer les TC de ce SUP
+        Assignment::where('manager_id', $assignment->employee_id)
+            ->where('campaign_id', $assignment->campaign_id)
+            ->where('status', 'actif')
+            ->update(['status' => 'terminé', 'end_date' => now()]);
+    }
 
-            // Libérer les SUP
-            Assignment::where('manager_id', $assignment->employee_id)
-                ->where('campaign_id', $assignment->campaign_id)
-                ->where('status', 'actif')
-                ->update(['status' => 'terminé', 'end_date' => now()]);
-        }
+    $assignment->update(['status' => 'terminé', 'end_date' => now()]);
 
-        $assignment->update(['status' => 'terminé', 'end_date' => now()]);
+    // Redirection intelligente : si on vient de la page show d'une campagne
+    $referer = request()->headers->get('referer', '');
+    if (str_contains($referer, '/campaigns/')) {
+        return redirect()->back()->with('success', 'Ressource libérée avec succès.');
+    }
 
-        return back()->with('success', 'Ressource libérée avec succès.');
+    return redirect()->back()->with('success', 'Ressource libérée avec succès.');
     }
 }

@@ -11,6 +11,7 @@ import Dropdown from 'primevue/dropdown'
 
 const props = defineProps({
     campaigns: Array,
+    isAdmin: Boolean,
 });
 
 const filters = ["Toutes", "Actives", "Inactives", "Terminées"]
@@ -104,7 +105,7 @@ const submitEdit = () => {
                     <h1 class="text-3xl font-bold text-slate-900">Campagnes</h1>
                     <p class="mt-2 text-slate-500">Gestion des campagnes et suivi des ressources affectées.</p>
                 </div>
-                <Button @click="openCreateDialog" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-sm">
+                <Button v-if="isAdmin" @click="openCreateDialog" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-sm">
                     <span class="mr-2 text-xl">+</span> Créer une campagne
                 </Button>
             </div>
@@ -147,10 +148,12 @@ const submitEdit = () => {
                         <Link :href="route('campaigns.show', campaign.id)" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
                             Voir
                         </Link>
-                        <Button @click="openEditDialog(campaign)" label="Modifier" severity="warning" class="rounded-xl px-4 py-2 text-sm" />
+                        <template v-if="isAdmin">
+                        <Button  @click="openEditDialog(campaign)" label="Modifier" severity="warning" class="rounded-xl px-4 py-2 text-sm" />
                         <Link :href="route('campaigns.destroy', campaign.id)" method="delete" as="button" class="inline-flex items-center justify-center rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">
                             Désactiver
                         </Link>
+                        </template>
                     </div>
                 </div>
             </div>

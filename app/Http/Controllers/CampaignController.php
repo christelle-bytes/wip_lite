@@ -17,34 +17,37 @@ class CampaignController extends Controller
     public function index()
     {
         $user = Auth::user();
-        // dd(!$user->isAdmin());
-        // 1. Validation du rôle Admin
-        // if (!$user || !$user->isAdmin()) {
-        //     abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
-        // }
-
-        // 2. Récupération des campagnes avec compteurs
+        if ($user->isAdmin()) {
+        // Admin : toutes les campagnes avec compteurs
         $campaigns = Campaign::withCount([
-            'assignments as cp_count' => function ($query) {
-                $query->whereHas('position', function ($q) {
-                    $q->where('name', 'Chef Plateau');
-                });
-            },
-            'assignments as sup_count' => function ($query) {
-                $query->whereHas('position', function ($q) {
-                    $q->where('name', 'Superviseur');
-                });
-            },
-            'assignments as tc_count' => function ($query) {
-                $query->whereHas('position', function ($q) {
-                    $q->where('name', 'Teleconseiller');
-                });
-            }
+            'assignments as cp_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'CP')),
+            'assignments as sup_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'SUP')),
+            'assignments as tc_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'TC')),
         ])->get();
+    } else {
+        // Autres rôles : uniquement les campagnes où ils sont affectés
+        $employee = $user->employee;
 
-        return Inertia::render('Campaigns/Campaign', [
-            'campaigns' => $campaigns,
-        ]);
+        if (!$employee) {
+            $campaigns = collect();
+        } else {
+            $campaignIds = $employee->assignments()
+                ->where('status', 'actif')
+                ->pluck('campaign_id');
+
+            $campaigns = Campaign::whereIn('id', $campaignIds)
+                ->withCount([
+                    'assignments as cp_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'CP')),
+                    'assignments as sup_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'SUP')),
+                    'assignments as tc_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'TC')),
+                ])->get();
+        }
+    }
+
+    return Inertia::render('Campaigns/Campaign', [
+        'campaigns'  => $campaigns,
+        'isAdmin'    => $user->isAdmin(),
+    ]);
     }
 
     /**
@@ -78,46 +81,56 @@ class CampaignController extends Controller
      */
     public function show(string $id)
     {
-        $campaign = Campaign::with(['assignments.employee.user.role', 'assignments.position'])->findOrFail($id);
+       $user = Auth::user();
 
-        $assignments = $campaign->assignments;
+    // Non-admin : vérifier qu'il est bien affecté à cette campagne
+    if (!$user->isAdmin()) {
+        $employee = $user->employee;
+        $hasAccess = $employee?->assignments()
+            ->where('campaign_id', $id)
+            ->where('status', 'actif')
+            ->exists();
 
-        $summary = [
-            'total_resources' => $assignments->count(),
-            'cp_count' => $assignments->filter(function ($assignment) {
-                return optional($assignment->position)->name === 'Chef Plateau';
-            })->count(),
-            'sup_count' => $assignments->filter(function ($assignment) {
-                return optional($assignment->position)->name === 'Superviseur';
-            })->count(),
-            'tc_count' => $assignments->filter(function ($assignment) {
-                return optional($assignment->position)->name === 'Teleconseiller';
-            })->count(),
-        ];
-
-        $assignments->each(function ($assignment) {
-            $assignment->setAttribute('tree_children', []);
-        });
-
-        $assignmentsByEmployee = $assignments->keyBy('employee_id');
-        $hierarchy = [];
-
-        foreach ($assignments as $assignment) {
-            if ($assignment->manager_id && $assignmentsByEmployee->has($assignment->manager_id)) {
-                $manager = $assignmentsByEmployee[$assignment->manager_id];
-                $children = $manager->tree_children;
-                $children[] = $assignment;
-                $manager->setAttribute('tree_children', $children);
-            } else {
-                $hierarchy[] = $assignment;
-            }
+        if (!$hasAccess) {
+            abort(403, "Vous n'avez pas accès à cette campagne.");
         }
+    }
 
-        return Inertia::render('Campaigns/Show', [
-            'campaign' => $campaign,
-            'summary' => $summary,
-            'hierarchy' => $hierarchy,
-        ]);
+    $campaign = Campaign::with([
+        'assignments' => fn($q) => $q->where('status', 'actif')
+            ->with(['employee.user', 'position'])
+    ])->findOrFail($id);
+
+    $assignments = $campaign->assignments;
+
+    $summary = [
+        'total_resources' => $assignments->count(),
+        'cp_count'  => $assignments->filter(fn($a) => optional($a->position)->code === 'CP')->count(),
+        'sup_count' => $assignments->filter(fn($a) => optional($a->position)->code === 'SUP')->count(),
+        'tc_count'  => $assignments->filter(fn($a) => optional($a->position)->code === 'TC')->count(),
+    ];
+
+    $assignments->each(fn($a) => $a->setAttribute('tree_children', []));
+    $assignmentsByEmployee = $assignments->keyBy('employee_id');
+    $hierarchy = [];
+
+    foreach ($assignments as $assignment) {
+        if ($assignment->manager_id && $assignmentsByEmployee->has($assignment->manager_id)) {
+            $manager = $assignmentsByEmployee[$assignment->manager_id];
+            $children = $manager->tree_children;
+            $children[] = $assignment;
+            $manager->setAttribute('tree_children', $children);
+        } else {
+            $hierarchy[] = $assignment;
+        }
+    }
+
+    return Inertia::render('Campaigns/Show', [
+        'campaign'  => $campaign,
+        'summary'   => $summary,
+        'hierarchy' => $hierarchy,
+        'isAdmin'   => $user->isAdmin(),
+    ]);
     }
 
     /**
