@@ -13,13 +13,14 @@ const toast = useToast();
 
 // Calcul du rôle pour afficher les liens conditionnels
 const user = computed(() => page.props.auth.user);
+const roleName = computed(() => user.value?.role?.name?.toUpperCase() || '');
 
 // On crée une référence réactive sur les messages flash partagés par Laravel
 const flash = computed(() => page.props.flash);
 
 // Fonction pour déterminer si on doit afficher le menu de navigation complet
 const showFullNavigation = computed(() => {
-    return user.value && user.value.role;
+    return !!roleName.value;
 });
 
 // Fonction pour déterminer si on doit afficher le bouton de déconnexion
