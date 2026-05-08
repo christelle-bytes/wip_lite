@@ -10,6 +10,7 @@ use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use phpDocumentor\Reflection\Types\Null_;
 
@@ -52,10 +53,18 @@ class TimesheetEntryController extends Controller
     // index telecon
     public function indexTelecon(Request $request)
     {
+        // $manager = Auth::user()->employee;
+        // if (!$manager) {
+        //     // Gérer le cas où l'utilisateur n'est pas lié à un employé
+        //     return redirect()->back()->with('error', 'Aucun profil employé lié.');
+        // }
+        // ->whereHas('assignments', function ($query) {
+        //     $query->where('manager_id', $manager->id);
+        // })
         $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
-        $telecon = Employee::with('position', 'timesheet')
+        $telecon = Employee::with('position', 'timesheet', 'assignments')
             ->whereHas('position', function ($query) use ($targetMonth) {
-                
+
                 $query->with(['entries' => function ($entryQuery) use ($targetMonth) {
                     // On filtre les entrées précises pour le mois choisi
                     $entryQuery->where('date', 'like', "$targetMonth%");
@@ -90,11 +99,19 @@ class TimesheetEntryController extends Controller
     // entry tc
     public function entryTelecon()
     {
+
+        // $manager = Auth::user()->employee;
+        // if (!$manager) {
+        //     // Gérer le cas où l'utilisateur n'est pas lié à un employé
+        //     return redirect()->back()->with('error', 'Aucun profil employé lié.');
+        //     }
+        //     ->whereHas('assignments', function ($query) {
+        //         $query->where('manager_id', $manager->id);
+        //     })
         $telecon = Employee::with('position', 'assignments')
             ->whereHas('position', function ($query) {
                 $query->where('code', 'TC');
             })
-            ->whereHas('assignments')
             ->where('status', 'actif')
             ->get();
 
