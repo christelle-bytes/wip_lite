@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
+use App\Http\Controllers\ReportingController;
+
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -16,21 +19,9 @@ Route::get('/', function () {
     ]);
 });
 
-use Illuminate\Support\Facades\Auth;
-
-
-Route::get('/dashboard', function () {
-    $user = Auth::user();
-    $roleName = $user?->role?->name;
-
-    return match ($roleName) {
-        'Admin' => Inertia::render('DashboardAdmin'),
-        'CP' => Inertia::render('DashboardCp'),
-        'SUP' => Inertia::render('DashboardSup'),
-        'TC' => Inertia::render('DashboardTc'),
-        default => Inertia::render('DashboardAdmin'),
-    };
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 
 Route::middleware('auth')->group(function () {
@@ -49,5 +40,8 @@ Route::middleware('auth')->group(function () {
 Route::resource('campaigns', CampaignController::class);
 
 Route::resource('assignments', AssignmentController::class);
+
+
+Route::get('/statistiques', [ReportingController::class, 'index'])->name('reporting.index');
 
 require __DIR__.'/auth.php';
