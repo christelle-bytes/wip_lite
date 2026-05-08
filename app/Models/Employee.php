@@ -41,10 +41,7 @@ class Employee extends Model
         return $this->hasMany(Timesheet::class);
     }
 
-    public function assignments(): HasMany
-    {
-        return $this->hasMany(Assignment::class);
-    }
+   
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

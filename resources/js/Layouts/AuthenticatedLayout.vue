@@ -68,7 +68,7 @@ watch(
                
                 <Link v-if="user" :href="route('dashboard')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
                  
-                <template v-if="roleName === 'ADMIN'">
+                <template v-if="user?.role?.name === 'Admin'">
                     <Link href="/gestion-employees" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
                     <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                     <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
@@ -82,7 +82,7 @@ watch(
                         >Feuille d'heures</Link
                     >
                 
-                
+                </template>
                 <template v-else-if="user?.role?.name === 'CP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
                         >Employés</Link
