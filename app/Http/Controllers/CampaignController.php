@@ -20,10 +20,17 @@ class CampaignController extends Controller
         $user = Auth::user();
         if ($user->isAdmin()) {
             // Admin : toutes les campagnes avec compteurs
+            // Admin
             $campaigns = Campaign::withCount([
-                'assignments as cp_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'CP')),
-                'assignments as sup_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'SUP')),
-                'assignments as tc_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'TC')),
+                'assignments as cp_count' => fn($q) => $q
+                    ->where('status', 'actif') // ← manquant !
+                    ->whereHas('position', fn($q) => $q->where('code', 'CP')),
+                'assignments as sup_count' => fn($q) => $q
+                    ->where('status', 'actif') // ← manquant !
+                    ->whereHas('position', fn($q) => $q->where('code', 'SUP')),
+                'assignments as tc_count' => fn($q) => $q
+                    ->where('status', 'actif') // ← manquant !
+                    ->whereHas('position', fn($q) => $q->where('code', 'TC')),
             ])->get();
         } else {
             // Autres rôles : uniquement les campagnes où ils sont affectés
@@ -38,9 +45,15 @@ class CampaignController extends Controller
 
                 $campaigns = Campaign::whereIn('id', $campaignIds)
                     ->withCount([
-                        'assignments as cp_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'CP')),
-                        'assignments as sup_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'SUP')),
-                        'assignments as tc_count' => fn($q) => $q->whereHas('position', fn($q) => $q->where('code', 'TC')),
+                        'assignments as cp_count' => fn($q) => $q
+                            ->where('status', 'actif')
+                            ->whereHas('position', fn($q) => $q->where('code', 'CP')),
+                        'assignments as sup_count' => fn($q) => $q
+                            ->where('status', 'actif')
+                            ->whereHas('position', fn($q) => $q->where('code', 'SUP')),
+                        'assignments as tc_count' => fn($q) => $q
+                            ->where('status', 'actif')
+                            ->whereHas('position', fn($q) => $q->where('code', 'TC')),
                     ])->get();
             }
         }
