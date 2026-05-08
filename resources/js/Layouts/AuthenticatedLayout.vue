@@ -114,7 +114,7 @@ watch(
                         >Affectations</Link
                     >
                     <Link :href="route('index.telecon')" class="block p-2 hover:bg-slate-800 rounded"
-                        >Feuille d'heures</Link
+                        >Heures</Link
                     >
                 </template>
                 <template v-else-if="user?.role?.name === 'TC'">
