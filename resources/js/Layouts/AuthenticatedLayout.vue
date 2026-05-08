@@ -63,6 +63,13 @@ watch(
             </div>
 
             <nav class="flex-1 px-4 space-y-2">
+                <Link :href="route('reporting.index')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
+                <!-- <Link :href="route('reporting.index')" class="block p-2 hover:bg-slate-800 rounded">Statistiques</Link> -->
+                <Link
+                    :href="route('dashboard')"
+                    class="block p-2 hover:bg-slate-800 rounded"
+                    >Tableau de bord</Link
+                >
 
 
                

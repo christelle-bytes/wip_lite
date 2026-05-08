@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -9,6 +10,8 @@ use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\TimesheetEntryController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
+use App\Http\Controllers\ReportingController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,7 +23,10 @@ Route::get('/', function () {
     ]);
 });
 
-use Illuminate\Support\Facades\Auth;
+// Route::get('/dashboard', [DashboardController::class, 'index'])
+//     ->middleware(['auth', 'verified'])
+//     ->name('dashboard');
+// use Illuminate\Support\Facades\Auth;
 
 
 Route::get('/dashboard', function () {
@@ -89,5 +95,6 @@ Route::post('/assignments/cp', [AssignmentController::class, 'assignCP'])->name(
 Route::post('/assignments/sup', [AssignmentController::class, 'assignSUP'])->name('assignments.assignSUP');
 Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name('assignments.assignTC');
 Route::patch('/assignments/{assignment}/release', [AssignmentController::class, 'release'])->name('assignments.release');
+Route::get('/statistiques', [ReportingController::class, 'index'])->name('reporting.index');
 
 require __DIR__.'/auth.php';

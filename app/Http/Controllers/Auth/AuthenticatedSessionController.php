@@ -33,7 +33,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $user = auth()->user();
+        // Tous les rôles atterrissent sur /dashboard
+        // Le DashboardController se charge de rediriger vers la bonne vue selon le rôle
+        // return redirect()->intended(route('dashboard'));
+        $user = Auth::user();
         
         // dd($user);
 
