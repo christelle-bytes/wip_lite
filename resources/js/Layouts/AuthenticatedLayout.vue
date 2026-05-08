@@ -66,30 +66,10 @@ watch(
                 <Link v-if="user" :href="route('reporting.index')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
 
                 <template v-if="user?.role?.name === 'Admin'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Heures</Link>
-                </template>
-                <template v-else-if="user?.role?.name === 'CP'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                     <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
-                </template>
-                <template v-else-if="user?.role?.name === 'SUP'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
-                    <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
-                </template>
-                <template v-else-if="user?.role?.name === 'TC'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
-                    <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                     <Link href="/gestion-employees" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
                     <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                     <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
+                    <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                     <Link
                         :href="route('index.sup')"
                         class="block p-2 hover:bg-slate-800 rounded"
@@ -107,7 +87,10 @@ watch(
                     <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Campagnes</Link
                     >
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded"
+                        >Affectations</Link
+                    >
+                    <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded"
                         >Plannings</Link
                     >
                     <Link :href="route('index.sup')" class="block p-2 hover:bg-slate-800 rounded"
@@ -127,6 +110,9 @@ watch(
                     <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Affectations</Link
                     >
+                    <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded"
+                        >Plannings</Link
+                    >
                     <Link :href="route('index.telecon')" class="block p-2 hover:bg-slate-800 rounded"
                         >Heures</Link
                     >
@@ -137,6 +123,9 @@ watch(
                     >
                     <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded"
                         >Affectations</Link
+                    >
+                    <Link href="/planning" class="block p-2 hover:bg-slate-800 rounded"
+                        >Plannings</Link
                     >
                 </template>
             </nav>
