@@ -10,10 +10,11 @@ const showingNavigationDropdown = ref(false);
 
 // Calcul du rôle pour afficher les liens conditionnels
 const user = computed(() => page.props.auth.user);
+const roleName = computed(() => user.value?.role?.name?.toUpperCase() || '');
 
 // Fonction pour déterminer si on doit afficher le menu de navigation complet
 const showFullNavigation = computed(() => {
-    return user.value && user.value.role;
+    return !!roleName.value;
 });
 
 // Fonction pour déterminer si on doit afficher le bouton de déconnexion
@@ -32,33 +33,33 @@ const showLogoutButton = computed(() => {
             <nav class="flex-1 px-4 space-y-2">
                 <Link :href="route('dashboard')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
 
-                <template v-if="user?.role?.name === 'Admin'">
-                    <Link href="gestion-employees" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+               
+                <Link v-if="user" :href="route('dashboard')" class="block p-2 hover:bg-slate-800 rounded">Tableau de bord</Link>
+                 
+                <template v-if="roleName === 'ADMIN'">
+                    <Link href="" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
+                    <Link :href="route('assignments.index')" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Heures</Link>
                 </template>
-                <template v-else-if="user?.role?.name === 'CP'">
+                <template v-else-if="roleName === 'CP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                      <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Plannings</Link>
                 </template>
-                <template v-else-if="user?.role?.name === 'SUP'">
+                <template v-else-if="roleName === 'SUP'">
                     <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Employés</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                 </template>
-                <template v-else-if="user?.role?.name === 'TC'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded">Affectations</Link>
+                <template v-else-if="roleName === 'TC'">
+                    <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded">Campagnes</Link>
                 </template>
             </nav>
         </aside>
 
         <div class="flex-1 flex flex-col">
-            
+
             <nav class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-8">
                 <!-- Espace vide à gauche pour équilibre -->
                 <div class="flex items-center space-x-4">
@@ -72,10 +73,12 @@ const showLogoutButton = computed(() => {
                         <svg class="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
                         </svg>
-                        <span class="text-sm font-medium text-gray-700">{{ user?.name }}</span>
+                        <span class="text-sm font-medium text-gray-700">
+                            {{ user?.employee ? `${user.employee.first_name} ${user.employee.last_name}` : user?.email }}
+                        </span>
                         <span class="text-xs text-gray-500">({{ user?.role?.name }})</span>
                     </div>
-                    
+
                     <!-- Dropdown pour les options -->
                     <Dropdown align="right" width="48">
                         <template #trigger>
@@ -93,12 +96,12 @@ const showLogoutButton = computed(() => {
                         <DropdownLink :href="route('profile.edit')" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
                             Profil
                         </DropdownLink>
-                        
+
                         <!-- Bouton de déconnexion - visible selon le niveau -->
-                        <DropdownLink 
+                        <DropdownLink
                             v-if="showLogoutButton"
-                            :href="route('logout')" 
-                            method="post" 
+                            :href="route('logout')"
+                            method="post"
                             as="button"
                             class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                         >

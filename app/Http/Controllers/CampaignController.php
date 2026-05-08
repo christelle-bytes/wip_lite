@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Assignment;
 use App\Models\Campaign;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,32 +18,49 @@ class CampaignController extends Controller
     public function index()
     {
         $user = Auth::user();
-        // 1. Validation du rôle Admin
-        if (!$user || !$user->isAdmin()) {
-            abort(403, "Vous n'avez pas les droits nécessaires pour accéder à cette page.");
+        if ($user->isAdmin()) {
+            // Admin : toutes les campagnes avec compteurs
+            // Admin
+            $campaigns = Campaign::withCount([
+                'assignments as cp_count' => fn($q) => $q
+                    ->where('status', 'actif') // ← manquant !
+                    ->whereHas('position', fn($q) => $q->where('code', 'CP')),
+                'assignments as sup_count' => fn($q) => $q
+                    ->where('status', 'actif') // ← manquant !
+                    ->whereHas('position', fn($q) => $q->where('code', 'SUP')),
+                'assignments as tc_count' => fn($q) => $q
+                    ->where('status', 'actif') // ← manquant !
+                    ->whereHas('position', fn($q) => $q->where('code', 'TC')),
+            ])->get();
+        } else {
+            // Autres rôles : uniquement les campagnes où ils sont affectés
+            $employee = $user->employee;
+
+            if (!$employee) {
+                $campaigns = collect();
+            } else {
+                $campaignIds = $employee->assignments()
+                    ->where('status', 'actif')
+                    ->pluck('campaign_id');
+
+                $campaigns = Campaign::whereIn('id', $campaignIds)
+                    ->withCount([
+                        'assignments as cp_count' => fn($q) => $q
+                            ->where('status', 'actif')
+                            ->whereHas('position', fn($q) => $q->where('code', 'CP')),
+                        'assignments as sup_count' => fn($q) => $q
+                            ->where('status', 'actif')
+                            ->whereHas('position', fn($q) => $q->where('code', 'SUP')),
+                        'assignments as tc_count' => fn($q) => $q
+                            ->where('status', 'actif')
+                            ->whereHas('position', fn($q) => $q->where('code', 'TC')),
+                    ])->get();
+            }
         }
 
-        // 2. Récupération des campagnes avec compteurs
-        $campaigns = Campaign::withCount([
-            'assignments as cp_count' => function ($query) {
-                $query->whereHas('position', function ($q) {
-                    $q->where('name', 'Chef Plateau');
-                });
-            },
-            'assignments as sup_count' => function ($query) {
-                $query->whereHas('position', function ($q) {
-                    $q->where('name', 'Superviseur');
-                });
-            },
-            'assignments as tc_count' => function ($query) {
-                $query->whereHas('position', function ($q) {
-                    $q->where('name', 'Teleconseiller');
-                });
-            }
-        ])->get();
-
         return Inertia::render('Campaigns/Campaign', [
-            'campaigns' => $campaigns,
+            'campaigns'  => $campaigns,
+            'isAdmin'    => $user->isAdmin(),
         ]);
     }
 
@@ -59,7 +77,7 @@ class CampaignController extends Controller
      */
     public function store(Request $request)
     {
-        $validated= $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'start_date' => 'required|date',
@@ -77,27 +95,36 @@ class CampaignController extends Controller
      */
     public function show(string $id)
     {
-        $campaign = Campaign::with(['assignments.employee.user.role', 'assignments.position'])->findOrFail($id);
+        $user = Auth::user();
+
+        // Non-admin : vérifier qu'il est bien affecté à cette campagne
+        if (!$user->isAdmin()) {
+            $employee = $user->employee;
+            $hasAccess = $employee?->assignments()
+                ->where('campaign_id', $id)
+                ->where('status', 'actif')
+                ->exists();
+
+            if (!$hasAccess) {
+                abort(403, "Vous n'avez pas accès à cette campagne.");
+            }
+        }
+
+        $campaign = Campaign::with([
+            'assignments' => fn($q) => $q->where('status', 'actif')
+                ->with(['employee.user', 'position'])
+        ])->findOrFail($id);
 
         $assignments = $campaign->assignments;
 
         $summary = [
             'total_resources' => $assignments->count(),
-            'cp_count' => $assignments->filter(function ($assignment) {
-                return optional($assignment->position)->name === 'Chef Plateau';
-            })->count(),
-            'sup_count' => $assignments->filter(function ($assignment) {
-                return optional($assignment->position)->name === 'Superviseur';
-            })->count(),
-            'tc_count' => $assignments->filter(function ($assignment) {
-                return optional($assignment->position)->name === 'Teleconseiller';
-            })->count(),
+            'cp_count'  => $assignments->filter(fn($a) => optional($a->position)->code === 'CP')->count(),
+            'sup_count' => $assignments->filter(fn($a) => optional($a->position)->code === 'SUP')->count(),
+            'tc_count'  => $assignments->filter(fn($a) => optional($a->position)->code === 'TC')->count(),
         ];
 
-        $assignments->each(function ($assignment) {
-            $assignment->setAttribute('tree_children', []);
-        });
-
+        $assignments->each(fn($a) => $a->setAttribute('tree_children', []));
         $assignmentsByEmployee = $assignments->keyBy('employee_id');
         $hierarchy = [];
 
@@ -113,9 +140,10 @@ class CampaignController extends Controller
         }
 
         return Inertia::render('Campaigns/Show', [
-            'campaign' => $campaign,
-            'summary' => $summary,
+            'campaign'  => $campaign,
+            'summary'   => $summary,
             'hierarchy' => $hierarchy,
+            'isAdmin'   => $user->isAdmin(),
         ]);
     }
 
@@ -138,17 +166,32 @@ class CampaignController extends Controller
     {
         $campaign = Campaign::findOrFail($id);
 
-       $validated= $request->validate([
-            'name' => 'required|string|max:255',
+        $validated = $request->validate([
+            'name'        => 'required|string|max:255',
             'description' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'status' => 'required|in:active,inactive,terminée',
+            'start_date'  => 'required|date',
+            'end_date'    => 'required|date|after:start_date',
+            'status'      => 'required|in:active,inactive,terminée',
         ]);
+
+        // Si on passe au statut "terminée" ou "inactive" → désaffecter toutes les ressources
+        $closingStatuses = ['terminée', 'inactive'];
+        $wasActive = $campaign->status === 'active';
+        $isClosing = in_array($validated['status'], $closingStatuses);
+
+        if ($wasActive && $isClosing) {
+            Assignment::where('campaign_id', $campaign->id)
+                ->where('status', 'actif')
+                ->update([
+                    'status'   => 'terminé',
+                    'end_date' => now(),
+                ]);
+        }
 
         $campaign->update($validated);
 
-        return redirect()->route('campaigns.index')->with('success', 'Campagne mise à jour avec succès.');
+        return redirect()->route('campaigns.index')
+            ->with('success', 'Campagne mise à jour avec succès.');
     }
 
     /**
@@ -157,8 +200,18 @@ class CampaignController extends Controller
     public function destroy(string $id)
     {
         $campaign = Campaign::findOrFail($id);
+
+        // Désaffecter toutes les ressources actives automatiquement
+        Assignment::where('campaign_id', $campaign->id)
+            ->where('status', 'actif')
+            ->update([
+                'status'   => 'terminé',
+                'end_date' => now(),
+            ]);
+
         $campaign->update(['status' => 'inactive']);
 
-        return redirect()->route('campaigns.index')->with('success', 'Campagne désactivée avec succès.');
+        return redirect()->route('campaigns.index')
+            ->with('success', 'Campagne désactivée et ressources désassignées avec succès.');
     }
 }
