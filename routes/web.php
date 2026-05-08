@@ -5,6 +5,8 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TimesheetController;
+use App\Http\Controllers\TimesheetEntryController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +37,22 @@ Route::get('/dashboard', function () {
     };
 })->middleware(['auth'])->name('dashboard');
 
+Route::resource('/timesheet', TimesheetController::class);
+Route::resource('/timesheetEntry', TimesheetEntryController::class);
+// saisie heure sup
+Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->name('entry.sup');
+// vue recap saisie sup
+Route::get('/timesheetEntry_sup', [TimesheetEntryController::class, 'indexSup'])->name('index.sup');
+
+// vue recap saisie telecon
+Route::get('/timesheetEntry_telecon', [TimesheetEntryController::class, 'indexTelecon'])->name('index.telecon');
+// saisie heure telecon
+Route::get('/timesheetEntry_teleconEntry', [TimesheetEntryController::class, 'entryTelecon'])->name('entry.telecon');
+
+// store telecon
+Route::post('/timesheetEntry_teleconStore', [TimesheetEntryController::class, 'storeTelecon'])->name('store.telecon');
+// store sup
+Route::post('/timesheetEntry_supStore', [TimesheetEntryController::class, 'storeSup'])->name('store.sup');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
