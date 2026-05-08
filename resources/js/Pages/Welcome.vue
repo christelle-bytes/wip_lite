@@ -26,26 +26,16 @@ function handleImageError() {
 }
 </script>
 
-<!-- <script setup>
-import { Head, Link } from '@inertiajs/vue3';
-
-defineProps({
-    canLogin: Boolean,
-    canRegister: Boolean,
-    laravelVersion: String,
-    phpVersion: String,
-});
-</script> -->
 
 <template>
     <Head title="Bienvenue - Gestion des Employés" />
 
     <div class="relative min-h-screen flex items-center justify-center bg-gray-900 selection:bg-blue-500 selection:text-white">
-        
+
         <!-- Image d'arrière-plan professionnelle -->
         <div class="absolute inset-0 z-0">
-            <img 
-                src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
+            <img
+                src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
                 class="w-full h-full object-cover opacity-40"
                 alt="Background"
             />
@@ -54,10 +44,10 @@ defineProps({
 
         <!-- Contenu Principal -->
         <div class="relative z-10 w-full max-w-2xl px-6">
-            
+
             <!-- Carte avec effet de transparence (Glassmorphism) -->
             <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-10 shadow-2xl text-center">
-                
+
                 <!-- Logo ou Icône de l'application -->
                 <div class="mb-6 flex justify-center">
                     <div class="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/50">
@@ -70,9 +60,9 @@ defineProps({
                 <h1 class="text-4xl font-extrabold text-white tracking-tight mb-4">
                     Système de Gestion RH
                 </h1>
-                
+
                 <p class="text-gray-200 text-lg mb-10 leading-relaxed">
-                    Plateforme centralisée pour la gestion de vos collaborateurs, 
+                    Plateforme centralisée pour la gestion de vos collaborateurs,
                     suivi des performances et administration simplifiée.
                 </p>
 
@@ -80,7 +70,7 @@ defineProps({
                 <div v-if="canLogin" class="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
                         v-if="$page.props.auth.user"
-                        :href="route('dashboard')"
+                        :href="route('reporting.index')"
                         class="px-8 py-4 bg-white text-blue-900 font-bold rounded-xl hover:bg-gray-100 transition duration-300 shadow-xl"
                     >
                         Aller au Tableau de Bord
@@ -94,13 +84,13 @@ defineProps({
                             Connexion
                         </Link>
 
-                        <Link
+                        <!-- <Link
                             v-if="canRegister"
                             :href="route('register')"
                             class="px-8 py-4 bg-white/10 text-white font-bold border border-white/30 rounded-xl hover:bg-white/20 transition duration-300"
                         >
                             Créer un compte
-                        </Link>
+                        </Link> -->
                     </template>
                 </div>
             </div>
