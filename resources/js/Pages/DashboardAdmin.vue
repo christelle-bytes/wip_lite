@@ -34,6 +34,7 @@ const campaignsLineData = computed(() => {
     };
 });
 
+<<<<<<< HEAD
 // ── Graphe 2 : Évolution des employés par mois (Bar + Line superposés) ───────
 const employeesChartData = computed(() => {
     const items = props.charts?.employeesByMonth ?? [];
@@ -67,6 +68,17 @@ const employeesChartData = computed(() => {
             },
         ],
     };
+=======
+const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'ADMIN');
+
+onMounted(() => {
+    toast.add({
+        severity: 'success',
+        summary: 'Bienvenue',
+        detail: 'Connecté en tant qu\'Administrateur',
+        life: 3000,
+    });
+>>>>>>> 9781550fa90c83bb4fd7e25de8355e3cb638af32
 });
 
 const lineOptions = {

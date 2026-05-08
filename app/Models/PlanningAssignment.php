@@ -23,7 +23,7 @@ class PlanningAssignment extends Model
         return $this->belongsTo(PlanningModel::class);
     }
     public function employee() {
-        return $this->hasMany(Employee::class);
+        return $this->belongsTo(Employee::class);
     }
 
     public function logs()

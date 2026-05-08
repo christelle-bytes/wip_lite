@@ -14,7 +14,7 @@ class EmployeeSeeder extends Seeder
         // (Optionnel si ton PositionSeeder tourne déjà)
         $positions = Position::all();
         if ($positions->isEmpty()) {
-            $positions = Position::factory()->count(5)->create();
+            $positions = Position::factory()->count(4)->create();
         }
 
         // 2. Créer 50 employés aléatoires

@@ -28,7 +28,7 @@ use RecordsActivity;
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'user_id');
+        return $this->belongsTo(Employee::class, 'employee_id');
     }
 
     public function validator(): BelongsTo

@@ -35,7 +35,25 @@ class AuthenticatedSessionController extends Controller
 
         // Tous les rôles atterrissent sur /dashboard
         // Le DashboardController se charge de rediriger vers la bonne vue selon le rôle
-        return redirect()->intended(route('dashboard'));
+        // return redirect()->intended(route('dashboard'));
+        $user = Auth::user();
+        
+        // dd($user);
+
+        $roleName = $user->role->name ?? null;
+        // dd($roleName);
+
+        if ($roleName === 'Admin') {
+            $redirect = route('dashboard');
+        } elseif ($roleName === 'CP') {
+            $redirect = route('dashboard');
+        } elseif ($roleName === 'SUP') {
+            $redirect = route('dashboard');
+        } elseif ($roleName === 'TC') {
+            $redirect = route('dashboard');
+        }
+
+        return redirect()->route('dashboard');
     }
 
     /**

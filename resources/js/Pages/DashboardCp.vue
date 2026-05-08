@@ -30,6 +30,7 @@ const presenceData = computed(() => {
     };
 });
 
+<<<<<<< HEAD
 // ── Graphe 2 : Performance — heures réelles vs planifiées par employé ─────────
 const performanceData = computed(() => {
     const items = props.charts?.performanceByEmployee ?? [];
@@ -52,6 +53,17 @@ const performanceData = computed(() => {
             },
         ],
     };
+=======
+const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'CP');
+
+onMounted(() => {
+    toast.add({
+        severity: 'success',
+        summary: 'Bienvenue',
+        detail: 'Connecté en tant que Chef Plateau',
+        life: 3000,
+    });
+>>>>>>> 9781550fa90c83bb4fd7e25de8355e3cb638af32
 });
 
 // Options bar horizontal pour la présence

@@ -4,10 +4,12 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TimesheetController;
+use App\Http\Controllers\TimesheetEntryController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\ReportingController;
-
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -19,10 +21,42 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Route::get('/dashboard', [DashboardController::class, 'index'])
+//     ->middleware(['auth', 'verified'])
+//     ->name('dashboard');
+// use Illuminate\Support\Facades\Auth;
 
+
+Route::get('/dashboard', function () {
+    $user = Auth::user();
+    $role = $user?->role;
+    $roleName = $role ? strtoupper($role->name) : 'ADMIN';
+
+    return match ($roleName) {
+        'ADMIN' => Inertia::render('DashboardAdmin'),
+        'CP' => Inertia::render('DashboardCp'),
+        'SUP' => Inertia::render('DashboardSup'),
+        'TC' => Inertia::render('DashboardTc'),
+        default => Inertia::render('DashboardAdmin'),
+    };
+})->middleware(['auth'])->name('dashboard');
+
+Route::resource('/timesheet', TimesheetController::class);
+Route::resource('/timesheetEntry', TimesheetEntryController::class);
+// saisie heure sup
+Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->name('entry.sup');
+// vue recap saisie sup
+Route::get('/timesheetEntry_sup', [TimesheetEntryController::class, 'indexSup'])->name('index.sup');
+
+// vue recap saisie telecon
+Route::get('/timesheetEntry_telecon', [TimesheetEntryController::class, 'indexTelecon'])->name('index.telecon');
+// saisie heure telecon
+Route::get('/timesheetEntry_teleconEntry', [TimesheetEntryController::class, 'entryTelecon'])->name('entry.telecon');
+
+// store telecon
+Route::post('/timesheetEntry_teleconStore', [TimesheetEntryController::class, 'storeTelecon'])->name('store.telecon');
+// store sup
+Route::post('/timesheetEntry_supStore', [TimesheetEntryController::class, 'storeSup'])->name('store.sup');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -39,7 +73,11 @@ Route::middleware('auth')->group(function () {
 
 Route::resource('campaigns', CampaignController::class);
 
-Route::resource('assignments', AssignmentController::class);
+Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+Route::post('/assignments/cp', [AssignmentController::class, 'assignCP'])->name('assignments.assignCP');
+Route::post('/assignments/sup', [AssignmentController::class, 'assignSUP'])->name('assignments.assignSUP');
+Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name('assignments.assignTC');
+Route::patch('/assignments/{assignment}/release', [AssignmentController::class, 'release'])->name('assignments.release');
 
 
 Route::get('/statistiques', [ReportingController::class, 'index'])->name('reporting.index');
