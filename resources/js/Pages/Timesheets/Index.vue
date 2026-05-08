@@ -67,6 +67,14 @@ const getStatusSeverity = (status) => {
     return "secondary";
 };
 
+const progressBar = (joursSaisis, totalJours) => {
+    if (!totalJours || totalJours <= 0) return 0;
+    if (!joursSaisis || joursSaisis <= 0) return 0;
+
+    const percentage = Math.min(Math.round((joursSaisis / totalJours) * 100), 100);
+    return percentage;
+};
+
 // --- Filtres ---
 const initFilters = () => {
     filters.value = {
@@ -79,7 +87,6 @@ const initFilters = () => {
 };
 
 onMounted(() => {
-    console.log(props.timesheets);
     initFilters();
 });
 
@@ -120,7 +127,9 @@ const validation = (id) => {
 
         <div class="space-y-6">
             <!-- Carte principale -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div
+                class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+            >
                 <DataTable
                     v-if="filters"
                     v-model:filters="filters"
@@ -141,7 +150,9 @@ const validation = (id) => {
                 >
                     <!-- Toolbar -->
                     <template #header>
-                        <div class="flex flex-wrap justify-between items-center gap-4 p-5 border-b border-slate-100 bg-slate-50">
+                        <div
+                            class="flex flex-wrap justify-between items-center gap-4 p-5 border-b border-slate-100 bg-slate-50"
+                        >
                             <div class="flex items-center gap-3">
                                 <Button
                                     label="Nouvelle feuille"
@@ -160,8 +171,13 @@ const validation = (id) => {
                                 />
                             </div>
 
-                            <IconField iconPosition="left" class="w-full max-w-md">
-                                <InputIcon class="pi pi-search text-slate-400" />
+                            <IconField
+                                iconPosition="left"
+                                class="w-full max-w-md"
+                            >
+                                <InputIcon
+                                    class="pi pi-search text-slate-400"
+                                />
                                 <InputText
                                     v-model="filters['global'].value"
                                     placeholder="Rechercher un collaborateur..."
@@ -173,8 +189,12 @@ const validation = (id) => {
 
                     <template #empty>
                         <div class="py-16 text-center text-slate-500">
-                            <i class="pi pi-folder-open text-5xl mb-4 text-slate-300 block"></i>
-                            <p class="text-lg">Aucune feuille de temps trouvée</p>
+                            <i
+                                class="pi pi-folder-open text-5xl mb-4 text-slate-300 block"
+                            ></i>
+                            <p class="text-lg">
+                                Aucune feuille de temps trouvée
+                            </p>
                         </div>
                     </template>
 
@@ -187,14 +207,20 @@ const validation = (id) => {
                     >
                         <template #body="{ data }">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-slate-100 text-slate-700 flex items-center justify-center font-semibold text-sm border border-slate-200 shadow-sm">
-                                    {{ data.employee.first_name[0] }}{{ data.employee.last_name[0] }}
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-slate-100 text-slate-700 flex items-center justify-center font-semibold text-sm border border-slate-200 shadow-sm"
+                                >
+                                    {{ data.employee.first_name[0]
+                                    }}{{ data.employee.last_name[0] }}
                                 </div>
                                 <div>
                                     <p class="font-semibold text-slate-800">
-                                        {{ data.employee.first_name }} {{ data.employee.last_name }}
+                                        {{ data.employee.first_name }}
+                                        {{ data.employee.last_name }}
                                     </p>
-                                    <p class="text-xs text-slate-500">Superviseur</p>
+                                    <p class="text-xs text-slate-500">
+                                        Superviseur
+                                    </p>
                                 </div>
                             </div>
                         </template>
@@ -203,9 +229,13 @@ const validation = (id) => {
                     <!-- Période -->
                     <Column header="Période" style="min-width: 15rem">
                         <template #body="{ data }">
-                            <div class="flex items-center text-slate-600 font-medium">
+                            <div
+                                class="flex items-center text-slate-600 font-medium"
+                            >
                                 <span>{{ formatDate(data.period_start) }}</span>
-                                <i class="pi pi-arrow-right mx-3 text-slate-300"></i>
+                                <i
+                                    class="pi pi-arrow-right mx-3 text-slate-300"
+                                ></i>
                                 <span>{{ formatDate(data.period_end) }}</span>
                             </div>
                         </template>
@@ -225,17 +255,33 @@ const validation = (id) => {
                                         class="pi pi-clock text-amber-500 text-lg"
                                     ></i>
                                     <span
-                                        :class="data.stats?.is_complete ? 'text-emerald-700 font-semibold' : 'text-slate-700'"
+                                    class="text-lg"
+                                        :class="
+                                            data.stats?.is_complete
+                                                ? 'text-emerald-700 font-semibold'
+                                                : 'text-slate-700'
+                                        "
                                     >
-                                        {{ data.stats?.jours_saisis }} / {{ data.stats?.total_jours }} jours
+                                        {{ data.stats?.jours_saisis }} /
+                                        {{ data.stats?.total_jours }} jours
                                     </span>
                                 </div>
 
-                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div
+                                    class="w-full bg-slate-100 rounded-full h-2 overflow-hidden"
+                                >
                                     <div
                                         class="h-full rounded-full transition-all duration-300"
-                                        :class="data.stats?.is_complete ? 'bg-emerald-500' : 'bg-amber-400'"
-                                        :style="{ width: data.stats?.is_complete ? '100%' : '65%' }"
+                                        :class="
+                                            data.stats?.is_complete
+                                                ? 'bg-emerald-500'
+                                                : 'bg-amber-400'
+                                        "
+                                        :style="{
+                                            width: data.stats?.is_complete
+                                                ? '100%'
+                                                : `${progressBar(data.stats?.jours_saisis, data.stats?.total_jours)}%`,
+                                        }"
                                     ></div>
                                 </div>
                             </div>
@@ -243,7 +289,12 @@ const validation = (id) => {
                     </Column>
 
                     <!-- Statut -->
-                    <Column field="status" header="Statut" sortable style="min-width: 10rem">
+                    <Column
+                        field="status"
+                        header="Statut"
+                        sortable
+                        style="min-width: 10rem"
+                    >
                         <template #body="{ data }">
                             <Tag
                                 :value="data.status"
@@ -256,11 +307,15 @@ const validation = (id) => {
                     <!-- Validation -->
                     <Column header="Validation" style="min-width: 15rem">
                         <template #body="{ data }">
-                            <div v-if="data.validated_by" class="flex items-center gap-3 text-emerald-700">
+                            <div
+                                v-if="data.validated_by"
+                                class="flex items-center gap-3 text-emerald-700"
+                            >
                                 <i class="pi pi-check-circle text-xl"></i>
                                 <div>
                                     <p class="font-medium text-sm">
-                                        {{ data.validator?.first_name }} {{ data.validator?.last_name }}
+                                        {{ data.validator?.first_name }}
+                                        {{ data.validator?.last_name }}
                                     </p>
                                     <p class="text-xs text-emerald-600/75">
                                         {{ formatDate(data.validated_at) }}
@@ -274,11 +329,19 @@ const validation = (id) => {
                     </Column>
 
                     <!-- Actions -->
-                    <Column :exportable="false" style="min-width: 9rem" alignFrozen="right" frozen>
+                    <Column
+                        :exportable="false"
+                        style="min-width: 9rem"
+                        alignFrozen="right"
+                        frozen
+                    >
                         <template #body="{ data }">
                             <div class="flex justify-end gap-2">
                                 <Button
-                                    v-if="!data.validated_by && data.status == 'submitted'"
+                                    v-if="
+                                        !data.validated_by &&
+                                        data.status == 'submitted'
+                                    "
                                     icon="pi pi-shield"
                                     label="Approuver"
                                     size="small"
@@ -287,7 +350,10 @@ const validation = (id) => {
                                     @click="validation(data.id)"
                                 />
                                 <Button
-                                    v-else-if="!data.validated_by && data.status == 'draft'"
+                                    v-else-if="
+                                        !data.validated_by &&
+                                        data.status == 'draft'
+                                    "
                                     icon="pi pi-clock"
                                     label="Brouillon"
                                     size="small"
@@ -319,7 +385,9 @@ const validation = (id) => {
         >
             <div class="space-y-6 py-4">
                 <div class="flex flex-col gap-2">
-                    <label class="font-semibold text-slate-700">Collaborateurs concernés</label>
+                    <label class="font-semibold text-slate-700"
+                        >Collaborateurs concernés</label
+                    >
                     <MultiSelect
                         v-model="form.employee_id"
                         :options="formattedSup"
@@ -334,7 +402,9 @@ const validation = (id) => {
 
                 <div class="grid grid-cols-2 gap-5">
                     <div class="flex flex-col gap-2">
-                        <label class="font-semibold text-slate-700">Date de début</label>
+                        <label class="font-semibold text-slate-700"
+                            >Date de début</label
+                        >
                         <DatePicker
                             v-model="form.period_start"
                             showIcon
@@ -344,7 +414,9 @@ const validation = (id) => {
                         />
                     </div>
                     <div class="flex flex-col gap-2">
-                        <label class="font-semibold text-slate-700">Date de fin</label>
+                        <label class="font-semibold text-slate-700"
+                            >Date de fin</label
+                        >
                         <DatePicker
                             v-model="form.period_end"
                             showIcon

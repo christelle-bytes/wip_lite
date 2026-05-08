@@ -87,7 +87,9 @@ class TimesheetEntryController extends Controller
             ->whereHas('position', function ($query) {
                 $query->where('code', 'SUP');
             })
-            ->whereHas('timesheet')
+            ->whereHas('timesheet', function ($query) {
+                $query->where('status', '!=', 'validated');
+            })
             ->where('status', 'actif')
             ->get();
 
