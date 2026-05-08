@@ -81,7 +81,7 @@ watch(
 
                 </template>
                 <template v-else-if="user?.role?.name === 'CP'">
-                    <Link href="#" class="block p-2 hover:bg-slate-800 rounded"
+                    <Link href="/gestion-employees" class="block p-2 hover:bg-slate-800 rounded"
                         >Employés</Link
                     >
                     <Link :href="route('campaigns.index')" class="block p-2 hover:bg-slate-800 rounded"
