@@ -38,8 +38,15 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (form.date) {
+        // Force une string sans fuseau
+        const year = form.date.getFullYear();
+        const month = String(form.date.getMonth() + 1).padStart(2, '0');
+        const day = String(form.date.getDate()).padStart(2, '0');
+        
+        form.date = `${year}-${month}-${day}`; 
+    }
     form.employee_ids = selectedSuperior.value.map((sup) => sup.id);
-    console.log(selectedSuperior.value);
     form.post(route("store.sup"));
     visible.value = false;
 };
@@ -78,7 +85,7 @@ const initFilters = () => {
 initFilters();
 
 onMounted(() => {
-    console.log(props.superior);
+    
     initFilters();
 });
 

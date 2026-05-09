@@ -21,7 +21,7 @@ onMounted(() => {
     toast.add({
         severity: 'success',
         summary: 'Bienvenue',
-        detail: 'Connecté en tant que Technicien',
+        detail: 'Connecté en tant que Teleconseiller',
         life: 3000,
     });
 });
@@ -29,11 +29,11 @@ onMounted(() => {
 
 <template>
     <Toast />
-    <Head title="Dashboard Technicien" />
+    <Head title="Dashboard Teleconseiller" />
     <AuthenticatedLayout>
         <template #header>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Dashboard Technicien
+                Dashboard Teleconseiller
             </h2>
         </template>
 
@@ -42,12 +42,12 @@ onMounted(() => {
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         <div class="mb-3">
-                            Vous êtes connecté en tant que Technicien (rôle attendu: <span class="font-mono">TC</span>).
+                            Vous êtes connecté en tant que Teleconseiller (rôle attendu: <span class="font-mono">TC</span>).
                         </div>
 
                         <div>
                             <div class="space-y-4">
-                                <p>Vous êtes sur le dashboard <span class="font-semibold">Technicien</span>.</p>
+                                <p>Vous êtes sur le dashboard <span class="font-semibold">Teleconseiller</span>.</p>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <div class="bg-blue-50 p-4 rounded-lg">

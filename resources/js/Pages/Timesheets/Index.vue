@@ -41,6 +41,22 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (form.period_start) {
+        // Force une string sans fuseau
+        const year = form.period_start.getFullYear();
+        const month = String(form.period_start.getMonth() + 1).padStart(2, '0');
+        const day = String(form.period_start.getDate()).padStart(2, '0');
+        
+        form.period_start = `${year}-${month}-${day}`; 
+    }
+    if (form.period_end) {
+        // Force une string sans fuseau
+        const year = form.period_end.getFullYear();
+        const month = String(form.period_end.getMonth() + 1).padStart(2, '0');
+        const day = String(form.period_end.getDate()).padStart(2, '0');
+        
+        form.period_end = `${year}-${month}-${day}`; 
+    }
     form.post(route("timesheet.store"), {
         onSuccess: () => {
             visible.value = false;
