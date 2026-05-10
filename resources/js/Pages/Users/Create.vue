@@ -16,34 +16,26 @@
           <div class="p-6">
             <form @submit.prevent="submit" class="space-y-6">
               <div>
-                <InputLabel for="name" value="Nom" />
-                <TextInput id="name" v-model="form.name" type="text" class="mt-1 block w-full" required autofocus />
-                <InputError :message="form.errors.name" class="mt-2" />
+                <InputLabel for="employee_id" value="Sélectionner un employé" />
+                <select id="employee_id" v-model="form.employee_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required autofocus>
+                  <option value="">Sélectionner un employé...</option>
+                  <option v-for="emp in props.employees" :key="emp.id" :value="emp.id">
+                    {{ emp.first_name }} {{ emp.last_name }} (#{{ emp.matricule }}) - {{ emp.email }}
+                  </option>
+                </select>
+                <InputError :message="form.errors.employee_id" class="mt-2" />
+                <p v-if="selectedEmployeeEmail" class="mt-2 text-[11px] text-teal-600 font-bold">
+                  <i class="pi pi-envelope mr-1"></i>
+                  L'email du compte sera : {{ selectedEmployeeEmail }}
+                </p>
               </div>
 
               <div>
-                <InputLabel for="email" value="Email" />
-                <TextInput id="email" v-model="form.email" type="email" class="mt-1 block w-full" required />
-                <InputError :message="form.errors.email" class="mt-2" />
-              </div>
-
-              <div>
-                <InputLabel for="password" value="Mot de passe" />
-                <TextInput id="password" v-model="form.password" type="password" class="mt-1 block w-full" required />
-                <InputError :message="form.errors.password" class="mt-2" />
-              </div>
-
-              <div>
-                <InputLabel for="password_confirmation" value="Confirmer mot de passe" />
-                <TextInput id="password_confirmation" v-model="form.password_confirmation" type="password" class="mt-1 block w-full" required />
-              </div>
-
-              <div>
-                <InputLabel for="role_id" value="Rôle" />
+                <InputLabel for="role_id" value="Rôle d'accès" />
                 <select id="role_id" v-model="form.role_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
-                  <option value="">Sélectionner un rôle</option>
-                  <option v-for="role in props.roles" :key="role.id" :value="role.id">
-                    {{ role.name.toUpperCase() }}
+                  <option value="">Sélectionner un rôle...</option>
+                  <option v-for="(name, id) in props.roles" :key="id" :value="id">
+                    {{ name.toUpperCase() }}
                   </option>
                 </select>
                 <InputError :message="form.errors.role_id" class="mt-2" />
@@ -51,7 +43,7 @@
 
               <div class="flex items-center gap-4">
                 <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                  Créer
+                  Créer l'utilisateur
                 </PrimaryButton>
 
                 <Transition 
@@ -63,6 +55,14 @@
                     Créé avec succès !
                   </p>
                 </Transition>
+              </div>
+              
+              <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <p class="text-xs text-slate-500 font-medium">
+                  <i class="pi pi-info-circle mr-1"></i>
+                  Le mot de passe par défaut est <span class="font-bold text-slate-900">Welcome123!</span>. 
+                  L'utilisateur devra le modifier lors de sa première connexion.
+                </p>
               </div>
             </form>
 
@@ -77,6 +77,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
@@ -85,15 +86,18 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
 const props = defineProps({
-  roles: Array,
+  roles: Object,
+  employees: Array,
 });
 
 const form = useForm({
-  name: '',
-  email: '',
-  password: '',
-  password_confirmation: '',
+  employee_id: '',
   role_id: '',
+});
+
+const selectedEmployeeEmail = computed(() => {
+  const emp = props.employees.find(e => e.id === form.employee_id);
+  return emp ? emp.email : null;
 });
 
 const submit = () => {

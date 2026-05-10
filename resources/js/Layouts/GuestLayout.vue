@@ -1,6 +1,52 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { useToast } from "primevue/usetoast";
+import Toast from "primevue/toast";
+import { computed, watch } from 'vue';
+
+const page = usePage();
+const toast = useToast();
+const flash = computed(() => page.props.flash);
+
+watch(
+    flash,
+    (newFlash) => {
+        if (newFlash && newFlash.success) {
+            toast.add({
+                severity: "success",
+                summary: "Succès",
+                detail: newFlash.success,
+                life: 3000,
+            });
+        }
+        if (newFlash && newFlash.error) {
+            toast.add({
+                severity: "error",
+                summary: "Erreur",
+                detail: newFlash.error,
+                life: 5000,
+            });
+        }
+        if (newFlash && newFlash.info) {
+            toast.add({
+                severity: "info",
+                summary: "Information",
+                detail: newFlash.info,
+                life: 3000,
+            });
+        }
+        if (newFlash && newFlash.warning) {
+            toast.add({
+                severity: "warn",
+                summary: "Attention",
+                detail: newFlash.warning,
+                life: 4000,
+            });
+        }
+    },
+    { deep: true },
+);
 </script>
 
 <template>
@@ -18,5 +64,6 @@ import { Link } from '@inertiajs/vue3';
         >
             <slot />
         </div>
+        <Toast />
     </div>
 </template>

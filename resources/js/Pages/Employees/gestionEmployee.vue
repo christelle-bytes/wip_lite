@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
+import { router } from '@inertiajs/vue3';
 import Toast from 'primevue/toast';
 import Toolbar from 'primevue/toolbar';
 import DataTable from 'primevue/datatable';
@@ -67,6 +68,15 @@ const loadData = async () => {
 };
 
 onMounted(loadData);
+
+const uniquePositions = computed(() => {
+  const seen = new Set();
+  return positions.value.filter(pos => {
+    const duplicate = seen.has(pos.name);
+    seen.add(pos.name);
+    return !duplicate;
+  });
+});
 
 const filteredEmployees = computed(() => {
   return employees.value.filter((emp) => {
@@ -291,7 +301,7 @@ const getStatusText = (status) => {
                             <button @click="setRole('all')" 
                                 :class="[selectedRole === 'all' ? 'bg-white text-slate-900 shadow-sm border-slate-200' : 'text-slate-400 hover:text-slate-600 border-transparent']"
                                 class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all">Tous les rôles</button>
-                            <button v-for="pos in positions" :key="pos.id" @click="setRole(pos.id)"
+                            <button v-for="pos in uniquePositions" :key="pos.id" @click="setRole(pos.id)"
                                 :class="[selectedRole === pos.id ? 'bg-white text-teal-600 shadow-sm border-teal-100' : 'text-slate-400 hover:text-slate-600 border-transparent']"
                                 class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all">{{ pos.name }}</button>
                         </div>
@@ -367,8 +377,8 @@ const getStatusText = (status) => {
                     </Column>
                     <Column header="Actions" class="text-right">
                         <template #body="{ data }">
-                            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button icon="pi pi-eye" class="p-button-text p-button-secondary p-button-sm rounded-lg" @click="viewEmployeeDetails(data)" />
+                            <div class="flex items-center justify-end gap-1 transition-opacity">
+                                <Button icon="pi pi-eye" class="p-button-text p-button-secondary p-button-sm rounded-lg" @click="router.visit(route('employees.show', data.id))" />
                                 <Button icon="pi pi-pencil" class="p-button-text p-button-secondary p-button-sm rounded-lg hover:text-teal-600" @click="editEmployee(data)" />
                                 <Button v-if="data.status === 'actif'" icon="pi pi-user-minus" class="p-button-text p-button-danger p-button-sm rounded-lg" @click="confirmDeactivate(data)" />
                             </div>

@@ -19,8 +19,8 @@ class EmployeeFactory extends Factory
     public function definition(): array
     {
         return [
-            // Lie à un utilisateur ou en crée un
-            'user_id'     => User::inRandomOrder()->first()->id,
+            // On ne lie plus à un utilisateur par défaut pour éviter les incohérences
+            'user_id'     => null,
 
             // Génère un matricule unique type EMP-00123
             'matricule'   => 'EMP-' . $this->faker->unique()->numberBetween(1000, 9999),
