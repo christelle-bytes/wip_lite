@@ -23,7 +23,11 @@ class AssignmentController extends Controller
 
         // ── ADMIN : tout voir, tout faire ─────────────────────────────────────
         if ($user->isAdmin()) {
-            $activeCampaigns = Campaign::where('status', 'active')->get();
+            // Uniquement les campagnes qui n'ont pas encore de CP assigné
+            $activeCampaigns = Campaign::where('status', 'active')
+                ->whereDoesntHave('assignments', function($q) use ($cpPosition) {
+                    $q->where('position_id', $cpPosition->id)->where('status', 'actif');
+                })->get();
 
             $unassignedCPs = Employee::where('position_id', $cpPosition->id)
                 ->where('status', 'actif')
@@ -276,13 +280,16 @@ class AssignmentController extends Controller
                     'campaign_ids' => "La campagne « {$campaign->name} » n'est pas active."
                 ]);
             }
-            $exists = Assignment::where('employee_id', $data['employee_id'])
-                ->where('campaign_id', $campaign->id)
+            
+            // RÈGLE : Un seul CP par campagne
+            $existingCP = Assignment::where('campaign_id', $campaign->id)
+                ->where('position_id', $cpPosition->id)
                 ->where('status', 'actif')
-                ->exists();
-            if ($exists) {
+                ->first();
+
+            if ($existingCP) {
                 return back()->withErrors([
-                    'employee_id' => "Ce CP est déjà affecté à la campagne « {$campaign->name} »."
+                    'campaign_ids' => "La campagne « {$campaign->name} » a déjà un Chef de Plateau assigné ({$existingCP->employee->first_name} {$existingCP->employee->last_name})."
                 ]);
             }
         }

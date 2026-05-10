@@ -1,17 +1,45 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, usePage } from '@inertiajs/vue3';
+import { computed, onMounted } from 'vue';
 import { Line, Bar } from 'vue-chartjs';
 import {
     Chart as ChartJS, Title, Tooltip, Legend,
     LineElement, PointElement, BarElement,
     CategoryScale, LinearScale, Filler
 } from 'chart.js';
+import { useToast } from 'primevue/usetoast';
+import Button from 'primevue/button';
+import Toast from 'primevue/toast';
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, BarElement, CategoryScale, LinearScale, Filler);
 
-const props = defineProps({ stats: Object, charts: Object });
+const props = defineProps({
+    stats: {
+        type: Object,
+        default: () => ({
+            totalEmployees: 0,
+            activeCampaigns: 0,
+            totalUsers: 0,
+            totalAssignments: 0,
+            totalHours: 0,
+            gap: 0
+        })
+    },
+    charts: {
+        type: Object,
+        default: () => ({
+            campaignsByMonth: [],
+            employeesByMonth: []
+        })
+    }
+});
+
+const page = usePage();
+const toast = useToast();
+
+const userRole = computed(() => page.props?.auth?.user?.role);
+const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'ADMIN');
 
 // ── Graphe 1 : Campagnes créées par mois (Line) ──────────────────────────────
 const campaignsLineData = computed(() => {
@@ -21,24 +49,21 @@ const campaignsLineData = computed(() => {
         datasets: [{
             label: 'Campagnes créées',
             data: items.map(i => i.total),
-            borderColor: '#6366F1',
-            backgroundColor: 'rgba(99,102,241,0.15)',
-            pointBackgroundColor: '#6366F1',
+            borderColor: '#0d9488', // teal-600
+            backgroundColor: 'rgba(13,148,136,0.1)',
+            pointBackgroundColor: '#0d9488',
             pointBorderColor: '#fff',
             pointBorderWidth: 2,
-            pointRadius: 6,
-            pointHoverRadius: 9,
-            fill: true,
+            pointRadius: 4,
             tension: 0.4,
+            fill: true
         }],
     };
 });
 
-
 // ── Graphe 2 : Évolution des employés par mois (Bar + Line superposés) ───────
 const employeesChartData = computed(() => {
     const items = props.charts?.employeesByMonth ?? [];
-    // Calcul du cumulatif pour montrer l'évolution totale
     let cumul = 0;
     const cumulData = items.map(i => { cumul += i.total; return cumul; });
     return {
@@ -48,37 +73,36 @@ const employeesChartData = computed(() => {
                 type: 'bar',
                 label: 'Nouveaux employés',
                 data: items.map(i => i.total),
-                backgroundColor: 'rgba(34,211,238,0.7)',
-                borderRadius: 6,
-                borderSkipped: false,
+                backgroundColor: 'rgba(20,184,166,0.7)', // teal-500
+                borderRadius: 4,
                 yAxisID: 'y',
             },
             {
                 type: 'line',
                 label: 'Total cumulé',
                 data: cumulData,
-                borderColor: '#F59E0B',
+                borderColor: '#0f172a', // slate-900
                 backgroundColor: 'transparent',
-                pointBackgroundColor: '#F59E0B',
+                pointBackgroundColor: '#0f172a',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointRadius: 5,
+                pointRadius: 4,
                 tension: 0.4,
                 yAxisID: 'y2',
             },
         ],
     };
 });
-const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'ADMIN');
 
 onMounted(() => {
-    toast.add({
-        severity: 'success',
-        summary: 'Bienvenue',
-        detail: 'Connecté en tant qu\'Administrateur',
-        life: 3000,
-    });
-
+    if (isAuthorized.value) {
+        toast.add({
+            severity: 'success',
+            summary: 'Bienvenue',
+            detail: 'Connecté en tant qu\'Administrateur',
+            life: 3000,
+        });
+    }
 });
 
 const lineOptions = {
@@ -124,61 +148,86 @@ const mixedOptions = {
 </script>
 
 <template>
+    <Toast />
     <Head title="Dashboard Admin" />
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Tableau de bord — Admin</h2>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Tableau de bord</h2>
+                    <p class="text-sm text-slate-400 font-medium">Bienvenue, Administrateur</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <Button icon="pi pi-download" label="Exporter" class="p-button-outlined p-button-secondary p-button-sm rounded-lg" />
+                    <Button icon="pi pi-plus" label="Nouvel Employé" class="p-button-teal p-button-sm rounded-lg shadow-lg shadow-teal-600/20" />
+                </div>
+            </div>
         </template>
 
-        <div class="py-6 space-y-6 px-4 sm:px-6 lg:px-8">
-
+        <div class="py-6 space-y-8">
             <!-- KPI Cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-5 text-white shadow-lg">
-                    <p class="text-xs uppercase font-semibold opacity-80">Employés</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.totalEmployees }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:scale-110 transition-transform">
+                        <i class="pi pi-users text-4xl text-slate-900"></i>
+                    </div>
+                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Employés</p>
+                    <p class="text-3xl font-black text-slate-800">{{ stats.totalEmployees }}</p>
                 </div>
-                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white shadow-lg">
-                    <p class="text-xs uppercase font-semibold opacity-80">Campagnes actives</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.activeCampaigns }}</p>
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:scale-110 transition-transform">
+                        <i class="pi pi-flag text-4xl text-teal-600"></i>
+                    </div>
+                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Campagnes actives</p>
+                    <p class="text-3xl font-black text-teal-600">{{ stats.activeCampaigns }}</p>
                 </div>
-                <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-5 text-white shadow-lg">
-                    <p class="text-xs uppercase font-semibold opacity-80">Utilisateurs</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.totalUsers }}</p>
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:scale-110 transition-transform">
+                        <i class="pi pi-user text-4xl text-slate-900"></i>
+                    </div>
+                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Utilisateurs</p>
+                    <p class="text-3xl font-black text-slate-800">{{ stats.totalUsers }}</p>
                 </div>
-                <div class="bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl p-5 text-white shadow-lg">
-                    <p class="text-xs uppercase font-semibold opacity-80">Affectations</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.totalAssignments }}</p>
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:scale-110 transition-transform">
+                        <i class="pi pi-link text-4xl text-slate-900"></i>
+                    </div>
+                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Affectations</p>
+                    <p class="text-3xl font-black text-slate-800">{{ stats.totalAssignments }}</p>
                 </div>
-                <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-5 text-white shadow-lg">
-                    <p class="text-xs uppercase font-semibold opacity-80">Heures réelles</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.totalHours }}h</p>
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:scale-110 transition-transform">
+                        <i class="pi pi-clock text-4xl text-teal-600"></i>
+                    </div>
+                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Heures réelles</p>
+                    <p class="text-3xl font-black text-teal-600">{{ stats.totalHours }}h</p>
                 </div>
-                <div :class="`rounded-xl p-5 text-white shadow-lg bg-gradient-to-br ${stats.gap < 0 ? 'from-red-500 to-red-600' : 'from-green-500 to-green-600'}`">
-                    <p class="text-xs uppercase font-semibold opacity-80">Écart planning</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.gap > 0 ? '+' : '' }}{{ stats.gap }}%</p>
+                <div :class="[stats.gap < 0 ? 'bg-rose-50 border-rose-100' : 'bg-teal-50 border-teal-100']" 
+                    class="rounded-2xl p-6 shadow-sm border flex flex-col gap-1 relative overflow-hidden group">
+                    <p class="text-[10px] uppercase font-bold tracking-widest" :class="[stats.gap < 0 ? 'text-rose-400' : 'text-teal-500']">Écart planning</p>
+                    <p class="text-3xl font-black" :class="[stats.gap < 0 ? 'text-rose-600' : 'text-teal-700']">{{ stats.gap > 0 ? '+' : '' }}{{ stats.gap }}%</p>
                 </div>
             </div>
 
             <!-- Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="mb-5">
-                        <h3 class="text-base font-bold text-gray-800">Campagnes par mois</h3>
-                        <p class="text-xs text-gray-400 mt-0.5">Nombre de campagnes créées sur les 12 derniers mois</p>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col">
+                    <div class="mb-8">
+                        <h3 class="text-lg font-black text-slate-800">Campagnes par mois</h3>
+                        <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-bold">Volume de création sur 12 mois</p>
                     </div>
-                    <div class="h-72">
+                    <div class="h-80 w-full">
                         <Line :data="campaignsLineData" :options="lineOptions" />
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="mb-5">
-                        <h3 class="text-base font-bold text-gray-800">Évolution des employés</h3>
-                        <p class="text-xs text-gray-400 mt-0.5">Nouveaux employés par mois + total cumulé</p>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col">
+                    <div class="mb-8">
+                        <h3 class="text-lg font-black text-slate-800">Évolution des effectifs</h3>
+                        <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-bold">Nouveaux arrivants vs Total cumulé</p>
                     </div>
-                    <div class="h-72">
+                    <div class="h-80 w-full">
                         <Bar :data="employeesChartData" :options="mixedOptions" />
                     </div>
                 </div>

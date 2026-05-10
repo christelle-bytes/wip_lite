@@ -7,4 +7,58 @@
 @layer tailwind-utilities {
     @tailwind components;
     @tailwind utilities;
+
+    /* PrimeVue Global Overrides for Slate & Teal Theme */
+    .p-datatable.p-datatable-custom .p-datatable-thead > tr > th {
+        @apply bg-slate-50 text-slate-500 font-black uppercase tracking-widest text-[10px] py-4 px-6 border-b border-slate-100;
+    }
+
+    .p-datatable.p-datatable-custom .p-datatable-tbody > tr {
+        @apply transition-colors duration-200;
+    }
+
+    .p-datatable.p-datatable-custom .p-datatable-tbody > tr > td {
+        @apply py-4 px-6 border-b border-slate-50 text-sm text-slate-600;
+    }
+
+    .p-inputtext:focus, .p-dropdown:not(.p-disabled).p-focus {
+        @apply ring-2 ring-teal-500/20 border-teal-500 !important;
+    }
+
+    .p-button.p-button-teal {
+        @apply bg-teal-600 border-teal-600 text-white hover:bg-teal-700 hover:border-teal-700 !important;
+    }
+
+    .p-badge-success {
+        @apply bg-teal-100 text-teal-700 font-black !important;
+    }
+
+    .p-badge-secondary {
+        @apply bg-slate-100 text-slate-600 font-black !important;
+    }
+
+    /* TabView Customization */
+    .custom-tabview .p-tabview-nav {
+        @apply bg-transparent border-b border-slate-100 !important;
+    }
+
+    .custom-tabview .p-tabview-nav li .p-tabview-nav-link {
+        @apply bg-transparent border-transparent text-slate-400 font-bold py-4 transition-all !important;
+    }
+
+    .custom-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+        @apply border-teal-500 text-teal-600 !important;
+    }
+
+    .p-dialog .p-dialog-header {
+        @apply bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100 !important;
+    }
+
+    .p-dialog .p-dialog-content {
+        @apply p-8 !important;
+    }
+
+    .p-dialog .p-dialog-footer {
+        @apply bg-slate-50 p-6 rounded-b-3xl border-t border-slate-100 !important;
+    }
 }

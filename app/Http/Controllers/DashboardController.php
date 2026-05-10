@@ -11,10 +11,10 @@ class DashboardController extends Controller
     public function index()
     {
         $user     = Auth::user();
-        $roleName = $user?->role?->name;
+        $roleName = strtoupper($user?->role?->name ?? '');
 
         return match ($roleName) {
-            'Admin' => $this->adminDashboard(),
+            'ADMIN' => $this->adminDashboard(),
             'CP'    => $this->cpDashboard(),
             'SUP'   => $this->supDashboard(),
             'TC'    => $this->tcDashboard(),

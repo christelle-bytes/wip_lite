@@ -48,11 +48,11 @@ const statusOptions = [
 const getStatusClass = (status) => {
     switch (status) {
         case "active":
-            return "bg-emerald-100 text-emerald-700";
+            return "bg-teal-100 text-teal-700";
         case "inactive":
             return "bg-slate-100 text-slate-700";
         case "terminée":
-            return "bg-sky-100 text-sky-700";
+            return "bg-slate-200 text-slate-800";
         default:
             return "bg-slate-100 text-slate-700";
     }
@@ -116,43 +116,41 @@ const confirmDeactivate = () => {
 <template>
     <Head title="Campagnes" />
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-slate-50 p-8">
-            <div
-                class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
-            >
+        <div class="py-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
-                    <h1 class="text-3xl font-bold text-slate-900">Campagnes</h1>
-                    <p class="mt-2 text-slate-500">
-                        Gestion des campagnes et suivi des ressources affectées.
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Campagnes</h1>
+                    <p class="mt-1 text-sm text-slate-500 font-medium">
+                        Pilotez vos opérations et suivez l'affectation de vos ressources.
                     </p>
                 </div>
                 <Button
                     v-if="isAdmin"
                     @click="openCreateDialog"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-sm"
+                    class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-teal-600/20 border-none font-bold transition-all"
                 >
-                    <span class="mr-2 text-xl">+</span> Créer une campagne
+                    <i class="pi pi-plus mr-2"></i> Nouvelle campagne
                 </Button>
             </div>
 
-            <div class="grid gap-6 xl:grid-cols-3 lg:grid-cols-2">
+            <div class="grid gap-8 xl:grid-cols-3 lg:grid-cols-2">
                 <div
                     v-for="campaign in campaigns"
                     :key="campaign.id"
-                    class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm"
+                    class="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group"
                 >
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-semibold text-slate-900">
+                    <div class="flex items-start justify-between gap-4 mb-6">
+                        <div class="flex-1">
+                            <h2 class="text-xl font-black text-slate-800 group-hover:text-teal-600 transition-colors">
                                 {{ campaign.name }}
                             </h2>
-                            <p class="mt-2 text-sm leading-6 text-slate-500">
+                            <p class="mt-2 text-xs leading-relaxed text-slate-400 font-medium line-clamp-2">
                                 {{ campaign.description }}
                             </p>
                         </div>
                         <span
                             :class="[
-                                'rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide',
+                                'rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-widest',
                                 getStatusClass(campaign.status),
                             ]"
                         >
@@ -160,62 +158,49 @@ const confirmDeactivate = () => {
                         </span>
                     </div>
 
-                    <div class="mt-6 text-sm text-slate-500 space-y-2">
-                        <div class="flex items-center gap-2">
-                            <i class="pi pi-calendar text-slate-400"></i>
-                            {{ formatDate(campaign.start_date) }} -
+                    <div class="flex items-center gap-4 py-4 border-y border-slate-50 mb-6">
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
+                            <i class="pi pi-calendar text-teal-500"></i>
+                            {{ formatDate(campaign.start_date) }}
+                        </div>
+                        <i class="pi pi-arrow-right text-[10px] text-slate-300"></i>
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
                             {{ formatDate(campaign.end_date) }}
                         </div>
                     </div>
 
-                    <div
-                        class="mt-6 grid grid-cols-3 gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600"
-                    >
-                        <div
-                            class="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2"
-                        >
-                            <span
-                                class="h-2 w-2 rounded-full bg-slate-900"
-                            ></span>
-                            {{ campaign.cp_count }} CP
+                    <div class="grid grid-cols-3 gap-3 mb-8">
+                        <div class="flex flex-col items-center justify-center rounded-2xl bg-slate-50 py-3 px-2 border border-slate-100">
+                            <span class="text-lg font-black text-slate-800">{{ campaign.cp_count }}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">CP</span>
                         </div>
-                        <div
-                            class="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2"
-                        >
-                            <span
-                                class="h-2 w-2 rounded-full bg-blue-600"
-                            ></span>
-                            {{ campaign.sup_count }} SUP
+                        <div class="flex flex-col items-center justify-center rounded-2xl bg-slate-50 py-3 px-2 border border-slate-100">
+                            <span class="text-lg font-black text-slate-800">{{ campaign.sup_count }}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">SUP</span>
                         </div>
-                        <div
-                            class="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2"
-                        >
-                            <span
-                                class="h-2 w-2 rounded-full bg-emerald-600"
-                            ></span>
-                            {{ campaign.tc_count }} TC
+                        <div class="flex flex-col items-center justify-center rounded-2xl bg-slate-50 py-3 px-2 border border-slate-100">
+                            <span class="text-lg font-black text-slate-800">{{ campaign.tc_count }}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">TC</span>
                         </div>
                     </div>
 
-                    <div class="mt-6 flex flex-wrap gap-3">
+                    <div class="flex items-center gap-3">
                         <Link
                             :href="route('campaigns.show', campaign.id)"
-                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                            class="flex-1 inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
                         >
-                            Voir
+                            Détails
                         </Link>
                         <template v-if="isAdmin">
                             <Button
                                 @click="openEditDialog(campaign)"
-                                label="Modifier"
-                                severity="warning"
-                                class="rounded-xl px-4 py-2 text-sm"
+                                icon="pi pi-pencil"
+                                class="h-10 w-10 p-button-rounded p-button-secondary p-button-outlined border-slate-200 text-slate-600 hover:text-teal-600 hover:border-teal-200 transition-all"
                             />
                             <Button
                                 @click="openDeactivateDialog(campaign)"
-                                label="Désactiver"
-                                severity="danger"
-                                class="rounded-xl px-4 py-2 text-sm"
+                                icon="pi pi-ban"
+                                class="h-10 w-10 p-button-rounded p-button-danger p-button-outlined border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-all"
                                 :disabled="campaign.status === 'inactive'"
                             />
                         </template>
@@ -227,124 +212,53 @@ const confirmDeactivate = () => {
             <Dialog
                 v-model:visible="createDialogVisible"
                 modal
-                header="Créer une campagne"
-                :style="{ width: '50rem' }"
+                header="Nouvelle Campagne"
+                class="rounded-3xl shadow-2xl border-none"
+                :style="{ width: '450px' }"
+                :pt="{
+                    header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' },
+                    content: { class: 'p-8 bg-white' },
+                    footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' }
+                }"
             >
-                <form @submit.prevent="submitCreate" class="space-y-6">
-                    <div>
-                        <label
-                            for="create-name"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Nom</label
-                        >
-                        <InputText
-                            id="create-name"
-                            v-model="createForm.name"
-                            class="w-full"
-                            required
-                        />
-                        <small
-                            v-if="createForm.errors.name"
-                            class="text-red-500"
-                            >{{ createForm.errors.name }}</small
-                        >
+                <form @submit.prevent="submitCreate" class="space-y-5">
+                    <div class="flex flex-col gap-2">
+                        <label for="create-name" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Nom de la campagne</label>
+                        <InputText id="create-name" v-model="createForm.name" class="w-full p-3 rounded-xl border-slate-200 focus:border-teal-500 focus:ring-teal-500" required placeholder="Ex: Campagne Hiver 2024" />
+                        <small v-if="createForm.errors.name" class="text-rose-500 text-[10px] font-bold">{{ createForm.errors.name }}</small>
                     </div>
 
-                    <div>
-                        <label
-                            for="create-description"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Description</label
-                        >
-                        <Textarea
-                            id="create-description"
-                            v-model="createForm.description"
-                            class="w-full"
-                            rows="4"
-                            required
-                        />
-                        <small
-                            v-if="createForm.errors.description"
-                            class="text-red-500"
-                            >{{ createForm.errors.description }}</small
-                        >
+                    <div class="flex flex-col gap-2">
+                        <label for="create-description" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Description</label>
+                        <Textarea id="create-description" v-model="createForm.description" class="w-full p-3 rounded-xl border-slate-200 focus:border-teal-500 focus:ring-teal-500" rows="3" required placeholder="Objectifs et contexte..." />
+                        <small v-if="createForm.errors.description" class="text-rose-500 text-[10px] font-bold">{{ createForm.errors.description }}</small>
                     </div>
 
-                    <div>
-                        <label
-                            for="create-start_date"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Date de début</label
-                        >
-                        <Calendar
-                            id="create-start_date"
-                            v-model="createForm.start_date"
-                            class="w-full"
-                            dateFormat="dd/mm/yy"
-                            required
-                        />
-                        <small
-                            v-if="createForm.errors.start_date"
-                            class="text-red-500"
-                            >{{ createForm.errors.start_date }}</small
-                        >
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label for="create-start_date" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Début</label>
+                            <Calendar id="create-start_date" v-model="createForm.start_date" class="w-full" inputClass="p-3 rounded-xl border-slate-200" dateFormat="dd/mm/yy" required />
+                            <small v-if="createForm.errors.start_date" class="text-rose-500 text-[10px] font-bold">{{ createForm.errors.start_date }}</small>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="create-end_date" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Fin</label>
+                            <Calendar id="create-end_date" v-model="createForm.end_date" class="w-full" inputClass="p-3 rounded-xl border-slate-200" dateFormat="dd/mm/yy" required />
+                            <small v-if="createForm.errors.end_date" class="text-rose-500 text-[10px] font-bold">{{ createForm.errors.end_date }}</small>
+                        </div>
                     </div>
 
-                    <div>
-                        <label
-                            for="create-end_date"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Date de fin</label
-                        >
-                        <Calendar
-                            id="create-end_date"
-                            v-model="createForm.end_date"
-                            class="w-full"
-                            dateFormat="dd/mm/yy"
-                            required
-                        />
-                        <small
-                            v-if="createForm.errors.end_date"
-                            class="text-red-500"
-                            >{{ createForm.errors.end_date }}</small
-                        >
-                    </div>
-
-                    <div>
-                        <label
-                            for="create-status"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Statut</label
-                        >
-                        <Dropdown
-                            id="create-status"
-                            v-model="createForm.status"
-                            :options="statusOptions"
-                            optionLabel="label"
-                            optionValue="value"
-                            class="w-full"
-                        />
-                        <small
-                            v-if="createForm.errors.status"
-                            class="text-red-500"
-                            >{{ createForm.errors.status }}</small
-                        >
+                    <div class="flex flex-col gap-2">
+                        <label for="create-status" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Statut initial</label>
+                        <Dropdown id="create-status" v-model="createForm.status" :options="statusOptions" optionLabel="label" optionValue="value" class="w-full rounded-xl border-slate-200" />
+                        <small v-if="createForm.errors.status" class="text-rose-500 text-[10px] font-bold">{{ createForm.errors.status }}</small>
                     </div>
                 </form>
 
                 <template #footer>
-                    <Button
-                        label="Annuler"
-                        icon="pi pi-times"
-                        severity="secondary"
-                        @click="createDialogVisible = false"
-                    />
-                    <Button
-                        label="Créer"
-                        icon="pi pi-check"
-                        @click="submitCreate"
-                        :loading="createForm.processing"
-                    />
+                    <div class="flex gap-3 w-full">
+                        <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-bold text-xs" @click="createDialogVisible = false" />
+                        <Button label="Confirmer" class="flex-1 bg-teal-600 border-none font-bold text-xs p-3 rounded-xl shadow-lg shadow-teal-600/20" @click="submitCreate" :loading="createForm.processing" />
+                    </div>
                 </template>
             </Dialog>
 
@@ -352,131 +266,66 @@ const confirmDeactivate = () => {
             <Dialog
                 v-model:visible="editDialogVisible"
                 modal
-                header="Modifier la campagne"
-                :style="{ width: '50rem' }"
+                header="Modifier la Campagne"
+                class="rounded-3xl shadow-2xl border-none"
+                :style="{ width: '450px' }"
+                :pt="{
+                    header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' },
+                    content: { class: 'p-8 bg-white' },
+                    footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' }
+                }"
             >
-                <form @submit.prevent="submitEdit" class="space-y-6">
-                    <div>
-                        <label
-                            for="edit-name"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Nom</label
-                        >
-                        <InputText
-                            id="edit-name"
-                            v-model="editForm.name"
-                            class="w-full"
-                            required
-                        />
-                        <small
-                            v-if="editForm.errors.name"
-                            class="text-red-500"
-                            >{{ editForm.errors.name }}</small
-                        >
+                <form @submit.prevent="submitEdit" class="space-y-5">
+                    <div class="flex flex-col gap-2">
+                        <label for="edit-name" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Nom de la campagne</label>
+                        <InputText id="edit-name" v-model="editForm.name" class="w-full p-3 rounded-xl border-slate-200 focus:border-teal-500 focus:ring-teal-500" required />
+                        <small v-if="editForm.errors.name" class="text-rose-500 text-[10px] font-bold">{{ editForm.errors.name }}</small>
                     </div>
 
-                    <div>
-                        <label
-                            for="edit-description"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Description</label
-                        >
-                        <Textarea
-                            id="edit-description"
-                            v-model="editForm.description"
-                            class="w-full"
-                            rows="4"
-                            required
-                        />
-                        <small
-                            v-if="editForm.errors.description"
-                            class="text-red-500"
-                            >{{ editForm.errors.description }}</small
-                        >
+                    <div class="flex flex-col gap-2">
+                        <label for="edit-description" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Description</label>
+                        <Textarea id="edit-description" v-model="editForm.description" class="w-full p-3 rounded-xl border-slate-200 focus:border-teal-500 focus:ring-teal-500" rows="3" required />
+                        <small v-if="editForm.errors.description" class="text-rose-500 text-[10px] font-bold">{{ editForm.errors.description }}</small>
                     </div>
 
-                    <div>
-                        <label
-                            for="edit-start_date"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Date de début</label
-                        >
-                        <Calendar
-                            id="edit-start_date"
-                            v-model="editForm.start_date"
-                            class="w-full"
-                            dateFormat="dd/mm/yy"
-                            required
-                        />
-                        <small
-                            v-if="editForm.errors.start_date"
-                            class="text-red-500"
-                            >{{ editForm.errors.start_date }}</small
-                        >
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label for="edit-start_date" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Début</label>
+                            <Calendar id="edit-start_date" v-model="editForm.start_date" class="w-full" inputClass="p-3 rounded-xl border-slate-200" dateFormat="dd/mm/yy" required />
+                            <small v-if="editForm.errors.start_date" class="text-rose-500 text-[10px] font-bold">{{ editForm.errors.start_date }}</small>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="edit-end_date" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Fin</label>
+                            <Calendar id="edit-end_date" v-model="editForm.end_date" class="w-full" inputClass="p-3 rounded-xl border-slate-200" dateFormat="dd/mm/yy" required />
+                            <small v-if="editForm.errors.end_date" class="text-rose-500 text-[10px] font-bold">{{ editForm.errors.end_date }}</small>
+                        </div>
                     </div>
 
-                    <div>
-                        <label
-                            for="edit-end_date"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Date de fin</label
-                        >
-                        <Calendar
-                            id="edit-end_date"
-                            v-model="editForm.end_date"
-                            class="w-full"
-                            dateFormat="dd/mm/yy"
-                            required
-                        />
-                        <small
-                            v-if="editForm.errors.end_date"
-                            class="text-red-500"
-                            >{{ editForm.errors.end_date }}</small
-                        >
-                    </div>
-
-                    <div>
-                        <label
-                            for="edit-status"
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                            >Statut</label
-                        >
-                        <Dropdown
-                            id="edit-status"
-                            v-model="editForm.status"
-                            :options="statusOptions"
-                            optionLabel="label"
-                            optionValue="value"
-                            class="w-full"
-                        />
-                        <small
-                            v-if="editForm.errors.status"
-                            class="text-red-500"
-                            >{{ editForm.errors.status }}</small
-                        >
+                    <div class="flex flex-col gap-2">
+                        <label for="edit-status" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Statut</label>
+                        <Dropdown id="edit-status" v-model="editForm.status" :options="statusOptions" optionLabel="label" optionValue="value" class="w-full rounded-xl border-slate-200" />
+                        <small v-if="editForm.errors.status" class="text-rose-500 text-[10px] font-bold">{{ editForm.errors.status }}</small>
                     </div>
                 </form>
 
                 <template #footer>
-                    <Button
-                        label="Annuler"
-                        icon="pi pi-times"
-                        severity="secondary"
-                        @click="editDialogVisible = false"
-                    />
-                    <Button
-                        label="Mettre à jour"
-                        icon="pi pi-check"
-                        @click="submitEdit"
-                        :loading="editForm.processing"
-                    />
+                    <div class="flex gap-3 w-full">
+                        <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-bold text-xs" @click="editDialogVisible = false" />
+                        <Button label="Mettre à jour" class="flex-1 bg-teal-600 border-none font-bold text-xs p-3 rounded-xl shadow-lg shadow-teal-600/20" @click="submitEdit" :loading="editForm.processing" />
+                    </div>
                 </template>
             </Dialog>
             <Dialog
                 v-model:visible="deactivateDialogVisible"
                 modal
-                header="Désactiver la campagne"
-                :style="{ width: '40rem' }"
+                header="Confirmer la Désactivation"
+                class="rounded-3xl shadow-2xl border-none"
+                :style="{ width: '400px' }"
+                :pt="{
+                    header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' },
+                    content: { class: 'p-8 bg-white' },
+                    footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' }
+                }"
             >
                 <div v-if="campaignToDeactivate">
                     <div
@@ -486,82 +335,30 @@ const confirmDeactivate = () => {
                                 campaignToDeactivate.tc_count >
                             0
                         "
-                        class="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-4"
+                        class="rounded-2xl bg-rose-50 border border-rose-100 p-4 mb-6"
                     >
                         <div class="flex items-start gap-3">
-                            <i
-                                class="pi pi-exclamation-triangle text-amber-500 text-xl mt-0.5"
-                            ></i>
+                            <i class="pi pi-exclamation-circle text-rose-500 text-lg"></i>
                             <div>
-                                <p class="font-semibold text-amber-800">
-                                    Ressources encore assignées
-                                </p>
-                                <p class="text-sm text-amber-700 mt-1">
-                                    Cette campagne possède encore :
-                                </p>
-                                <ul
-                                    class="mt-2 text-sm text-amber-700 space-y-1"
-                                >
-                                    <li
-                                        v-if="campaignToDeactivate.cp_count > 0"
-                                    >
-                                        •
-                                        {{
-                                            campaignToDeactivate.cp_count
-                                        }}
-                                        Chef(s) Plateau
-                                    </li>
-                                    <li
-                                        v-if="
-                                            campaignToDeactivate.sup_count > 0
-                                        "
-                                    >
-                                        •
-                                        {{
-                                            campaignToDeactivate.sup_count
-                                        }}
-                                        Superviseur(s)
-                                    </li>
-                                    <li
-                                        v-if="campaignToDeactivate.tc_count > 0"
-                                    >
-                                        •
-                                        {{
-                                            campaignToDeactivate.tc_count
-                                        }}
-                                        Téléconseiller(s)
-                                    </li>
-                                </ul>
-                                <p
-                                    class="text-sm text-amber-700 mt-2 font-medium"
-                                >
-                                    Toutes ces ressources seront automatiquement
-                                    désassignées.
+                                <p class="text-xs font-black text-rose-800 uppercase tracking-wider">Attention</p>
+                                <p class="text-xs text-rose-700 mt-1 font-medium">
+                                    {{ campaignToDeactivate.cp_count + campaignToDeactivate.sup_count + campaignToDeactivate.tc_count }} ressources seront désassignées.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <p class="text-slate-600">
-                        Voulez-vous vraiment désactiver la campagne
-                        <strong>{{ campaignToDeactivate.name }}</strong> ?
+                    <p class="text-sm text-slate-600 leading-relaxed text-center">
+                        Voulez-vous vraiment désactiver la campagne <br>
+                        <span class="font-black text-slate-900">"{{ campaignToDeactivate.name }}"</span> ?
                     </p>
                 </div>
 
                 <template #footer>
-                    <Button
-                        label="Annuler"
-                        icon="pi pi-times"
-                        severity="secondary"
-                        @click="deactivateDialogVisible = false"
-                    />
-                    <Button
-                        label="Désactiver"
-                        icon="pi pi-ban"
-                        severity="danger"
-                        @click="confirmDeactivate"
-                        :loading="deactivateForm.processing"
-                    />
+                    <div class="flex gap-3 w-full">
+                        <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-bold text-xs" @click="deactivateDialogVisible = false" />
+                        <Button label="Désactiver" class="flex-1 bg-rose-600 border-none font-bold text-xs p-3 rounded-xl shadow-lg shadow-rose-600/20" @click="confirmDeactivate" :loading="deactivateForm.processing" />
+                    </div>
                 </template>
             </Dialog>
         </div>
