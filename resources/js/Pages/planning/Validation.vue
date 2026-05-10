@@ -29,11 +29,18 @@ function countByStatus(status) {
     return (props.assignments ?? []).filter((a) => a.status === status).length;
 }
 
-function initials(name) {
-    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+function employeeFullName(employee) {
+    if (!employee) return "—";
+    return `${employee.first_name} ${employee.last_name}`;
 }
 
-function avatarColor(name) {
+function employeeInitials(employee) {
+    if (!employee) return "U";
+    return (employee.first_name[0] + employee.last_name[0]).toUpperCase();
+}
+
+function avatarColor(employee) {
+    const name = employee ? `${employee.first_name} ${employee.last_name}` : 'U';
     const colors = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626"];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -119,11 +126,11 @@ function changeStatus(assignment, status) {
                             <div class="employee-cell">
                                 <div
                                     class="avatar"
-                                    :style="{ background: avatarColor(data.employee?.full_name ?? 'U') }"
+                                    :style="{ background: avatarColor(data.employee) }"
                                 >
-                                    {{ initials(data.employee?.full_name ?? 'U') }}
+                                    {{ employeeInitials(data.employee) }}
                                 </div>
-                                <span class="employee-name">{{ data.employee?.full_name ?? '—' }}</span>
+                                <span class="employee-name">{{ employeeFullName(data.employee) }}</span>
                             </div>
                         </template>
                     </Column>
@@ -131,7 +138,7 @@ function changeStatus(assignment, status) {
                     <!-- Rôle -->
                     <Column header="Rôle" style="min-width: 140px">
                         <template #body="{ data }">
-                            <span class="role-badge">{{ data.employee?.role ?? '—' }}</span>
+                            <span class="role-badge">{{ data.employee?.user?.role?.name ?? '—' }}</span>
                         </template>
                     </Column>
 

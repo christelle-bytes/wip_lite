@@ -15,6 +15,7 @@ class PlanningAssignment extends Model
         'planning_model_id',
         'employee_id',
         'start_date',
+        'end_date',
         'status',
         'validated_by',
         'validated_at'

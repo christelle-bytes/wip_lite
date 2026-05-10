@@ -10,8 +10,17 @@ import Button from "primevue/button";
 
 const props = defineProps({
     planningModels: Array,
+    assignments: Object, // Groupé par statut
+    myAssignments: Array, // Ajouté
     auth: Object,
 });
+
+const userRole = computed(() => props.auth?.user?.role?.name?.toUpperCase());
+const isAdmin = computed(() => userRole.value === 'ADMIN');
+const isCP    = computed(() => userRole.value === 'CP');
+const isSUP   = computed(() => userRole.value === 'SUP');
+const isTC    = computed(() => userRole.value === 'TC');
+const canManage = computed(() => isAdmin.value || isCP.value);
 
 // ─── Liste & filtres ───────────────────────────────────────────────────────────
 
@@ -128,7 +137,7 @@ function submit() {
             <!-- Header -->
             <div class="header">
                 <h1 class="title">Plannings</h1>
-                <div class="header-actions">
+                <div v-if="canManage" class="header-actions">
                     <div class="search-box">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                         <input v-model="search" placeholder="Rechercher..." />
@@ -141,77 +150,135 @@ function submit() {
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
                         Affecter un planning
                     </button>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="isAdmin || isCP" class="btn-primary" @click="openCreate">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                         Créer un modèle
                     </button>
                 </div>
             </div>
 
-            <!-- Filtres -->
-            <div class="filters">
-                <button :class="['filter-tab', activeFilter === 'tous' && 'active']" @click="activeFilter = 'tous'">
-                    Tous <span class="badge">{{ countAll }}</span>
-                </button>
-                <button :class="['filter-tab', activeFilter === 'actifs' && 'active']" @click="activeFilter = 'actifs'">
-                    Actifs <span class="badge">{{ countActifs }}</span>
-                </button>
-                <button :class="['filter-tab', activeFilter === 'inactifs' && 'active']" @click="activeFilter = 'inactifs'">
-                    Inactifs <span class="badge">{{ countInactifs }}</span>
-                </button>
-            </div>
+            <template v-if="canManage">
+                <!-- Filtres -->
+                <div class="filters">
+                    <button :class="['filter-tab', activeFilter === 'tous' && 'active']" @click="activeFilter = 'tous'">
+                        Modèles <span class="badge">{{ countAll }}</span>
+                    </button>
+                    <button :class="['filter-tab', activeFilter === 'actifs' && 'active']" @click="activeFilter = 'actifs'">
+                        Actifs <span class="badge">{{ countActifs }}</span>
+                    </button>
+                    <button :class="['filter-tab', activeFilter === 'inactifs' && 'active']" @click="activeFilter = 'inactifs'">
+                        Inactifs <span class="badge">{{ countInactifs }}</span>
+                    </button>
+                </div>
 
-            <!-- Tableau -->
-            <div class="table-card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nom du modèle</th>
-                            <th>Heures par jour</th>
-                            <th>Total/semaine</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-if="filteredModels.length === 0">
-                            <td colspan="5" class="empty">Aucun planning trouvé.</td>
-                        </tr>
-                        <tr v-for="model in filteredModels" :key="model.id">
-                            <td class="col-name">
-                                <span class="model-name">{{ model.name }}</span>
-                                <span class="model-desc">{{ model.description }}</span>
-                            </td>
-                            <td class="col-hours">
-                                <div class="day-pills">
-                                    <span
-                                        v-for="(day, i) in days"
-                                        :key="day"
-                                        :class="['day-pill', model[day + '_hours'] > 0 ? 'active' : 'zero']"
-                                        :title="dayLabels[i]"
-                                    >
-                                        {{ model[day + '_hours'] }}
+                <!-- Résumé des assignations par statut -->
+                <div class="assignment-summary mb-6">
+                    <div class="summary-grid">
+                        <div v-for="(list, status) in props.assignments" :key="status" class="summary-card">
+                            <span class="status-dot" :class="status.replace(' ', '-')"></span>
+                            <div class="summary-info">
+                                <span class="summary-count">{{ list.length }}</span>
+                                <span class="summary-label">{{ status }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tableau -->
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom du modèle</th>
+                                <th>Heures par jour</th>
+                                <th>Total/semaine</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="filteredModels.length === 0">
+                                <td colspan="5" class="empty">Aucun planning trouvé.</td>
+                            </tr>
+                            <tr v-for="model in filteredModels" :key="model.id">
+                                <td class="col-name">
+                                    <span class="model-name">{{ model.name }}</span>
+                                    <span class="model-desc">{{ model.description }}</span>
+                                </td>
+                                <td class="col-hours">
+                                    <div class="day-pills">
+                                        <span
+                                            v-for="(day, i) in days"
+                                            :key="day"
+                                            :class="['day-pill', model[day + '_hours'] > 0 ? 'active' : 'zero']"
+                                            :title="dayLabels[i]"
+                                        >
+                                            {{ model[day + '_hours'] }}
+                                        </span>
+                                    </div>
+                                    <span class="day-total">{{ model.total_hours }}h</span>
+                                </td>
+                                <td class="col-total">{{ model.total_hours }}h</td>
+                                <td>
+                                    <span :class="['status-badge', model.status === 'actif' ? 'actif' : 'inactif']">
+                                        {{ model.status === 'actif' ? 'Actif' : 'Inactif' }}
                                     </span>
-                                </div>
-                                <span class="day-total">{{ model.total_hours }}h</span>
-                            </td>
-                            <td class="col-total">{{ model.total_hours }}h</td>
-                            <td>
-                                <span :class="['status-badge', model.status === 'actif' ? 'actif' : 'inactif']">
-                                    {{ model.status === 'actif' ? 'Actif' : 'Inactif' }}
-                                </span>
-                            </td>
-                            <td class="col-actions">
-                                <button class="icon-btn" @click="openEdit(model)" title="Modifier">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                </button>
-                                <button class="icon-btn danger" @click="deletePlanning(model)" title="Supprimer">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                </td>
+                                <td class="col-actions">
+                                    <button class="icon-btn" @click="openEdit(model)" title="Modifier">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </button>
+                                    <button class="icon-btn danger" @click="deletePlanning(model)" title="Supprimer">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+
+            <!-- Section "Mon Planning" -->
+            <div v-if="props.myAssignments && props.myAssignments.length > 0" class="my-planning-section mt-12">
+                <div class="section-header mb-4">
+                    <h2 class="text-xl font-semibold flex items-center gap-2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Mon Planning
+                    </h2>
+                    <p class="text-sm text-gray-500">Assignations qui me sont personnellement attribuées.</p>
+                </div>
+
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modèle</th>
+                                <th>Période</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="assignment in props.myAssignments" :key="assignment.id">
+                                <td class="col-name">
+                                    <span class="model-name">{{ assignment.planning_model?.name }}</span>
+                                    <span class="model-desc">{{ assignment.planning_model?.total_hours }}h par semaine</span>
+                                </td>
+                                <td>
+                                    <div class="flex flex-col">
+                                        <span class="text-sm font-medium">Du {{ new Date(assignment.start_date).toLocaleDateString('fr-FR') }}</span>
+                                        <span v-if="assignment.end_date" class="text-xs text-gray-500">Au {{ new Date(assignment.end_date).toLocaleDateString('fr-FR') }}</span>
+                                        <span v-else class="text-xs text-blue-500">Indéterminé</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span :class="['status-badge', assignment.status.replace(' ', '-')]">
+                                        {{ assignment.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Dialog PrimeVue création / édition -->
@@ -386,6 +453,28 @@ tr:hover td { background: #fafafa; }
 .icon-btn:hover { background: #f3f4f6; color: #111; }
 .icon-btn.danger:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 .empty { text-align: center; color: #9ca3af; padding: 3rem; }
+
+/* Assignment Summary */
+.assignment-summary { margin-bottom: 1.5rem; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.summary-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;
+}
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: #9ca3af; }
+.status-dot.en-attente { background: #f59e0b; }
+.status-dot.validé { background: #10b981; }
+.status-dot.suspendu { background: #ef4444; }
+.status-dot.terminé { background: #6b7280; }
+.summary-info { display: flex; flex-direction: column; }
+.summary-count { font-size: 1.125rem; font-weight: 700; color: #111; line-height: 1; }
+.summary-label { font-size: 0.75rem; color: #6b7280; text-transform: capitalize; margin-top: 2px; }
+
+/* Status Badges for My Planning */
+.status-badge.en-attente { background: #fef3c7; color: #92400e; }
+.status-badge.validé { background: #d1fae5; color: #065f46; }
+.status-badge.suspendu { background: #fee2e2; color: #991b1b; }
+.status-badge.terminé { background: #f3f4f6; color: #374151; }
 
 /* Dialog form */
 .dialog-form { display: flex; flex-direction: column; gap: 1.25rem; padding: 0.25rem 0; }

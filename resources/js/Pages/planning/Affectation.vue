@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, ref } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
@@ -21,6 +21,7 @@ const form = useForm({
     planning_model_id: "",
     employee_id: "",
     start_date: "",
+    end_date: "", // Ajout de la date de fin
 });
 
 const statusLabel = {
@@ -119,22 +120,21 @@ function deleteAssignment(assignment) {
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700"
-                            >Employé</label
+                            >Employé (Superviseurs uniquement)</label
                         >
                         <select
                             v-model="form.employee_id"
                             class="mt-1 block w-full rounded border-slate-300 bg-white p-2 text-sm"
                         >
                             <option value="" disabled>
-                                Choisir un employé
+                                Choisir un superviseur
                             </option>
                             <option
                                 v-for="employee in props.employees"
                                 :key="employee.id"
                                 :value="employee.id"
                             >
-                                {{ employee.first_name }}
-                                {{ employee.last_name }}
+                                {{ employee.name }}
                             </option>
                         </select>
                     </div>
@@ -146,6 +146,17 @@ function deleteAssignment(assignment) {
                         <input
                             type="date"
                             v-model="form.start_date"
+                            class="mt-1 block w-full rounded border-slate-300 bg-white p-2 text-sm"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700"
+                            >Date de fin (facultatif)</label
+                        >
+                        <input
+                            type="date"
+                            v-model="form.end_date"
                             class="mt-1 block w-full rounded border-slate-300 bg-white p-2 text-sm"
                         />
                     </div>
