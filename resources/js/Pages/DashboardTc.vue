@@ -78,7 +78,7 @@ onMounted(() => {
     toast.add({
         severity: 'success',
         summary: 'Bienvenue',
-        detail: 'Connecté en tant que Technicien',
+        detail: 'Connecté en tant que Teleconseiller',
         life: 3000,
     });
 

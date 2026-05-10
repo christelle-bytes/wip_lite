@@ -47,14 +47,17 @@ console.log(props.telecon);
     <AuthenticatedLayout>
         <div class="p-6 space-y-6">
             <!-- En-tête amélioré -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div
+                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
+            >
                 <div class="flex flex-wrap justify-between items-end gap-6">
                     <div>
                         <h1 class="text-3xl font-semibold text-slate-800">
                             Reporting Téléconseillers
                         </h1>
                         <p class="text-slate-500 mt-1">
-                            {{ props.currentMonth }} • Synthèse des heures saisies
+                            {{ props.currentMonth }} • Synthèse des heures
+                            saisies
                         </p>
                     </div>
 
@@ -77,7 +80,9 @@ console.log(props.telecon);
             </div>
 
             <!-- Tableau Principal -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div
+                class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+            >
                 <DataTable
                     :value="props.telecon"
                     v-model:expandedRows="expandedRows"
@@ -92,12 +97,16 @@ console.log(props.telecon);
                     <Column header="Collaborateur" style="min-width: 18rem">
                         <template #body="{ data }">
                             <div class="flex items-center gap-4">
-                                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center font-semibold text-slate-700 border border-slate-200 shadow-sm">
-                                    {{ data.first_name?.[0] }}{{ data.last_name?.[0] }}
+                                <div
+                                    class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center font-semibold text-slate-700 border border-slate-200 shadow-sm"
+                                >
+                                    {{ data.first_name?.[0]
+                                    }}{{ data.last_name?.[0] }}
                                 </div>
                                 <div>
                                     <p class="font-semibold text-slate-800">
-                                        {{ data.first_name }} {{ data.last_name }}
+                                        {{ data.first_name }}
+                                        {{ data.last_name }}
                                     </p>
                                     <p class="text-xs text-slate-500">
                                         {{ data.matricule }}
@@ -107,7 +116,11 @@ console.log(props.telecon);
                         </template>
                     </Column>
 
-                    <Column field="position.name" header="Poste" style="min-width: 12rem" />
+                    <Column
+                        field="position.name"
+                        header="Poste"
+                        style="min-width: 12rem"
+                    />
 
                     <Column header="Total Heures" style="min-width: 12rem">
                         <template #body="{ data }">
@@ -122,22 +135,29 @@ console.log(props.telecon);
                         <div class="p-6 bg-slate-50 border-t border-slate-100">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="flex items-center gap-3">
-                                    <i class="pi pi-list-check text-blue-600"></i>
+                                    <i
+                                        class="pi pi-list-check text-blue-600"
+                                    ></i>
                                     <span class="font-semibold text-slate-700">
                                         Détail des saisies
                                     </span>
                                 </div>
                                 <span class="text-sm text-slate-500">
-                                    {{ getEntries(data).length }} jour(s)
+                                    {{ getEntries(data).filter(Boolean)?.length }} jour(s)
                                 </span>
                             </div>
 
                             <DataTable
+                                v-if="getEntries(data).filter(Boolean)?.length != 0"
                                 :value="getEntries(data)"
                                 class="p-datatable-sm rounded-xl border border-slate-200 overflow-hidden"
                                 stripedRows
                             >
-                                <Column field="date" header="Date" style="width: 110px">
+                                <Column
+                                    field="date"
+                                    header="Date"
+                                    style="width: 110px"
+                                >
                                     <template #body="sp">
                                         {{ formatD(sp.data.date) }}
                                     </template>
@@ -146,7 +166,9 @@ console.log(props.telecon);
                                 <Column field="check_out" header="Sortie" />
                                 <Column header="Durée" style="width: 130px">
                                     <template #body="sp">
-                                        <span class="font-medium text-slate-700">
+                                        <span
+                                            class="font-medium text-slate-700"
+                                        >
                                             {{ formatH(sp.data.total_hours) }}
                                         </span>
                                     </template>
@@ -158,7 +180,9 @@ console.log(props.telecon);
                                             :value="`+${formatH(sp.data.overtime_hours)}`"
                                             severity="warn"
                                         />
-                                        <span v-else class="text-slate-300">-</span>
+                                        <span v-else class="text-slate-300"
+                                            >-</span
+                                        >
                                     </template>
                                 </Column>
                             </DataTable>

@@ -32,37 +32,37 @@ class TimesheetController extends Controller
 
         // 2. Récupération des feuilles avec calcul de complétude
         $timesheets = Timesheet::with(['employee', 'validator', 'entries'])
-    ->latest()
-    ->get()
-    ->map(function ($ts) {
-        // 1. Calcul des stats (en mémoire uniquement)
-        $start = Carbon::parse($ts->period_start);
-        $end = Carbon::parse($ts->period_end);
-        $joursTheoriques = $start->diffInDays($end) + 1;
-        $joursSaisis = $ts->entries->pluck('date')->unique()->count();
-        $isComplete = ($joursSaisis >= $joursTheoriques);
+            ->latest()
+            ->get()
+            ->map(function ($ts) {
+                // 1. Calcul des stats (en mémoire uniquement)
+                $start = Carbon::parse($ts->period_start);
+                $end = Carbon::parse($ts->period_end);
+                $joursTheoriques = $start->diffInDays($end) + 1;
+                $joursSaisis = $ts->entries->pluck('date')->unique()->count();
+                $isComplete = ($joursSaisis >= $joursTheoriques);
 
-        // 2. Mise à jour du statut SEULEMENT
-        if ($ts->status !== 'validated') {
-            $newStatus = $isComplete ? 'submitted' : 'draft';
-            
-            if ($ts->status !== $newStatus) {
-                // On spécifie uniquement la colonne 'status' pour éviter l'erreur
-                $ts->update(['status' => $newStatus]);
-            }
-        }
+                // 2. Mise à jour du statut SEULEMENT
+                if ($ts->status !== 'validated') {
+                    $newStatus = $isComplete ? 'submitted' : 'draft';
 
-        // 3. On injecte 'stats' APRÈS l'update
-        // On utilise l'affectation directe pour que ce soit disponible pour Inertia
-        $ts->stats = [
-            'total_jours' => $joursTheoriques,
-            'jours_saisis' => $joursSaisis,
-            'is_complete' => $isComplete,
-            'manquant' => max(0, $joursTheoriques - $joursSaisis)
-        ];
+                    if ($ts->status !== $newStatus) {
+                        // On spécifie uniquement la colonne 'status' pour éviter l'erreur
+                        $ts->update(['status' => $newStatus]);
+                    }
+                }
 
-        return $ts;
-    });
+                // 3. On injecte 'stats' APRÈS l'update
+                // On utilise l'affectation directe pour que ce soit disponible pour Inertia
+                $ts->stats = [
+                    'total_jours' => $joursTheoriques,
+                    'jours_saisis' => $joursSaisis,
+                    'is_complete' => $isComplete,
+                    'manquant' => max(0, $joursTheoriques - $joursSaisis)
+                ];
+
+                return $ts;
+            });
 
         return Inertia::render('Timesheets/Index', [
             'timesheets' => $timesheets,
@@ -83,27 +83,61 @@ class TimesheetController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'employee_id' => 'required|array',
-            'employee_id.*' => 'exists:employees,id',
-            'period_start' => 'required|date',
-            'period_end' => 'required|date',
-            'status' => 'nullable',
-        ]);
-        $data = collect($validated['employee_id'])->map(function ($id) use ($validated) {
-            return [
-                'employee_id'  => $id,
-                'period_start' => Carbon::parse($validated['period_start'])->format('Y-m-d'),
-                'period_end'   => Carbon::parse($validated['period_end'])->format('Y-m-d'),
-                'status'       => $validated['status'] ?? 'draft',
-                'created_at'   => now(),
-                'updated_at'   => now(),
-            ];
-        })->toArray();
-        Timesheet::insert($data);
-        return redirect()->route('timesheet.index');
-    }
+{
+    $validated = $request->validate([
+        'employee_id'   => 'required|array',
+        'employee_id.*' => 'exists:employees,id',
+        'period_start'  => 'required|date',
+        'period_end'    => 'required|date|after_or_equal:period_start',
+        'status'        => 'nullable|in:draft,submitted',
+    ]);
+
+    $periodStart = Carbon::parse($validated['period_start'])->format('Y-m-d');
+    $periodEnd   = Carbon::parse($validated['period_end'])->format('Y-m-d');
+
+    $data = collect($validated['employee_id'])->map(function ($id) use ($periodStart, $periodEnd, $validated) {
+
+        // Vérifier si une feuille existe déjà pour cet employé sur cette période
+        $existing = Timesheet::where('employee_id', $id)
+            ->where(function ($query) use ($periodStart, $periodEnd) {
+                $query->whereBetween('period_start', [$periodStart, $periodEnd])
+                      ->orWhereBetween('period_end', [$periodStart, $periodEnd])
+                      ->orWhere(function ($q) use ($periodStart, $periodEnd) {
+                          $q->where('period_start', '<=', $periodStart)
+                            ->where('period_end', '>=', $periodEnd);
+                      });
+            })
+            ->first();
+
+        if ($existing) {
+            return redirect()->back()
+                ->with('error', "Une feuille de temps existe déjà pour l'employé ID {$id} sur cette période.");
+        }
+
+        return [
+            'employee_id'  => $id,
+            'period_start' => $periodStart,
+            'period_end'   => $periodEnd,
+            'status'       => $validated['status'] ?? 'draft',
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ];
+    })->toArray();
+
+    // Supprimer les éventuels redirects qui se sont glissés dans le tableau
+    $data = array_filter($data, fn($item) => is_array($item));
+
+    if (empty($data)) {
+        // dd($data);
+        return redirect()->route('timesheet.index')
+        ->with('error', 'Aucune feuille n\'a été créée. Merci de vérifer vos entrées');
+        }
+
+    Timesheet::insert($data);
+
+    return redirect()->route('timesheet.index')
+        ->with('success', 'Feuille(s) d\'heures créée(s) avec succès.');
+}
 
 
 

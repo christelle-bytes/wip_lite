@@ -8,13 +8,15 @@ import InputText from "primevue/inputtext";
 import IconField from "primevue/iconfield";
 import InputIcon from "primevue/inputicon";
 import Dialog from "primevue/dialog";
-import Tag from "primevue/tag";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import InputNumber from "primevue/inputnumber";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import { computed } from "vue";
 import AuthenticatedLayout from "../../Layouts/AuthenticatedLayout.vue";
+import { useToast } from 'primevue/usetoast';
+
+const toast = useToast();
 
 // les employées sélectionné
 const selectedTelecon = ref([]);
@@ -103,8 +105,12 @@ const createEntry = () => {
         .filter((id, index, self) => id !== null && self.indexOf(id) === index);
 
     if (supervisorIds.length === 0) {
-        alert("Certains téléconseillers n'ont pas de superviseur assigné.");
-        return;
+       return toast.add({
+        severity: 'error',
+        summary: 'Alerte',
+        detail: 'Certains teleconseillers ne sont pas assigné à de superviseur',
+        life: 5000,
+    });
     }
 
     form.employee_ids = supervisorIds;
