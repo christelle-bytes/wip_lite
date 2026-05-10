@@ -87,7 +87,12 @@ const filteredEmployees = computed(() => {
         .filter(Boolean)
         .some((value) => value.toString().toLowerCase().includes(query));
 
-    const matchesRole = selectedRole.value === 'all' || emp.position_id === selectedRole.value;
+    let matchesRole = true;
+    if (selectedRole.value !== 'all') {
+      const selectedPosName = uniquePositions.value.find(p => p.id === selectedRole.value)?.name;
+      matchesRole = emp.position?.name === selectedPosName || emp.position_id === selectedRole.value;
+    }
+    
     const matchesStatus = selectedStatus.value === 'all' || emp.status === selectedStatus.value;
 
     return matchesSearch && matchesRole && matchesStatus;
@@ -378,7 +383,7 @@ const getStatusText = (status) => {
                     <Column header="Actions" class="text-right">
                         <template #body="{ data }">
                             <div class="flex items-center justify-end gap-1 transition-opacity">
-                                <Button icon="pi pi-eye" class="p-button-text p-button-secondary p-button-sm rounded-lg" @click="router.visit(route('employees.show', data.id))" />
+                                <Button icon="pi pi-eye" class="p-button-text p-button-secondary p-button-sm rounded-lg" @click="router.visit(route('employees.show', data.id), { data: { from: 'employees' } })" />
                                 <Button icon="pi pi-pencil" class="p-button-text p-button-secondary p-button-sm rounded-lg hover:text-teal-600" @click="editEmployee(data)" />
                                 <Button v-if="data.status === 'actif'" icon="pi pi-user-minus" class="p-button-text p-button-danger p-button-sm rounded-lg" @click="confirmDeactivate(data)" />
                             </div>

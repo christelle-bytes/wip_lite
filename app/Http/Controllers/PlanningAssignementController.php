@@ -111,7 +111,7 @@ class PlanningAssignementController extends Controller
         $updateData = ['status' => $validated['status']];
 
         if ($validated['status'] === 'validé') {
-            $updateData['validated_by'] = auth()->user()->employee->id;
+            $updateData['validated_by'] = auth()->user()->employee?->id;
             $updateData['validated_at'] = now();
         }
 
