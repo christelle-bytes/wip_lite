@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\TimesheetEntryController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ActivityLogController;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\ReportingController;
 use Illuminate\Support\Facades\Auth;
@@ -70,11 +71,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/positions/{id}', [PositionController::class, 'show'])->name('positions.show');
     Route::delete('/positions/{id}', [PositionController::class, 'destroy'])->name('positions.destroy');
 
-    Route::middleware('role:admin')->prefix('users')->name('users.')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index');
-        Route::get('/create', [UserController::class, 'create'])->name('create');
-        Route::post('/', [UserController::class, 'store'])->name('store');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/logs', [ActivityLogController::class, 'index'])->name('admin.logs');
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/', [UserController::class, 'index'])->name('index');
+            Route::get('/create', [UserController::class, 'create'])->name('create');
+            Route::post('/', [UserController::class, 'store'])->name('store');
+            Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        });
     });
 });
 

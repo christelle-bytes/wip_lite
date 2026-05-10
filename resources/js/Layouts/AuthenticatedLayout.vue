@@ -56,9 +56,9 @@ watch(
 </script>
 
 <template>
-    <div class="min-h-screen bg-slate-50 flex">
+    <div class="h-screen bg-slate-50 flex overflow-hidden">
         <!-- Sidebar -->
-        <aside class="w-64 bg-slate-900 text-white hidden sm:flex flex-col shadow-xl">
+        <aside class="w-64 bg-slate-900 text-white hidden sm:flex flex-col shadow-xl h-full flex-shrink-0">
             <div class="p-8 border-b border-slate-800/50">
                 <h1 class="text-2xl font-black tracking-tight flex items-center gap-2">
                     <span class="text-teal-500">GRH</span>
@@ -110,6 +110,12 @@ watch(
                         class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Feuille d'heures
+                    </Link>
+                    <Link :href="route('admin.logs')" 
+                        :class="[route().current('admin.logs') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-history mr-3 text-lg" :class="[route().current('admin.logs') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        Logs d'activité
                     </Link>
                 </template>
 

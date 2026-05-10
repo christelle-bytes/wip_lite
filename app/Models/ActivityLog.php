@@ -11,6 +11,11 @@ class ActivityLog extends Model
     /** @use HasFactory<\Database\Factories\ActivityLogFactory> */
     use HasFactory;
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function model()
     {
         return $this->morphTo();
