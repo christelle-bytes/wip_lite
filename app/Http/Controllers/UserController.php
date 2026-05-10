@@ -63,9 +63,17 @@ class UserController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
-        $user->delete();
+        $user->update(['is_active' => false]);
 
-        return redirect()->route('users.index')->with('success', 'Utilisateur supprimé.');
+        return redirect()->route('users.index')->with('success', 'Utilisateur désactivé.');
+    }
+
+    public function toggleStatus(User $user): RedirectResponse
+    {
+        $user->update(['is_active' => !$user->is_active]);
+        $status = $user->is_active ? 'activé' : 'désactivé';
+
+        return redirect()->route('users.index')->with('success', "Utilisateur {$status}.");
     }
 }
 
