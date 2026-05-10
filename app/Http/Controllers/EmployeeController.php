@@ -34,12 +34,11 @@ class EmployeeController extends Controller
     }
 
     public function show($id){
-        try {
-            $employee = Employee::with('position')->findOrFail($id);
-            return response()->json($employee, 200);
-        } catch (\Exception $e) {
-            return response()->json(['error'=> 'Employé non trouvé'], 404);
-        }
+        $employee = Employee::with(['position', 'assignments.campaign', 'assignments.position', 'assignments.manager'])->findOrFail($id);
+        
+        return \Inertia\Inertia::render('Employees/Show', [
+            'employee' => $employee
+        ]);
     }
 
     public function update(Request $request, $id){

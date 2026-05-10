@@ -5,14 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
+
 class ActivityLogController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        if (!Auth::user()->isAdmin()) {
+            abort(403);
+        }
+
+        $logs = ActivityLog::with(['user.employee', 'model'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return Inertia::render('Admin/Logs', [
+            'logs' => $logs
+        ]);
     }
 
     /**
