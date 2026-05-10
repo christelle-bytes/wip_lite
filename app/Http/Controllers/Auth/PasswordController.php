@@ -25,6 +25,6 @@ class PasswordController extends Controller
             'must_change_password' => false,
         ]);
 
-        return back();
+        return back()->with('success', 'Votre mot de passe a été mis à jour avec succès.');
     }
 }

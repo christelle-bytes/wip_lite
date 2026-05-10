@@ -16,8 +16,15 @@ class ForcePasswordChange
     public function handle(Request $request, Closure $next): Response
     {
         if (auth()->check() && auth()->user()->must_change_password) {
-            // Ne pas rediriger si on est déjà sur la page de changement de mot de passe ou si on se déconnecte
-            if (!$request->routeIs('profile.edit') && !$request->routeIs('profile.update') && !$request->routeIs('logout')) {
+            // Ne pas rediriger si on est déjà sur les pages de profil, de mise à jour du mot de passe ou déconnexion
+            $allowedRoutes = [
+                'profile.edit',
+                'profile.update',
+                'password.update',
+                'logout'
+            ];
+
+            if (!$request->routeIs($allowedRoutes)) {
                 return redirect()->route('profile.edit')->with('warning', 'Vous devez changer votre mot de passe par défaut avant de continuer.');
             }
         }

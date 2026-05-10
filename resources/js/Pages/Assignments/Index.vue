@@ -107,7 +107,8 @@ const supAssignmentOptions = computed(() =>
 
 // ── Ouvrir dialog depuis carte "disponibles" ──────────────────────────────────
 const openDialogForEmployee = (employee) => {
-    const code = employee.position?.code
+    // Priorité au rôle de l'utilisateur pour l'affectation
+    const code = employee.user?.role?.name || employee.position?.code
     if (code === 'CP') {
         cpForm.reset(); cpForm.employee_id = employee.id
         cpDialogVisible.value = true
@@ -188,7 +189,8 @@ const formatDate = (date) => {
 const unassignedByPosition = computed(() => {
     const groups = {}
     filteredUnassignedEmployees.value?.forEach(emp => {
-        const code = emp.position?.code ?? 'Autre'
+        // Priorité au rôle de l'utilisateur, sinon on prend le code du poste
+        const code = emp.user?.role?.name || emp.position?.code || 'Autre'
         if (!groups[code]) groups[code] = []
         groups[code].push(emp)
     })
