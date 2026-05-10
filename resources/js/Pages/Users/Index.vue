@@ -58,11 +58,14 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <button @click="confirmToggle(user)" 
+                  <button v-if="user.id !== $page.props.auth.user.id" @click="confirmToggle(user)" 
                     :class="['p-2 rounded-lg transition-all', user.is_active ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-teal-500 hover:bg-teal-50']"
                     :title="user.is_active ? 'Désactiver le compte' : 'Activer le compte'">
                     <i :class="['pi', user.is_active ? 'pi-user-minus' : 'pi-user-plus']"></i>
                   </button>
+                  <span v-else class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-100 rounded-md">
+                    <i class="pi pi-user mr-1"></i> Vous
+                  </span>
                 </td>
               </tr>
               <tr v-if="props.users.data.length === 0">
