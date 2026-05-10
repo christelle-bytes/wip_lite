@@ -22,7 +22,7 @@ const filteredCampaigns = computed(() => {
         const matchesSearch =
             !searchQuery.value ||
             campaign.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-            campaign.description.toLowerCase().includes(searchQuery.value.toLowerCase());
+            (campaign.description && campaign.description.toLowerCase().includes(searchQuery.value.toLowerCase()));
 
         let matchesStatus = true;
         if (activeFilter.value === "Actives") matchesStatus = campaign.status === "active";
