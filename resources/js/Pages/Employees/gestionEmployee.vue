@@ -87,7 +87,12 @@ const filteredEmployees = computed(() => {
         .filter(Boolean)
         .some((value) => value.toString().toLowerCase().includes(query));
 
-    const matchesRole = selectedRole.value === 'all' || emp.position_id === selectedRole.value;
+    let matchesRole = true;
+    if (selectedRole.value !== 'all') {
+      const selectedPosName = uniquePositions.value.find(p => p.id === selectedRole.value)?.name;
+      matchesRole = emp.position?.name === selectedPosName || emp.position_id === selectedRole.value;
+    }
+    
     const matchesStatus = selectedStatus.value === 'all' || emp.status === selectedStatus.value;
 
     return matchesSearch && matchesRole && matchesStatus;
