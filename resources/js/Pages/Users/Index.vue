@@ -6,7 +6,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
               <h1 class="text-3xl font-black text-slate-900 tracking-tight">Gestion des Utilisateurs</h1>
-              <p class="mt-1 text-sm text-slate-500 font-medium">Gérez les accès et les rôles des membres de la plateforme.</p>
+              <p class="mt-1 text-sm text-slate-500 font-medium">Gérez les accès et les statuts des membres de la plateforme.</p>
           </div>
           <Link :href="route('users.create')" 
               class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-teal-600/20 transition-all flex items-center gap-2">
@@ -24,17 +24,19 @@
                 <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Utilisateur (Email)</th>
                 <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Rôle</th>
                 <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Status PWD</th>
+                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Compte</th>
                 <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
-              <tr v-for="user in props.users.data" :key="user.id" class="hover:bg-slate-50/50 transition-colors group">
+              <tr v-for="user in props.users.data" :key="user.id" 
+                :class="['hover:bg-slate-50/50 transition-colors group', !user.is_active ? 'opacity-60 grayscale-[0.5]' : '']">
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
-                    <div class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-black text-[10px]">
+                    <div :class="['h-8 w-8 rounded-lg flex items-center justify-center font-black text-[10px]', user.is_active ? 'bg-slate-100 text-slate-500' : 'bg-slate-200 text-slate-400']">
                       {{ user.email.charAt(0).toUpperCase() }}
                     </div>
-                    <span class="text-sm font-bold text-slate-700">{{ user.email }}</span>
+                    <span :class="['text-sm font-bold', user.is_active ? 'text-slate-700' : 'text-slate-500 line-through decoration-slate-300']">{{ user.email }}</span>
                   </div>
                 </td>
                 <td class="px-6 py-4 text-center">
@@ -50,16 +52,21 @@
                     OK
                   </span>
                 </td>
+                <td class="px-6 py-4 text-center">
+                  <span :class="['rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest', user.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100']">
+                    {{ user.is_active ? 'Actif' : 'Désactivé' }}
+                  </span>
+                </td>
                 <td class="px-6 py-4 text-right">
-                  <button @click="deleteUser(user)" 
-                    class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                    title="Supprimer l'utilisateur">
-                    <i class="pi pi-trash"></i>
+                  <button @click="confirmToggle(user)" 
+                    :class="['p-2 rounded-lg transition-all', user.is_active ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-teal-500 hover:bg-teal-50']"
+                    :title="user.is_active ? 'Désactiver le compte' : 'Activer le compte'">
+                    <i :class="['pi', user.is_active ? 'pi-user-minus' : 'pi-user-plus']"></i>
                   </button>
                 </td>
               </tr>
               <tr v-if="props.users.data.length === 0">
-                <td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">
+                <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">
                   Aucun utilisateur trouvé.
                 </td>
               </tr>
@@ -81,18 +88,49 @@
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <Dialog v-model:visible="confirmVisible" modal :header="userToToggle?.is_active ? 'Désactiver le compte' : 'Activer le compte'" 
+      class="rounded-3xl shadow-2xl border-none" :style="{ width: '400px' }"
+      :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
+      <div v-if="userToToggle" class="space-y-4">
+        <div :class="['h-16 w-16 rounded-2xl mx-auto flex items-center justify-center mb-4', userToToggle.is_active ? 'bg-rose-50 text-rose-500' : 'bg-teal-50 text-teal-500']">
+          <i :class="['pi text-2xl', userToToggle.is_active ? 'pi-user-minus' : 'pi-user-plus']"></i>
+        </div>
+        <p class="text-sm text-slate-600 text-center leading-relaxed">
+          Êtes-vous sûr de vouloir {{ userToToggle.is_active ? 'désactiver' : 'activer' }} le compte de 
+          <span class="font-black text-slate-900">{{ userToToggle.email }}</span> ?
+        </p>
+        <p v-if="userToToggle.is_active" class="text-[10px] text-slate-400 text-center font-medium">
+          L'utilisateur ne pourra plus se connecter à la plateforme.
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex gap-3 w-full">
+          <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-black text-xs uppercase" @click="confirmVisible = false" />
+          <Button :label="userToToggle?.is_active ? 'Désactiver' : 'Activer'" 
+            :class="['flex-1 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg transition-all', userToToggle?.is_active ? 'bg-rose-600 shadow-rose-600/20' : 'bg-teal-600 shadow-teal-600/20']" 
+            @click="toggleStatus" />
+        </div>
+      </template>
+    </Dialog>
+
   </AuthenticatedLayout>
 </template>
 
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
+import { ref } from 'vue';
 
 const props = defineProps({
   users: Object,
 });
 
-const form = useForm({});
+const confirmVisible = ref(false);
+const userToToggle = ref(null);
 
 const getRoleColor = (role) => {
   const name = role?.toLowerCase();
@@ -102,10 +140,17 @@ const getRoleColor = (role) => {
   return 'bg-slate-100 text-slate-600';
 };
 
-const deleteUser = (user) => {
-  if (confirm(`Voulez-vous vraiment supprimer l'utilisateur ${user.email} ?`)) {
-    form.delete(route('users.destroy', user.id));
-  }
+const confirmToggle = (user) => {
+  userToToggle.value = user;
+  confirmVisible.value = true;
+};
+
+const toggleStatus = () => {
+  router.patch(route('users.toggle-status', userToToggle.value.id), {}, {
+    onSuccess: () => {
+      confirmVisible.value = false;
+    }
+  });
 };
 </script>
 
