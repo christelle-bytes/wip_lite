@@ -12,14 +12,33 @@ class PlanningModelController extends Controller
 
     public function index()
     {
-        $employee = auth()->user()?->employee;
-        $planningModels = $employee ? $employee->planningModels : [];
-        return Inertia::render(
-            'planning/Index',
-            [
-                'planningModels' => $planningModels ?? []
-            ]
-        );
+        $user = auth()->user();
+        $employee = $user->employee;
+
+        // Récupérer "Mon Planning" (les assignations personnelles de l'utilisateur)
+        $myAssignments = $employee 
+            ? $employee->planningAssignments()->with(['planningModel', 'employee.user.role'])->get() 
+            : collect();
+
+        // Si l'utilisateur est Admin ou CP, il voit les modèles et toutes les assignations
+        if ($user->hasRole('Admin') || $user->hasRole('CP')) {
+            $planningModels = PlanningModel::all();
+            $assignments = PlanningAssignment::with(['employee.user.role', 'planningModel'])->get();
+        } else {
+            // Les SUP et TC ne voient pas les modèles globaux ni les autres assignations
+            $planningModels = collect();
+            $assignments = collect();
+        }
+
+        // Groupement par statut pour les assignations générales (uniquement pour Admin/CP)
+        $groupedAssignments = $assignments->groupBy('status');
+
+        return Inertia::render('planning/Index', [
+            'planningModels' => $planningModels,
+            'assignments'    => $groupedAssignments,
+            'allAssignments' => $assignments,
+            'myAssignments'  => $myAssignments 
+        ]);
     }
 
     public function store(Request $request)
@@ -50,6 +69,7 @@ class PlanningModelController extends Controller
             $validated['sunday_hours'],
         ]);
 
+        
         $validated['created_by'] = auth()->user()->employee->id;
 
         PlanningModel::create($validated);
