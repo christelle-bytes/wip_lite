@@ -28,19 +28,7 @@ Route::get('/', function () {
 
 
 
-Route::get('/dashboard', function () {
-    $user = Auth::user();
-    $role = $user?->role;
-    $roleName = $role ? strtoupper($role->name) : 'ADMIN';
-
-    return match ($roleName) {
-        'ADMIN' => Inertia::render('DashboardAdmin'),
-        'CP' => Inertia::render('DashboardCp'),
-        'SUP' => Inertia::render('DashboardSup'),
-        'TC' => Inertia::render('DashboardTc'),
-        default => Inertia::render('DashboardAdmin'),
-    };
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 Route::resource('/timesheet', TimesheetController::class);
 
 Route::middleware('auth')->group(function () {

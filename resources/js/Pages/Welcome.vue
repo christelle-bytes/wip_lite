@@ -28,76 +28,91 @@ function handleImageError() {
 
 
 <template>
-    <Head title="Bienvenue - Gestion des Employés" />
+    <Head title="Bienvenue — GRH System" />
 
-    <div class="relative min-h-screen flex items-center justify-center bg-gray-900 selection:bg-blue-500 selection:text-white">
+    <div class="relative min-h-screen flex items-center justify-center bg-slate-950 selection:bg-teal-500 selection:text-white">
 
-        <!-- Image d'arrière-plan professionnelle -->
-        <div class="absolute inset-0 z-0">
-            <img
-                src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
-                class="w-full h-full object-cover opacity-40"
-                alt="Background"
-            />
-            <div class="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-black/60 to-gray-900/80"></div>
+        <!-- Arrière-plan stylisé -->
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <div class="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-teal-600/20 blur-[120px]"></div>
+            <div class="absolute -bottom-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-slate-800/30 blur-[100px]"></div>
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557426272-fc759fbb7a8d?auto=format&fit=crop&q=80&w=1920')] bg-cover bg-center opacity-10 grayscale"></div>
         </div>
 
         <!-- Contenu Principal -->
-        <div class="relative z-10 w-full max-w-2xl px-6">
+        <div class="relative z-10 w-full max-w-4xl px-6">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                
+                <div class="text-left">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 mb-8">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                        </span>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-teal-400">Solution RH Intelligente</span>
+                    </div>
+                    
+                    <h1 class="text-6xl font-black text-white tracking-tight leading-[1.1] mb-6">
+                        Gérez vos équipes avec <span class="text-teal-500 italic">précision.</span>
+                    </h1>
+                    
+                    <p class="text-slate-400 text-lg mb-10 leading-relaxed font-medium">
+                        Une plateforme moderne conçue pour simplifier la gestion RH, le suivi des performances et la planification des campagnes.
+                    </p>
 
-            <!-- Carte avec effet de transparence (Glassmorphism) -->
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-10 shadow-2xl text-center">
+                    <div v-if="canLogin" class="flex flex-wrap gap-5">
+                        <Link
+                            v-if="$page.props.auth.user"
+                            :href="route('dashboard')"
+                            class="px-8 py-4 bg-teal-600 text-white font-black rounded-2xl hover:bg-teal-700 transition-all shadow-xl shadow-teal-600/20 uppercase tracking-widest text-xs"
+                        >
+                            Accéder au Dashboard
+                        </Link>
 
-                <!-- Logo ou Icône de l'application -->
-                <div class="mb-6 flex justify-center">
-                    <div class="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
+                        <template v-else>
+                            <Link
+                                :href="route('login')"
+                                class="px-8 py-4 bg-teal-600 text-white font-black rounded-2xl hover:bg-teal-700 transition-all shadow-xl shadow-teal-600/20 uppercase tracking-widest text-xs"
+                            >
+                                Connexion sécurisée
+                            </Link>
+                            <a href="#features" class="px-8 py-4 bg-white/5 text-slate-300 font-black rounded-2xl border border-white/10 hover:bg-white/10 transition-all uppercase tracking-widest text-xs">
+                                Découvrir
+                            </a>
+                        </template>
                     </div>
                 </div>
 
-                <h1 class="text-4xl font-extrabold text-white tracking-tight mb-4">
-                    Système de Gestion RH
-                </h1>
-
-                <p class="text-gray-200 text-lg mb-10 leading-relaxed">
-                    Plateforme centralisée pour la gestion de vos collaborateurs,
-                    suivi des performances et administration simplifiée.
-                </p>
-
-                <!-- Navigation Logique -->
-                <div v-if="canLogin" class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Link
-                        v-if="$page.props.auth.user"
-                        :href="route('reporting.index')"
-                        class="px-8 py-4 bg-white text-blue-900 font-bold rounded-xl hover:bg-gray-100 transition duration-300 shadow-xl"
-                    >
-                        Aller au Tableau de Bord
-                    </Link>
-
-                    <template v-else>
-                        <Link
-                            :href="route('login')"
-                            class="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition duration-300 shadow-lg shadow-blue-600/30"
-                        >
-                            Connexion
-                        </Link>
-
-                        <!-- <Link
-                            v-if="canRegister"
-                            :href="route('register')"
-                            class="px-8 py-4 bg-white/10 text-white font-bold border border-white/30 rounded-xl hover:bg-white/20 transition duration-300"
-                        >
-                            Créer un compte
-                        </Link> -->
-                    </template>
+                <div class="hidden lg:block">
+                    <div class="relative group">
+                        <div class="absolute inset-0 bg-teal-500/20 rounded-[40px] blur-2xl group-hover:bg-teal-500/30 transition-all duration-500"></div>
+                        <div class="relative bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-[40px] shadow-2xl">
+                            <!-- Mini Dashboard Mockup -->
+                            <div class="space-y-6">
+                                <div class="flex items-center justify-between">
+                                    <div class="h-4 w-24 bg-slate-700 rounded-full"></div>
+                                    <div class="h-8 w-8 bg-teal-500 rounded-lg"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="h-20 bg-slate-800 rounded-2xl border border-white/5 p-4">
+                                        <div class="h-2 w-12 bg-slate-600 rounded-full mb-3"></div>
+                                        <div class="h-4 w-16 bg-teal-400 rounded-full"></div>
+                                    </div>
+                                    <div class="h-20 bg-slate-800 rounded-2xl border border-white/5 p-4">
+                                        <div class="h-2 w-12 bg-slate-600 rounded-full mb-3"></div>
+                                        <div class="h-4 w-16 bg-slate-400 rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div class="h-40 bg-slate-800/50 rounded-2xl border border-white/5"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Footer discret -->
-            <footer class="mt-8 text-center text-gray-400 text-sm">
-                Laravel v{{ laravelVersion }} (PHP v{{ phpVersion }}) &bull; &copy; 2024 HR Management System
+            <footer class="mt-20 text-center lg:text-left text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
+                &copy; 2024 GRH System &bull; Powered by Modern HR Tech
             </footer>
         </div>
     </div>
