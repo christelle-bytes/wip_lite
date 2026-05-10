@@ -41,23 +41,26 @@ Route::get('/dashboard', function () {
         default => Inertia::render('DashboardAdmin'),
     };
 })->middleware(['auth'])->name('dashboard');
-
 Route::resource('/timesheet', TimesheetController::class);
-Route::resource('/timesheetEntry', TimesheetEntryController::class);
-// saisie heure sup
-Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->name('entry.sup');
-// vue recap saisie sup
-Route::get('/timesheetEntry_sup', [TimesheetEntryController::class, 'indexSup'])->name('index.sup');
 
-// vue recap saisie telecon
-Route::get('/timesheetEntry_telecon', [TimesheetEntryController::class, 'indexTelecon'])->name('index.telecon');
-// saisie heure telecon
-Route::get('/timesheetEntry_teleconEntry', [TimesheetEntryController::class, 'entryTelecon'])->name('entry.telecon');
+Route::middleware('auth')->group(function () {
+    Route::resource('/timesheet', TimesheetController::class)->middleware(['timesheet.access:ADMIN,CP']);
+    Route::resource('/timesheetEntry', TimesheetEntryController::class);
+    // saisie heure sup
+    Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->middleware('timesheetEntry.access:Admin,CP')->name('entry.sup');
+    // vue recap saisie sup
+    Route::get('/timesheetEntry_sup', [TimesheetEntryController::class, 'indexSup'])->middleware('timesheetEntry.access:Admin,CP')->name('index.sup');
 
-// store telecon
-Route::post('/timesheetEntry_teleconStore', [TimesheetEntryController::class, 'storeTelecon'])->name('store.telecon');
-// store sup
-Route::post('/timesheetEntry_supStore', [TimesheetEntryController::class, 'storeSup'])->name('store.sup');
+    // vue recap saisie telecon
+    Route::get('/timesheetEntry_telecon', [TimesheetEntryController::class, 'indexTelecon'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('index.telecon');
+    // saisie heure telecon
+    Route::get('/timesheetEntry_teleconEntry', [TimesheetEntryController::class, 'entryTelecon'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('entry.telecon');
+
+    // store telecon
+    Route::post('/timesheetEntry_teleconStore', [TimesheetEntryController::class, 'storeTelecon'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('store.telecon');
+    // store sup
+    Route::post('/timesheetEntry_supStore', [TimesheetEntryController::class, 'storeSup'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('store.sup');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -123,4 +126,4 @@ Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name(
 Route::patch('/assignments/{assignment}/release', [AssignmentController::class, 'release'])->name('assignments.release');
 Route::get('/statistiques', [ReportingController::class, 'index'])->name('reporting.index');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

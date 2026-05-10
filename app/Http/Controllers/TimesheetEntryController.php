@@ -23,53 +23,90 @@ class TimesheetEntryController extends Controller
     // index sup
     public function indexSup(Request $request)
     {
-        // Optionnel : Récupérer le mois depuis la requête (ex: 2026-05)
-        // Si vide, on peut décider de prendre le mois en cours ou tous les mois
-        $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
 
-        $supervisor = Employee::with([
-            'position',
-            'timesheet' => function ($query) use ($targetMonth) {
-                // On peut filtrer les feuilles de temps qui chevauchent le mois
-                $query->with(['entries' => function ($entryQuery) use ($targetMonth) {
-                    // On filtre les entrées précises pour le mois choisi
-                    $entryQuery->where('date', 'like', "$targetMonth%");
-                }]);
-            }
-        ])
-            ->whereHas('position', function ($query) {
-                $query->where('code', 'SUP');
-            })
-            ->whereHas('timesheet')
+        $query = Employee::query()
+            ->with([
+                'position',
+                'timesheet' => function ($q) {
+                    $q->orderBy('period_start')
+                        ->with('entries');
+                }
+            ])
+            ->whereHas('position', fn($q) => $q->where('code', 'SUP'))
+            ->where('status', 'actif');
+
+        if ($startDate && $endDate) {
+            $query->whereHas(
+                'timesheet',
+                fn($q) =>
+                $q->where('period_start', $startDate)
+                    ->where('period_end', $endDate)
+            );
+        } else {
+            $query->whereHas('timesheet');
+        }
+
+        $supervisors = $query->get();
+
+        // === Toutes les périodes uniques ===
+        $allPeriods = Employee::whereHas('position', fn($q) => $q->where('code', 'SUP'))
             ->where('status', 'actif')
-            ->get();
+            ->whereHas('timesheet')
+            ->with(['timesheet:id,employee_id,period_start,period_end'])
+            ->get()
+            ->flatMap(
+                fn($employee) =>
+                $employee->timesheet->map(fn($ts) => [
+                    'period_start' => $ts->period_start->format('Y-m-d'),   // ← Important
+                    'period_end'   => $ts->period_end->format('Y-m-d'),     // ← Important
+                    'label'        => $ts->period_start->format('d/m/Y') . ' → ' . $ts->period_end->format('d/m/Y'),
+                ])
+            )
+            ->unique(fn($p) => $p['period_start'] . '|' . $p['period_end'])
+            ->sortBy('period_start')
+            ->values();
+
+        // Filtrage des timesheets si période sélectionnée
+        if ($startDate && $endDate) {
+            $supervisors->each(function ($sup) use ($startDate, $endDate) {
+                $filtered = $sup->timesheet->where('period_start', $startDate)
+                    ->where('period_end', $endDate);
+                $sup->setRelation('timesheet', $filtered);
+            });
+        }
 
         return Inertia::render('TimesheetsEntry/IndexSup', [
-            'supervisor' => $supervisor,
-            'currentMonth' => $targetMonth
+            'supervisors'    => $supervisors,
+            'allPeriods'     => $allPeriods,
+            'selectedPeriod' => $startDate && $endDate ? [
+                'period_start' => $startDate,
+                'period_end'   => $endDate,
+                'label'        => str_replace('-', '/', $startDate) . ' → ' . str_replace('-', '/', $endDate),
+            ] : null,
         ]);
     }
-
     // index telecon
     public function indexTelecon(Request $request)
     {
-        // $manager = Auth::user()->employee;
-        // if (!$manager) {
-        //     // Gérer le cas où l'utilisateur n'est pas lié à un employé
-        //     return redirect()->back()->with('error', 'Aucun profil employé lié.');
-        // }
-        // ->whereHas('assignments', function ($query) {
-        //     $query->where('manager_id', $manager->id);
-        // })
+        $manager = Auth::user()->employee;
+        if (!$manager) {
+            // Gérer le cas où l'utilisateur n'est pas lié à un employé
+         return redirect()->route('entry.telecon')->with('error', 'Aucun profil employé lié.');
+        }
         $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
         $telecon = Employee::with('position', 'timesheet', 'assignments')
-            ->whereHas('position', function ($query) use ($targetMonth) {
-
-                $query->with(['entries' => function ($entryQuery) use ($targetMonth) {
-                    // On filtre les entrées précises pour le mois choisi
-                    $entryQuery->where('date', 'like', "$targetMonth%");
+        ->whereHas('position', function ($query) use ($targetMonth) {
+            
+            $query->with(['entries' => function ($entryQuery) use ($targetMonth) {
+                // On filtre les entrées précises pour le mois choisi
+                $entryQuery->where('date', 'like', "$targetMonth%");
                 }])->where('code', 'TC');
-            })
+                })
+                ->whereHas('assignments', function ($query) use ($manager) {
+                    $query->where('manager_id', $manager->id);
+                })
             ->whereHas('timesheet')
             ->where('status', 'actif')
             ->get();
@@ -87,7 +124,9 @@ class TimesheetEntryController extends Controller
             ->whereHas('position', function ($query) {
                 $query->where('code', 'SUP');
             })
-            ->whereHas('timesheet')
+            ->whereHas('timesheet', function ($query) {
+                $query->where('status', '!=', 'validated');
+            })
             ->where('status', 'actif')
             ->get();
 
@@ -104,10 +143,10 @@ class TimesheetEntryController extends Controller
         // if (!$manager) {
         //     // Gérer le cas où l'utilisateur n'est pas lié à un employé
         //     return redirect()->back()->with('error', 'Aucun profil employé lié.');
-        //     }
-        //     ->whereHas('assignments', function ($query) {
-        //         $query->where('manager_id', $manager->id);
-        //     })
+        // }
+        // ->whereHas('assignments', function ($query) {
+        //     $query->where('manager_id', Auth::user()->employee->id);
+        // })
         $telecon = Employee::with('position', 'assignments')
             ->whereHas('position', function ($query) {
                 $query->where('code', 'TC');
@@ -216,9 +255,11 @@ class TimesheetEntryController extends Controller
             $timesheet = Timesheet::where('employee_id', $id)
                 ->where('period_start', '<=', $validated['date'])
                 ->where('period_end', '>=', $validated['date'])
+                ->where('status', '=', 'draft')
                 ->first();
 
             if (!$timesheet) continue;
+
 
             $startTime = Carbon::parse($validated['check_in']);
             $endTime = Carbon::parse($validated['check_out']);
@@ -238,6 +279,7 @@ class TimesheetEntryController extends Controller
                 $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';
                 $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
             }
+
 
             // 4. Calcul de l'overtime
             $diff = $totalHours - $plannedHours;

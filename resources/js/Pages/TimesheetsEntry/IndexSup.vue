@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
@@ -8,65 +8,41 @@ import FloatLabel from "primevue/floatlabel";
 import AuthenticatedLayout from "../../Layouts/AuthenticatedLayout.vue";
 import { Link } from "@inertiajs/vue3";
 
+
 const props = defineProps({
-    supervisor: Array,
+    supervisors: { type: Array, default: () => [] },
+    allPeriods: { type: Array, default: () => [] },
+    selectedPeriod: { type: Object, default: null },
     auth: Object,
 });
 
 const expandedRows = ref([]);
 
-// 1. Extraire la liste unique des mois présents dans les données pour le filtre
-const monthOptions = computed(() => {
-    const months = new Set();
-    props.supervisor.forEach((sup) => {
-        sup.timesheet.forEach((ts) => {
-            ts.entries.forEach((entry) => {
-                const date = new Date(entry.date);
-                const monthLabel = date.toLocaleDateString("fr-FR", {
-                    month: "long",
-                    year: "numeric",
-                });
-                months.add(monthLabel);
-            });
-        });
-    });
-    return Array.from(months).map((m) => ({ label: m, value: m }));
+// Sélection
+const selectedPeriod = ref(props.selectedPeriod);
+
+// Options sécurisées
+const periodOptions = computed(() => {
+    return Array.isArray(props.allPeriods) ? props.allPeriods : [];
 });
 
-const selectedMonth = ref(monthOptions.value[0] || null);
-
-// 2. Filtrer les entrées selon le mois sélectionné
-const getFilteredEntries = (employee) => {
-    const allEntries = employee.timesheet.flatMap((ts) => ts.entries);
-    if (!selectedMonth.value) return allEntries;
-
-    return allEntries.filter((entry) => {
-        const dateLabel = new Date(entry.date).toLocaleDateString("fr-FR", {
-            month: "long",
-            year: "numeric",
-        });
-        return dateLabel === selectedMonth.value.value;
-    });
+const getFilteredEntries = (supervisor) => {
+    return supervisor.timesheet?.flatMap(ts => ts.entries || []) || [];
 };
 
-// Fonctions de formatage
 const formatHours = (v) =>
-    v
-        ? `${Math.floor(v)}h${Math.round((v % 1) * 60)
-              .toString()
-              .padStart(2, "0")}`
-        : "0h00";
+    v ? `${Math.floor(v)}h${Math.round((v % 1) * 60).toString().padStart(2, "0")}` : "0h00";
+
 const formatDate = (d) =>
-    new Date(d).toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "2-digit",
-    });
+    d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "-";
+
+console.log("Superviseurs reçus :", props);
 </script>
 
 <template>
     <AuthenticatedLayout>
         <div class="p-6 space-y-6">
-            <!-- Barre d'outils améliorée -->
+            <!-- Barre d'outils -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="flex flex-wrap justify-between items-end gap-6">
                     <div>
@@ -79,13 +55,6 @@ const formatDate = (d) =>
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <!-- <Link
-                            :href="route('entry.telecon')"
-                            class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-2"
-                        >
-                            <i class="pi pi-pencil"></i>
-                            Saisie Téléconseillers
-                        </Link> -->
                         <Link
                             :href="route('entry.sup')"
                             class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-2"
@@ -94,12 +63,12 @@ const formatDate = (d) =>
                             Saisie Superviseurs
                         </Link>
 
-                        <FloatLabel variant="on" class="min-w-60">
+                        <FloatLabel variant="on" class="min-w-80">
                             <Select
-                                v-model="selectedMonth"
-                                :options="monthOptions"
+                                v-model="selectedPeriod"
+                                :options="periodOptions"
                                 optionLabel="label"
-                                placeholder="Filtrer par mois"
+                                placeholder="Sélectionner une période"
                                 class="w-full"
                             />
                         </FloatLabel>
@@ -111,7 +80,7 @@ const formatDate = (d) =>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <DataTable
                     v-model:expandedRows="expandedRows"
-                    :value="props.supervisor"
+                    :value="props.supervisors"
                     dataKey="id"
                     class="p-datatable-sm"
                     stripedRows
@@ -140,15 +109,15 @@ const formatDate = (d) =>
 
                     <Column field="position.name" header="Poste" style="min-width: 12rem" />
 
-                    <Column header="Total Mois" style="min-width: 10rem">
+                    <Column header="Total Période" style="min-width: 11rem">
                         <template #body="{ data }">
                             <div class="text-lg font-semibold text-blue-600">
                                 {{
                                     formatHours(
                                         getFilteredEntries(data).reduce(
-                                            (acc, curr) => acc + curr.total_hours,
-                                            0,
-                                        ),
+                                            (acc, curr) => acc + (curr?.total_hours || 0),
+                                            0
+                                        )
                                     )
                                 }}
                             </div>
@@ -162,7 +131,8 @@ const formatDate = (d) =>
                                 <div class="flex items-center gap-3">
                                     <i class="pi pi-calendar text-blue-600 text-xl"></i>
                                     <span class="font-semibold text-slate-700">
-                                        Détails de {{ selectedMonth?.label }}
+                                        Période : 
+                                        {{ selectedPeriod?.label || "Toutes les périodes" }}
                                     </span>
                                 </div>
                                 <span class="text-xs text-slate-500">
@@ -208,39 +178,3 @@ const formatDate = (d) =>
         </div>
     </AuthenticatedLayout>
 </template>
-
-<style scoped>
-:deep(.p-datatable-thead > tr > th) {
-    background-color: #f8fafc;
-    color: #475569;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 1.1rem 1rem;
-}
-
-:deep(.p-datatable-tbody > tr) {
-    transition: background-color 0.2s;
-}
-
-:deep(.p-datatable-tbody > tr:hover) {
-    background-color: #f1f5f9;
-}
-
-/* Style de l'expander */
-:deep(.p-datatable .p-row-toggler) {
-    color: #64748b;
-}
-
-:deep(.p-tag) {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 9999px;
-}
-
-/* Amélioration globale des tableaux */
-.p-datatable {
-    border-radius: 16px;
-}
-</style>

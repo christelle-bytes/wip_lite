@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\CheckTimesheetAccess;
+use App\Http\Middleware\CheckTimesheetEntryAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'timesheet.access' => CheckTimesheetAccess::class,
+            'timesheetEntry.access' => CheckTimesheetEntryAccess::class,
         ]);
 
         //

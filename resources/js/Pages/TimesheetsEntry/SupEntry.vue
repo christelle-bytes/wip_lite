@@ -38,8 +38,15 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (form.date) {
+        // Force une string sans fuseau
+        const year = form.date.getFullYear();
+        const month = String(form.date.getMonth() + 1).padStart(2, '0');
+        const day = String(form.date.getDate()).padStart(2, '0');
+        
+        form.date = `${year}-${month}-${day}`; 
+    }
     form.employee_ids = selectedSuperior.value.map((sup) => sup.id);
-    console.log(selectedSuperior.value);
     form.post(route("store.sup"));
     visible.value = false;
 };
@@ -78,7 +85,7 @@ const initFilters = () => {
 initFilters();
 
 onMounted(() => {
-    console.log(props.superior);
+    
     initFilters();
 });
 
@@ -95,21 +102,26 @@ const createEntry = () => {
     <AuthenticatedLayout>
         <div class="p-6 space-y-6">
             <!-- En-tête -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div
+                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
+            >
                 <div class="flex justify-between items-start">
                     <div>
                         <h1 class="text-3xl font-semibold text-slate-800">
                             Saisie d'heures - Superviseurs
                         </h1>
                         <p class="text-slate-500 mt-1">
-                            Sélectionnez un ou plusieurs superviseurs pour créer une nouvelle saisie
+                            Sélectionnez un ou plusieurs superviseurs pour créer
+                            une nouvelle saisie
                         </p>
                     </div>
                 </div>
             </div>
 
             <!-- Tableau Principal -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div
+                class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+            >
                 <DataTable
                     v-model:filters="filters"
                     :value="props.superior"
@@ -118,19 +130,28 @@ const createEntry = () => {
                     dataKey="id"
                     v-model:selection="selectedSuperior"
                     filterDisplay="menu"
-                    :globalFilterFields="['first_name', 'last_name', 'matricule']"
+                    :globalFilterFields="[
+                        'first_name',
+                        'last_name',
+                        'matricule',
+                    ]"
                     class="p-datatable-sm"
                     stripedRows
                     rowHover
                 >
                     <template #header>
-                        <div class="p-5 border-b border-slate-100 bg-slate-50 flex flex-wrap justify-between items-center gap-4">
+                        <div
+                            class="p-5 border-b border-slate-100 bg-slate-50 flex flex-wrap justify-between items-center gap-4"
+                        >
                             <div class="flex items-center gap-3">
                                 <Button
                                     label="Nouvelle saisie"
                                     icon="pi pi-plus"
                                     severity="primary"
-                                    :disabled="!selectedSuperior || !selectedSuperior.length"
+                                    :disabled="
+                                        !selectedSuperior ||
+                                        !selectedSuperior.length
+                                    "
                                     @click="createEntry"
                                     class="shadow-sm"
                                 />
@@ -145,8 +166,13 @@ const createEntry = () => {
                                 />
                             </div>
 
-                            <IconField iconPosition="left" class="w-full max-w-md">
-                                <InputIcon class="pi pi-search text-slate-400" />
+                            <IconField
+                                iconPosition="left"
+                                class="w-full max-w-md"
+                            >
+                                <InputIcon
+                                    class="pi pi-search text-slate-400"
+                                />
                                 <InputText
                                     v-model="filters['global'].value"
                                     placeholder="Rechercher par nom ou matricule..."
@@ -162,26 +188,84 @@ const createEntry = () => {
                         </div>
                     </template>
 
-                    <Column selectionMode="multiple" headerStyle="width: 3.5rem" />
+                    <Column
+                        selectionMode="multiple"
+                        headerStyle="width: 3.5rem"
+                    />
 
                     <!-- Collaborateur -->
-                    <Column header="Collaborateur" sortable style="min-width: 18rem">
+                    <Column
+                        header="Collaborateur"
+                        sortable
+                        style="min-width: 18rem"
+                    >
                         <template #body="{ data }">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-slate-100 flex items-center justify-center font-semibold text-slate-700 border border-slate-200">
-                                    {{ data.first_name?.[0] }}{{ data.last_name?.[0] }}
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-slate-100 flex items-center justify-center font-semibold text-slate-700 border border-slate-200"
+                                >
+                                    {{ data.first_name?.[0]
+                                    }}{{ data.last_name?.[0] }}
                                 </div>
                                 <div>
                                     <p class="font-semibold text-slate-800">
-                                        {{ data.first_name }} {{ data.last_name }}
+                                        {{ data.first_name }}
+                                        {{ data.last_name }}
                                     </p>
-                                    <p class="text-xs text-slate-500">{{ data.matricule }}</p>
+                                    <p class="text-xs text-slate-500">
+                                        {{ data.matricule }}
+                                    </p>
+                                </div>
+                            </div>
+                        </template>
+                    </Column>
+                    <!-- Periode Start -->
+                    <Column
+                        header="Periode Start"
+                        sortable
+                        style="min-width: 18rem"
+                    >
+                        <template #body="{ data }">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="font-semibold text-slate-800"
+                                >
+                                    {{
+                                        formatDate(
+                                            data.timesheet?.[0].period_start,
+                                        )
+                                    }}
+                                </div>
+                            </div>
+                        </template>
+                    </Column>
+                    <!-- Periode END -->
+                    <Column
+                        header="Periode End"
+                        sortable
+                        style="min-width: 18rem"
+                    >
+                        <template #body="{ data }">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="font-semibold text-slate-800"
+                                >
+                                    {{
+                                        formatDate(
+                                            data.timesheet?.[0].period_end,
+                                        )
+                                    }}
                                 </div>
                             </div>
                         </template>
                     </Column>
 
-                    <Column field="matricule" header="Matricule" sortable style="min-width: 10rem" />
+                    <Column
+                        field="matricule"
+                        header="Matricule"
+                        sortable
+                        style="min-width: 10rem"
+                    />
                 </DataTable>
             </div>
         </div>
@@ -196,7 +280,8 @@ const createEntry = () => {
         >
             <div class="space-y-6 py-2">
                 <div class="text-slate-500 text-sm">
-                    Création d'une entrée pour {{ selectedSuperior.length }} superviseur(s) sélectionné(s)
+                    Création d'une entrée pour
+                    {{ selectedSuperior.length }} superviseur(s) sélectionné(s)
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -213,7 +298,9 @@ const createEntry = () => {
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col gap-2">
-                        <label class="font-semibold text-slate-700">Heure d'arrivée</label>
+                        <label class="font-semibold text-slate-700"
+                            >Heure d'arrivée</label
+                        >
                         <DatePicker
                             v-model="form.check_in"
                             timeOnly
@@ -222,7 +309,9 @@ const createEntry = () => {
                         />
                     </div>
                     <div class="flex flex-col gap-2">
-                        <label class="font-semibold text-slate-700">Heure de départ</label>
+                        <label class="font-semibold text-slate-700"
+                            >Heure de départ</label
+                        >
                         <DatePicker
                             v-model="form.check_out"
                             timeOnly
@@ -233,7 +322,9 @@ const createEntry = () => {
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <label class="font-semibold text-slate-700">Durée de pause (minutes)</label>
+                    <label class="font-semibold text-slate-700"
+                        >Durée de pause (minutes)</label
+                    >
                     <InputNumber
                         v-model="form.break_duration"
                         mode="decimal"
@@ -245,11 +336,17 @@ const createEntry = () => {
                 </div>
 
                 <!-- Section Absence -->
-                <div v-if="!form.check_in || !form.check_out" class="border border-dashed border-slate-300 rounded-xl p-5 bg-slate-50">
+                <div
+                    v-if="!form.check_in || !form.check_out"
+                    class="border border-dashed border-slate-300 rounded-xl p-5 bg-slate-50"
+                >
                     <h4 class="font-medium text-slate-700 mb-4">Absence</h4>
                     <div class="space-y-4">
                         <div>
-                            <label class="font-semibold text-slate-700 block mb-2">Type d'absence</label>
+                            <label
+                                class="font-semibold text-slate-700 block mb-2"
+                                >Type d'absence</label
+                            >
                             <Select
                                 v-model="form.absence_type"
                                 :options="typeAbs"
@@ -259,7 +356,10 @@ const createEntry = () => {
                             />
                         </div>
                         <div>
-                            <label class="font-semibold text-slate-700 block mb-2">Commentaire</label>
+                            <label
+                                class="font-semibold text-slate-700 block mb-2"
+                                >Commentaire</label
+                            >
                             <InputText
                                 v-model="form.comment"
                                 placeholder="Détails supplémentaires..."
