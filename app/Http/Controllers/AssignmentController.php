@@ -29,19 +29,29 @@ class AssignmentController extends Controller
                     $q->where('position_id', $cpPosition->id)->where('status', 'actif');
                 })->get();
 
-            $unassignedCPs = Employee::where('position_id', $cpPosition->id)
-                ->where('status', 'actif')
+            // Fetch unassigned CPs: either by position OR by user role
+            $unassignedCPs = Employee::where('status', 'actif')
                 ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->where(function($query) use ($cpPosition) {
+                    $query->where('position_id', $cpPosition->id)
+                          ->orWhereHas('user.role', fn($q) => $q->where('name', 'CP'));
+                })
                 ->with(['user', 'position'])->get();
 
-            $unassignedSUPs = Employee::where('position_id', $supPosition->id)
-                ->where('status', 'actif')
+            $unassignedSUPs = Employee::where('status', 'actif')
                 ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->where(function($query) use ($supPosition) {
+                    $query->where('position_id', $supPosition->id)
+                          ->orWhereHas('user.role', fn($q) => $q->where('name', 'SUP'));
+                })
                 ->with(['user', 'position'])->get();
 
-            $unassignedTCs = Employee::where('position_id', $tcPosition->id)
-                ->where('status', 'actif')
+            $unassignedTCs = Employee::where('status', 'actif')
                 ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->where(function($query) use ($tcPosition) {
+                    $query->where('position_id', $tcPosition->id)
+                          ->orWhereHas('user.role', fn($q) => $q->where('name', 'TC'));
+                })
                 ->with(['user', 'position'])->get();
 
             $assignedCPs = Assignment::where('position_id', $cpPosition->id)
@@ -86,7 +96,7 @@ class AssignmentController extends Controller
         }
 
         // ── CP : voit ses campagnes, peut affecter SUP/TC ─────────────────────
-        if ($employee?->position->code === 'CP') {
+        if ($user->isCP()) {
             $myCampaignIds = Assignment::where('employee_id', $employee->id)
                 ->where('position_id', $cpPosition->id)
                 ->where('status', 'actif')
@@ -109,19 +119,28 @@ class AssignmentController extends Controller
                 ->with(['employee.user', 'campaign'])
                 ->get();
 
-            $unassignedSUPs = Employee::where('position_id', $supPosition->id)
-                ->where('status', 'actif')
+            $unassignedSUPs = Employee::where('status', 'actif')
                 ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->where(function($query) use ($supPosition) {
+                    $query->where('position_id', $supPosition->id)
+                          ->orWhereHas('user.role', fn($q) => $q->where('name', 'SUP'));
+                })
                 ->with(['user', 'position'])->get();
 
-            $unassignedTCs = Employee::where('position_id', $tcPosition->id)
-                ->where('status', 'actif')
+            $unassignedTCs = Employee::where('status', 'actif')
                 ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
+                ->where(function($query) use ($tcPosition) {
+                    $query->where('position_id', $tcPosition->id)
+                          ->orWhereHas('user.role', fn($q) => $q->where('name', 'TC'));
+                })
                 ->with(['user', 'position'])->get();
 
             $unassignedEmployees = Employee::where('status', 'actif')
                 ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
-                ->whereIn('position_id', [$supPosition->id, $tcPosition->id])
+                ->where(function($query) use ($supPosition, $tcPosition) {
+                    $query->whereIn('position_id', [$supPosition->id, $tcPosition->id])
+                          ->orWhereHas('user.role', fn($q) => $q->whereIn('name', ['SUP', 'TC']));
+                })
                 ->with([
                     'position', 'user',
                     'assignments' => fn($q) => $q->where('status', 'terminé')
@@ -154,7 +173,7 @@ class AssignmentController extends Controller
         }
 
         // ── SUP : voit uniquement sa hiérarchie (ses TC) ──────────────────────
-        if ($employee?->position->code === 'SUP') {
+        if ($user->isSUP()) {
             $myAssignment = Assignment::where('employee_id', $employee->id)
                 ->where('status', 'actif')
                 ->first();
@@ -183,7 +202,7 @@ class AssignmentController extends Controller
         }
 
         // ── TC : voit uniquement son affectation ──────────────────────────────
-        if ($employee?->position->code === 'TC') {
+        if ($user->isTC()) {
             $myAssignment = Assignment::where('employee_id', $employee->id)
                 ->where('status', 'actif')
                 ->with([

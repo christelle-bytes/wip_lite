@@ -28,17 +28,15 @@ const showLogoutButton = computed(() => {
     return user.value && page.props.auth; // Afficher si l'utilisateur est authentifié
 });
 
-// On "observe" les changements sur flash
 watch(
     flash,
     (newFlash) => {
         if (newFlash && newFlash.success) {
-            console.log(newFlash)
             toast.add({
                 severity: "success",
                 summary: "Succès",
                 detail: newFlash.success,
-                life: 3000, // Disparaît après 3 secondes
+                life: 3000,
             });
         }
 
@@ -48,6 +46,24 @@ watch(
                 summary: "Erreur",
                 detail: newFlash.error,
                 life: 5000,
+            });
+        }
+
+        if (newFlash && newFlash.info) {
+            toast.add({
+                severity: "info",
+                summary: "Information",
+                detail: newFlash.info,
+                life: 3000,
+            });
+        }
+
+        if (newFlash && newFlash.warning) {
+            toast.add({
+                severity: "warn",
+                summary: "Attention",
+                detail: newFlash.warning,
+                life: 4000,
             });
         }
     },
@@ -79,6 +95,12 @@ watch(
 
                 <!-- Admin Specific Links -->
                 <template v-if="roleName === 'ADMIN'">
+                    <Link :href="route('users.index')" 
+                        :class="[route().current('users.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-user-plus mr-3 text-lg" :class="[route().current('users.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        Utilisateurs
+                    </Link>
                     <Link href="/gestion-employees" 
                         class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-users mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>

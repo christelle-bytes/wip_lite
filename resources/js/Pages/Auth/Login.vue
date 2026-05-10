@@ -30,104 +30,119 @@ const submit = () => {
 </script>
 
 <template>
-    <!-- Conteneur avec arrière-plan stylisé -->
-    <div class="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-500 py-12 px-4 sm:px-6 lg:px-8">
+    <Head title="Connexion" />
+
+    <div class="min-h-screen w-full flex items-center justify-center bg-slate-950 selection:bg-teal-500 selection:text-white relative overflow-hidden">
         
-        <Head title="Log in" />
+        <!-- Background elements matching Welcome page -->
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <div class="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-teal-600/10 blur-[120px]"></div>
+            <div class="absolute -bottom-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-slate-800/20 blur-[100px]"></div>
+        </div>
 
-        <div class="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-sm p-8 rounded-2xl shadow-2xl">
-            
-            <!-- Header du Formulaire -->
-            <div class="text-center">
-                <h2 class="mt-2 text-3xl font-extrabold text-gray-900">
-                    Bon retour !
-                </h2>
-                <p class="mt-2 text-sm text-gray-600">
-                    Veuillez vous connecter à votre compte
-                </p>
-            </div>
+        <div class="relative z-10 w-full max-w-md px-6">
+            <div class="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-10 rounded-[40px] shadow-2xl space-y-8">
+                
+                <!-- Logo/Header -->
+                <div class="text-center space-y-4">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 mb-2">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                        </span>
+                        <span class="text-[9px] font-black uppercase tracking-[0.2em] text-teal-400">Accès Sécurisé</span>
+                    </div>
+                    <h2 class="text-3xl font-black text-white tracking-tight">
+                        Bon retour !
+                    </h2>
+                    <p class="text-slate-400 text-sm font-medium">
+                        Identifiez-vous pour accéder à votre espace.
+                    </p>
+                </div>
 
-            <!-- Statut & Erreurs -->
-            <div v-if="status" class="rounded-md bg-green-50 p-4 text-sm font-medium text-green-800 border border-green-200 text-center">
-                {{ status }}
-            </div>
+                <!-- Status & Errors -->
+                <div v-if="status" class="rounded-2xl bg-teal-500/10 p-4 text-xs font-bold text-teal-400 border border-teal-500/20 text-center uppercase tracking-widest">
+                    {{ status }}
+                </div>
 
-            <div v-if="Object.keys(form.errors).length" class="rounded-md bg-red-50 p-4 border border-red-100">
-                <div class="flex">
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">Identifiants incorrects</h3>
-                        <div class="mt-1 text-xs text-red-700 space-y-1">
-                            <p v-for="(message, field) in form.errors" :key="field">{{ message }}</p>
+                <div v-if="Object.keys(form.errors).length" class="rounded-2xl bg-rose-500/10 p-4 border border-rose-500/20">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-exclamation-circle text-rose-500"></i>
+                        <div class="text-xs font-bold text-rose-400 uppercase tracking-widest">
+                            Identifiants incorrects
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Formulaire -->
-            <form @submit.prevent="submit" class="mt-8 space-y-6">
-                <div class="rounded-md shadow-sm space-y-4">
-                    <div>
-                        <InputLabel for="email" value="Adresse Email" class="sr-only" />
-                        <TextInput
-                            id="email"
-                            type="email"
-                            class="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all"
-                            v-model="form.email"
-                            required
-                            autofocus
-                            placeholder="Email"
-                        />
-                        <InputError class="mt-1" :message="form.errors.email" />
+                <!-- Form -->
+                <form @submit.prevent="submit" class="space-y-6">
+                    <div class="space-y-5">
+                        <div class="flex flex-col gap-2">
+                            <label for="email" class="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em] ml-1">Adresse Email</label>
+                            <div class="relative group">
+                                <i class="pi pi-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-teal-500 transition-colors"></i>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    class="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-white/5 rounded-2xl focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/10 transition-all text-white text-sm font-medium placeholder:text-slate-600"
+                                    v-model="form.email"
+                                    required
+                                    autofocus
+                                    placeholder="nom@entreprise.com"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between ml-1">
+                                <label for="password" class="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Mot de passe</label>
+                                <Link
+                                    v-if="canResetPassword"
+                                    :href="route('password.request')"
+                                    class="text-[9px] font-black text-teal-500 uppercase tracking-widest hover:text-teal-400 transition-colors"
+                                >
+                                    Oublié ?
+                                </Link>
+                            </div>
+                            <div class="relative group">
+                                <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-teal-500 transition-colors"></i>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    class="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-white/5 rounded-2xl focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/10 transition-all text-white text-sm font-medium placeholder:text-slate-600"
+                                    v-model="form.password"
+                                    required
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <InputLabel for="password" value="Mot de passe" class="sr-only" />
-                        <TextInput
-                            id="password"
-                            type="password"
-                            class="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all"
-                            v-model="form.password"
-                            required
-                            placeholder="Mot de passe"
-                        />
-                        <InputError class="mt-1" :message="form.errors.password" />
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <Checkbox name="remember" v-model:checked="form.remember" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" />
-                        <label for="remember" class="ml-2 block text-sm text-gray-900">
-                            Rester connecté
+                    <div class="flex items-center justify-between px-1">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <Checkbox name="remember" v-model:checked="form.remember" class="border-white/10 bg-slate-800 text-teal-500 rounded-md focus:ring-teal-500/20" />
+                            <span class="text-xs font-bold text-slate-400 group-hover:text-slate-300 transition-colors">Se souvenir de moi</span>
                         </label>
                     </div>
 
-                    <div class="text-sm">
-                        <Link
-                            v-if="canResetPassword"
-                            :href="route('password.request')"
-                            class="font-medium text-indigo-600 hover:text-indigo-500"
-                        >
-                            Oublié ?
-                        </Link>
-                    </div>
-                </div>
-
-                <div>
-                    <PrimaryButton
-                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all active:scale-95 shadow-lg"
+                    <button
+                        type="submit"
                         :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
                         :disabled="form.processing"
+                        class="w-full py-4 bg-teal-600 text-white font-black rounded-2xl hover:bg-teal-700 transition-all shadow-xl shadow-teal-600/20 uppercase tracking-widest text-xs flex items-center justify-center gap-2 group"
                     >
-                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                            <svg class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                            </svg>
-                        </span>
-                        {{ form.processing ? 'Chargement...' : 'Se connecter' }}
-                    </PrimaryButton>
+                        <span>Se connecter</span>
+                        <i class="pi pi-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                </form>
+
+                <div class="text-center pt-4">
+                    <Link href="/" class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-teal-500 transition-colors flex items-center justify-center gap-2">
+                        <i class="pi pi-arrow-left text-[8px]"></i>
+                        Retour à l'accueil
+                    </Link>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </template>

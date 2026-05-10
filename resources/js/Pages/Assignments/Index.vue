@@ -9,6 +9,7 @@ import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
 import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
+import InputText from 'primevue/inputtext'
 
 const props = defineProps({
     activeCampaigns:     Array,
@@ -21,6 +22,34 @@ const props = defineProps({
     unassignedEmployees: Array,
     myAssignment:        Object,
     role:                String,
+})
+
+// ── Filtres ───────────────────────────────────────────────────────────────────
+const searchActive = ref('')
+const searchAvailable = ref('')
+
+const filteredCampaigns = computed(() => {
+    if (!searchActive.value) return props.campaigns
+    const query = searchActive.value.toLowerCase()
+    return props.campaigns.filter(c => 
+        c.name.toLowerCase().includes(query) || 
+        c.tree.some(cp => 
+            `${cp.employee.first_name} ${cp.employee.last_name}`.toLowerCase().includes(query) ||
+            cp.children.some(sup => 
+                `${sup.employee.first_name} ${sup.employee.last_name}`.toLowerCase().includes(query)
+            )
+        )
+    )
+})
+
+const filteredUnassignedEmployees = computed(() => {
+    if (!searchAvailable.value) return props.unassignedEmployees
+    const query = searchAvailable.value.toLowerCase()
+    return props.unassignedEmployees.filter(e => 
+        `${e.first_name} ${e.last_name}`.toLowerCase().includes(query) ||
+        e.matricule.toLowerCase().includes(query) ||
+        e.email.toLowerCase().includes(query)
+    )
 })
 
 // ── Rôles ─────────────────────────────────────────────────────────────────────
@@ -78,7 +107,8 @@ const supAssignmentOptions = computed(() =>
 
 // ── Ouvrir dialog depuis carte "disponibles" ──────────────────────────────────
 const openDialogForEmployee = (employee) => {
-    const code = employee.position?.code
+    // Priorité au rôle de l'utilisateur pour l'affectation
+    const code = employee.user?.role?.name || employee.position?.code
     if (code === 'CP') {
         cpForm.reset(); cpForm.employee_id = employee.id
         cpDialogVisible.value = true
@@ -158,8 +188,9 @@ const formatDate = (date) => {
 // Grouper les non affectés par poste
 const unassignedByPosition = computed(() => {
     const groups = {}
-    props.unassignedEmployees?.forEach(emp => {
-        const code = emp.position?.code ?? 'Autre'
+    filteredUnassignedEmployees.value?.forEach(emp => {
+        // Priorité au rôle de l'utilisateur, sinon on prend le code du poste
+        const code = emp.user?.role?.name || emp.position?.code || 'Autre'
         if (!groups[code]) groups[code] = []
         groups[code].push(emp)
     })
@@ -172,7 +203,7 @@ const sortedPositionKeys = computed(() =>
 )
 
 const totalUnassigned = computed(() =>
-    (props.unassignedEmployees ?? []).length
+    (filteredUnassignedEmployees.value ?? []).length
 )
 </script>
 
@@ -259,9 +290,17 @@ const totalUnassigned = computed(() =>
                             </div>
                         </template>
                         
-                        <div class="grid gap-8 mt-8">
+                        <div class="flex items-center justify-between mt-8 mb-6">
+                            <div class="relative group max-w-md w-full">
+                                <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"></i>
+                                <InputText v-model="searchActive" placeholder="Rechercher une campagne, un CP ou un SUP..." 
+                                    class="w-full pl-12 pr-4 py-3 bg-white border-slate-100 rounded-xl focus:border-teal-500 focus:ring-teal-500 transition-all placeholder:text-slate-400 text-sm font-medium shadow-sm" />
+                            </div>
+                        </div>
+                        
+                        <div class="grid gap-8">
                             <div
-                                v-for="campaign in campaigns"
+                                v-for="campaign in filteredCampaigns"
                                 :key="campaign.id"
                                 class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden"
                             >
@@ -346,9 +385,17 @@ const totalUnassigned = computed(() =>
                         </template>
 
                         <div class="mt-8 space-y-12">
+                            <div class="flex items-center justify-between mb-8">
+                                <div class="relative group max-w-md w-full">
+                                    <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"></i>
+                                    <InputText v-model="searchAvailable" placeholder="Rechercher par nom, matricule ou email..." 
+                                        class="w-full pl-12 pr-4 py-3 bg-white border-slate-100 rounded-xl focus:border-teal-500 focus:ring-teal-500 transition-all placeholder:text-slate-400 text-sm font-medium shadow-sm" />
+                                </div>
+                            </div>
+
                             <div v-if="!totalUnassigned" class="py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200">
                                 <i class="pi pi-check-circle text-5xl text-teal-500 mb-4 opacity-20"></i>
-                                <p class="text-slate-400 font-black uppercase tracking-widest text-sm">Toutes les ressources sont affectées</p>
+                                <p class="text-slate-400 font-black uppercase tracking-widest text-sm">Aucune ressource ne correspond à votre recherche</p>
                             </div>
 
                             <div v-for="code in sortedPositionKeys" :key="code" class="space-y-6">

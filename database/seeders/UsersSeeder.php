@@ -15,32 +15,22 @@ class UsersSeeder extends Seeder
 
     public function run(): void
     {
-    $roleNames = ['Admin', 'CP', 'SUP', 'TC'];
-    $roles = [];
+        $roleAdmin = Role::where('name', 'Admin')->first();
+        $roleCP = Role::where('name', 'CP')->first();
+        $roleSUP = Role::where('name', 'SUP')->first();
+        $roleTC = Role::where('name', 'TC')->first();
 
-    foreach ($roleNames as $name) {
-        $roles[$name] = Role::firstOrCreate(['name' => $name]);
-    }
+        // 1. Créer l'Admin
+        User::updateOrCreate(
+            ['email' => 'admin@test.com'],
+            [
+                'password' => Hash::make('password'),
+                'role_id' => $roleAdmin->id,
+                'must_change_password' => false,
+            ]
+        );
 
-    // 2. Créer l'Admin (On utilise updateOrCreate pour pouvoir relancer le seeder sans doublon)
-    User::updateOrCreate(
-        ['email' => 'admin@test.com'],
-        [
-           
-            'password' => Hash::make('password'), // Toujours mieux de définir un mot de passe
-            'role_id' => $roles['Admin']->id,
-        ]
-    );
-
-    // 3. Créer les 300 utilisateurs
-    // On transforme la liste des rôles en collection pour utiliser random()
-    $rolesCollection = collect($roles);
-
-    User::factory(299)->create([
-        'role_id' => function () use ($rolesCollection) {
-            return $rolesCollection->random()->id;
-        },
-    ]);;
+        // On ne crée plus d'utilisateurs aléatoires ici car ils doivent être liés à des employés
     }
 }
 

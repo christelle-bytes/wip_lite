@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Button from "primevue/button";
@@ -14,8 +14,24 @@ const props = defineProps({
     isAdmin: Boolean,
 });
 
-const filters = ["Toutes", "Actives", "Inactives", "Terminées"];
+const searchQuery = ref("");
 const activeFilter = ref("Toutes");
+
+const filteredCampaigns = computed(() => {
+    return props.campaigns.filter((campaign) => {
+        const matchesSearch =
+            !searchQuery.value ||
+            campaign.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            campaign.description.toLowerCase().includes(searchQuery.value.toLowerCase());
+
+        let matchesStatus = true;
+        if (activeFilter.value === "Actives") matchesStatus = campaign.status === "active";
+        else if (activeFilter.value === "Inactives") matchesStatus = campaign.status === "inactive";
+        else if (activeFilter.value === "Terminées") matchesStatus = campaign.status === "terminée";
+
+        return matchesSearch && matchesStatus;
+    });
+});
 
 const createDialogVisible = ref(false);
 const editDialogVisible = ref(false);
@@ -124,18 +140,38 @@ const confirmDeactivate = () => {
                         Pilotez vos opérations et suivez l'affectation de vos ressources.
                     </p>
                 </div>
-                <Button
-                    v-if="isAdmin"
-                    @click="openCreateDialog"
-                    class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-teal-600/20 border-none font-bold transition-all"
+                <div class="flex items-center gap-4">
+                    <div class="relative group">
+                        <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"></i>
+                        <InputText v-model="searchQuery" placeholder="Rechercher une campagne..." 
+                            class="pl-12 pr-4 py-3 bg-white border-slate-100 rounded-xl focus:border-teal-500 focus:ring-teal-500 transition-all placeholder:text-slate-400 text-sm font-medium w-64" />
+                    </div>
+                    <Button
+                        v-if="isAdmin"
+                        @click="openCreateDialog"
+                        class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl shadow-lg shadow-teal-600/20 border-none font-bold transition-all"
+                    >
+                        <i class="pi pi-plus mr-2"></i> Nouvelle campagne
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-100 w-fit mb-10 shadow-sm">
+                <button 
+                    v-for="filter in ['Toutes', 'Actives', 'Inactives', 'Terminées']" 
+                    :key="filter"
+                    @click="activeFilter = filter"
+                    :class="[activeFilter === filter ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50']"
+                    class="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                 >
-                    <i class="pi pi-plus mr-2"></i> Nouvelle campagne
-                </Button>
+                    {{ filter }}
+                </button>
             </div>
 
             <div class="grid gap-8 xl:grid-cols-3 lg:grid-cols-2">
                 <div
-                    v-for="campaign in campaigns"
+                    v-for="campaign in filteredCampaigns"
                     :key="campaign.id"
                     class="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group"
                 >
