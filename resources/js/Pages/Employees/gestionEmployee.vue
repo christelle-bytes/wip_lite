@@ -13,6 +13,12 @@ import InputNumber from 'primevue/inputnumber';
 import Dropdown from 'primevue/dropdown';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
+
+
+const detailsDialog = ref(false);
+const selectedEmployee = ref(null);
+
+
 const toast = useToast();
 const dt = ref(null);
 const employees = ref([]);
@@ -32,6 +38,11 @@ const statusOptions = [
   { value: 'suspendu', label: 'Suspendu' },
   { value: 'inactif', label: 'Inactif' },
 ];
+
+const viewEmployeeDetails = (employee) => {
+  selectedEmployee.value = employee;
+  detailsDialog.value = true;
+};
 
 const loadData = async () => {
   loading.value = true;
@@ -367,19 +378,36 @@ const getStatusText = (status) => {
         </template>
       </Column>
       <Column header="Actions" :exportable="false" style="min-width: 12rem">
-        <template #body="slotProps">
-          <Button icon="pi pi-pencil" rounded text class="mr-2" @click="editEmployee(slotProps.data)" />
-          <Button
-            v-if="slotProps.data.status === 'actif'"
-            icon="pi pi-user-minus"
-            rounded
-            severity="danger"
-            text
-            @click="confirmDeactivate(slotProps.data)"
-          />
-          <span v-else class="text-sm text-gray-500">Désactivé</span>
-        </template>
-      </Column>
+  <template #body="slotProps">
+    <Button 
+      icon="pi pi-eye" 
+      rounded 
+      text 
+      class="mr-2" 
+      severity="info"
+      v-tooltip.top="'Voir les détails'"
+      @click="viewEmployeeDetails(slotProps.data)" 
+    />
+    <Button 
+      icon="pi pi-pencil" 
+      rounded 
+      text 
+      class="mr-2" 
+      v-tooltip.top="'Modifier'"
+      @click="editEmployee(slotProps.data)" 
+    />
+    <Button
+      v-if="slotProps.data.status === 'actif'"
+      icon="pi pi-user-minus"
+      rounded
+      severity="danger"
+      text
+      v-tooltip.top="'Désactiver'"
+      @click="confirmDeactivate(slotProps.data)"
+    />
+    <span v-else class="text-sm text-gray-500 ml-2">Désactivé</span>
+  </template>
+</Column>
     </DataTable>
 
     <Dialog v-model:visible="employeeDialog" :header="dialogHeader" :modal="true" class="w-11/12 md:w-1/2">
@@ -436,6 +464,151 @@ const getStatusText = (status) => {
         <Button label="Désactiver" icon="pi pi-user-minus" severity="danger" @click="deactivateEmployee" />
       </template>
     </Dialog>
+
+
+
+<Dialog 
+  v-model:visible="detailsDialog" 
+  :header="`Détails de ${selectedEmployee?.first_name} ${selectedEmployee?.last_name}`" 
+  :modal="true" 
+  class="w-11/12 md:w-3/4 lg:w-2/3"
+  :style="{ maxWidth: '900px' }"
+>
+  <div v-if="selectedEmployee" class="space-y-6">
+    
+    <div class="flex justify-between items-start pb-4 border-b">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <i class="pi pi-user-circle text-4xl text-sky-500"></i>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">
+              {{ selectedEmployee.first_name }} {{ selectedEmployee.last_name }}
+            </h2>
+            <p class="text-gray-500 text-sm">
+              <i class="pi pi-id-card mr-1"></i> 
+              Matricule: {{ selectedEmployee.matricule }}
+            </p>
+          </div>
+        </div>
+      </div>
+      <Tag :value="getStatusText(selectedEmployee.status)" :severity="getSeverity(selectedEmployee.status)" />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <div class="space-y-4">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <i class="pi pi-user text-sky-500"></i>
+            Informations personnelles
+          </h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block">Nom complet</label>
+              <p class="text-gray-800 font-medium">{{ selectedEmployee.first_name }} {{ selectedEmployee.last_name }}</p>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block">Email</label>
+              <p class="text-gray-800">
+                <a :href="`mailto:${selectedEmployee.email}`" class="text-sky-600 hover:underline">
+                  {{ selectedEmployee.email || 'Non renseigné' }}
+                </a>
+              </p>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block">Téléphone</label>
+              <p class="text-gray-800">
+                <a :href="`tel:${selectedEmployee.phone}`" class="text-sky-600 hover:underline">
+                  {{ selectedEmployee.phone || 'Non renseigné' }}
+                </a>
+              </p>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block">Date de naissance</label>
+              <p class="text-gray-800">{{ selectedEmployee.birth_date || 'Non renseignée' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <i class="pi pi-map-marker text-sky-500"></i>
+            Adresse
+          </h3>
+          <p class="text-gray-800">{{ selectedEmployee.address || 'Non renseignée' }}</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <i class="pi pi-briefcase text-sky-500"></i>
+            Informations professionnelles
+          </h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block">Rôle / Poste</label>
+              <p class="text-gray-800 font-medium">{{ selectedEmployee.position?.name || 'Non assigné' }}</p>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block">Salaire de base</label>
+              <p class="text-green-600 font-bold text-lg">{{ formatCurrency(selectedEmployee.salary_base) }}</p>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block">Statut</label>
+              <Tag :value="getStatusText(selectedEmployee.status)" :severity="getSeverity(selectedEmployee.status)" size="small" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block">Date d'embauche</label>
+              <p class="text-gray-800">{{ selectedEmployee.hire_date || 'Non renseignée' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <i class="pi pi-clock text-sky-500"></i>
+            Informations système
+          </h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-500 block">Date de création</label>
+              <p class="text-gray-800 text-sm">{{ new Date(selectedEmployee.created_at).toLocaleDateString('fr-FR') }}</p>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block">Dernière modification</label>
+              <p class="text-gray-800 text-sm">{{ new Date(selectedEmployee.updated_at).toLocaleDateString('fr-FR') }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-4 border-t">
+      <Button 
+        label="Modifier" 
+        icon="pi pi-pencil" 
+        severity="primary" 
+        @click="() => { detailsDialog = false; editEmployee(selectedEmployee); }" 
+      />
+      <Button 
+        v-if="selectedEmployee.status === 'actif'"
+        label="Désactiver" 
+        icon="pi pi-user-minus" 
+        severity="danger" 
+        text
+        @click="() => { detailsDialog = false; confirmDeactivate(selectedEmployee); }" 
+      />
+      <Button 
+        label="Fermer" 
+        icon="pi pi-times" 
+        severity="secondary" 
+        text 
+        @click="detailsDialog = false" 
+      />
+    </div>
+  </div>
+</Dialog>
   </div>
 </AuthenticatedLayout>
 

@@ -19,7 +19,7 @@ class PlanningAssignmentFactory extends Factory
      */
     public function definition(): array
     {
-        $status = fake()->randomElement(['en attente', 'validé', 'suspendu']);
+        $status = fake()->randomElement(['en attente', 'validé', 'suspendu', 'terminé']);
         return [
             'planning_model_id'=>PlanningModel::factory(),
             'employee_id'=>Employee::factory(),

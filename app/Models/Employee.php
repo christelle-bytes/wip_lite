@@ -31,36 +31,41 @@ class Employee extends Model
         'salary_base' => 'decimal:2',
     ];
 
-
     public function position(): BelongsTo
     {
-        return $this->belongsTo(Position::class); // ← majuscule corrigée
+        return $this->belongsTo(Position::class);
     }
+
     public function timesheet(): HasMany
     {
         return $this->hasMany(Timesheet::class);
     }
 
-   
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    public function planningAssignments(): HasMany
+    {
+        return $this->hasMany(PlanningAssignment::class);
+    }
 
-    // ── Relation assignments ──────────────────────────────────────────────────
+    public function planningModels(): HasMany
+    {
+        return $this->hasMany(PlanningModel::class, 'created_by');
+    }
+
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
     }
 
-    // Assignments actifs uniquement
     public function activeAssignments(): HasMany
     {
         return $this->hasMany(Assignment::class)->where('status', 'actif');
     }
 
-    // Employés sous gestion (SUPs ou TCs dont manager_id = cet employé)
     public function subordinates(): HasMany
     {
         return $this->hasMany(Assignment::class, 'manager_id');

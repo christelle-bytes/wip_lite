@@ -5,6 +5,7 @@ use App\Traits\RecordsActivity;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PlanningAssignment extends Model
 {
@@ -35,4 +36,8 @@ class PlanningAssignment extends Model
     {
         return $this->morphMany(Notification::class, 'model');
     }
+
+    // public function employee():BelongsTo{
+    //     return $this->belongsTo(Employee::class);
+    // }
 }
