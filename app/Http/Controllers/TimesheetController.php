@@ -176,8 +176,20 @@ class TimesheetController extends Controller
         $periodEnd   = Carbon::parse($validated['period_end'])->format('Y-m-d');
 
         $data = collect($validated['employee_id'])->map(function ($id) use ($periodStart, $periodEnd, $validated) {
+            $employee = Employee::find($id);
 
-            // Vérifier si une feuille existe déjà pour cet employé sur cette période
+            // 1. Vérifier s'il y a déjà une feuille en "draft" (brouillon) pour cet employé
+            $hasDraft = Timesheet::where('employee_id', $id)
+                ->where('status', 'draft')
+                ->exists();
+
+            if ($hasDraft) {
+                return [
+                    'error' => "L'employé {$employee->first_name} {$employee->last_name} a déjà une feuille de temps en cours (Brouillon). Veuillez la soumettre avant d'en créer une nouvelle."
+                ];
+            }
+
+            // 2. Vérifier si une feuille existe déjà pour cet employé sur cette période (Chevauchement)
             $existing = Timesheet::where('employee_id', $id)
                 ->where(function ($query) use ($periodStart, $periodEnd) {
                     $query->whereBetween('period_start', [$periodStart, $periodEnd])
@@ -190,8 +202,9 @@ class TimesheetController extends Controller
                 ->first();
 
             if ($existing) {
-                return redirect()->back()
-                    ->with('error', "Une feuille de temps existe déjà pour l'employé ID {$id} sur cette période.");
+                return [
+                    'error' => "Une feuille de temps existe déjà pour {$employee->first_name} {$employee->last_name} sur cette période."
+                ];
             }
 
             return [
@@ -202,18 +215,15 @@ class TimesheetController extends Controller
                 'created_at'   => now(),
                 'updated_at'   => now(),
             ];
-        })->toArray();
+        });
 
-        // Supprimer les éventuels redirects qui se sont glissés dans le tableau
-        $data = array_filter($data, fn($item) => is_array($item));
-
-        if (empty($data)) {
-            // dd($data);
-            return redirect()->route('timesheet.index')
-                ->with('error', 'Aucune feuille n\'a été créée. Merci de vérifer vos entrées');
+        // Vérifier s'il y a eu des erreurs pendant le map
+        $error = $data->firstWhere('error');
+        if ($error) {
+            return redirect()->back()->with('error', $error['error']);
         }
 
-        Timesheet::insert($data);
+        Timesheet::insert($data->toArray());
 
         return redirect()->route('timesheet.index')
             ->with('success', 'Feuille(s) d\'heures créée(s) avec succès.');
