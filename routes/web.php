@@ -15,6 +15,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\ReportingController;
+use App\Http\Controllers\CampaignStatsController;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -125,5 +127,16 @@ Route::post('/assignments/sup', [AssignmentController::class, 'assignSUP'])->nam
 Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name('assignments.assignTC');
 Route::patch('/assignments/{assignment}/release', [AssignmentController::class, 'release'])->name('assignments.release');
 Route::get('/statistiques', [ReportingController::class, 'index'])->name('reporting.index');
+
+
+Route::get('/statistiques/campagnes', [CampaignStatsController::class, 'index'])->name('campaigns.stats');
+
+Route::get('/statistiques/campagnes/export', [CampaignStatsController::class, 'export'])->name('campaigns.stats.export');
+
+
+
+Route::get('/statistiques/campagnes/export-pdf', [CampaignStatsController::class, 'exportPdf'])->name('campaigns.stats.export.pdf');
+
+
 
 require __DIR__ . '/auth.php';
