@@ -226,11 +226,11 @@ watch(
                         <i class="pi pi-calendar mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Plannings
                     </Link>
-                    <Link :href="route('index.sup')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('index.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-clock mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Heures
                     </Link>
-                    <Link :href="route('timesheet.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('timesheet.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Feuille d'heures
                     </Link>
@@ -242,9 +242,9 @@ watch(
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
                     </Link>
-                    <Link :href="route('timesheet.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('index.times')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
-                        Feuille d'heures
+                        Mes Heures
                     </Link>
                 </template>
             </nav>
