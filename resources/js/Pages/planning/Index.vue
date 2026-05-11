@@ -397,11 +397,11 @@ function submit() {
 .btn-ghost:hover { background: #f9fafb; }
 .btn-primary {
     display: flex; align-items: center; gap: 0.4rem;
-    background: #2563eb; color: #fff; border: none; border-radius: 8px;
+    background: #059669; color: #fff; border: none; border-radius: 8px;
     padding: 0.45rem 1rem; font-size: 0.875rem; cursor: pointer;
     font-weight: 500; transition: background 0.15s;
 }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:hover { background: #047857; }
 .filters { display: flex; gap: 0.25rem; margin-bottom: 1.25rem; }
 .filter-tab {
     display: flex; align-items: center; gap: 0.4rem;
@@ -410,7 +410,7 @@ function submit() {
     color: #6b7280; transition: all 0.15s;
 }
 .filter-tab:hover { background: #f3f4f6; }
-.filter-tab.active { background: #2563eb; color: #fff; }
+.filter-tab.active { background: #059669; color: #fff; }
 .filter-tab.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
 .badge {
     background: #f3f4f6; color: #374151; border-radius: 20px;
@@ -437,7 +437,7 @@ tr:hover td { background: #fafafa; }
     display: flex; align-items: center; justify-content: center;
     font-size: 0.8rem; font-weight: 500;
 }
-.day-pill.active { background: #dbeafe; color: #1d4ed8; }
+.day-pill.active { background: #d1fae5; color: #047857; }
 .day-pill.zero   { background: #f3f4f6; color: #9ca3af; }
 .day-total { margin-left: 8px; font-size: 0.85rem; color: #6b7280; }
 .col-total { font-weight: 600; color: #111; }
@@ -488,9 +488,9 @@ tr:hover td { background: #fafafa; }
     padding: 0.5rem 0.25rem; border-radius: 8px;
     border: 1px solid #e5e7eb; background: #f9fafb; transition: all 0.15s;
 }
-.day-field.has-hours { border-color: #bfdbfe; background: #eff6ff; }
+.day-field.has-hours { border-color: #a7f3d0; background: #ecfdf5; }
 .day-label { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; }
-.day-field.has-hours .day-label { color: #2563eb; }
+.day-field.has-hours .day-label { color: #059669; }
 :deep(.day-input) {
     width: 100% !important; text-align: center !important;
     padding: 0.3rem 0.2rem !important; font-size: 0.9rem !important;
@@ -498,10 +498,10 @@ tr:hover td { background: #fafafa; }
 }
 .total-bar {
     display: flex; align-items: center; justify-content: space-between;
-    background: #f0f9ff; border: 1px solid #bae6fd;
+    background: #ecfdf5; border: 1px solid #a7f3d0;
     border-radius: 8px; padding: 0.75rem 1rem;
 }
-.total-label { font-size: 0.875rem; font-weight: 500; color: #0369a1; }
-.total-value { font-size: 1.25rem; font-weight: 700; color: #0369a1; }
+.total-label { font-size: 0.875rem; font-weight: 500; color: #059669; }
+.total-value { font-size: 1.25rem; font-weight: 700; color: #059669; }
 .error { font-size: 0.8rem; color: #dc2626; }
 </style>
