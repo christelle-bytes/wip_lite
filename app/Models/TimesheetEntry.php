@@ -12,6 +12,7 @@ class TimesheetEntry extends Model
 use RecordsActivity;
     protected $fillable = [
         'timesheet_id',
+        'employee_id',
         'date',
         'check_in',
         'check_out',
@@ -38,6 +39,11 @@ use RecordsActivity;
         return $this->belongsTo(Timesheet::class);
     }
 
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
+    }
+
     public function logs()
     {
         return $this->morphMany(ActivityLog::class, 'model');
@@ -46,6 +52,16 @@ use RecordsActivity;
     public function scopeForTimesheet($query, Timesheet $timesheet)
     {
         return $query->where('timesheet_id', $timesheet->id);
+    }
+
+    public function scopeForEmployee($query, $employeeId)
+    {
+        return $query->where('employee_id', $employeeId);
+    }
+
+    public function scopeForEmployees($query, $employeeIds)
+    {
+        return $query->whereIn('employee_id', $employeeIds);
     }
 
     public function notif()

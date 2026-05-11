@@ -42,7 +42,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt(array_merge($this->only('email', 'password'), ['is_active' => true]), $this->boolean('remember'))) {
+        if (! Auth::attempt(array_merge($this->only('email', 'password'), ), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             // Vérifier si l'utilisateur existe mais est désactivé

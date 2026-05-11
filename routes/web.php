@@ -33,10 +33,12 @@ Route::get('/', function () {
 
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
-Route::resource('/timesheet', TimesheetController::class);
+
+
 
 Route::middleware('auth')->group(function () {
-    Route::resource('/timesheet', TimesheetController::class)->middleware(['timesheet.access:ADMIN,CP']);
+    Route::get('/timesheetTelecon', [TimesheetController::class, 'indexTelecon'])->name('timesheet.telecon');
+    Route::resource('/timesheet', TimesheetController::class)->middleware(['timesheet.access:ADMIN,CP,SUP']);
     Route::resource('/timesheetEntry', TimesheetEntryController::class);
     // saisie heure sup
     Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->middleware('timesheetEntry.access:Admin,CP')->name('entry.sup');
@@ -52,6 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/timesheetEntry_teleconStore', [TimesheetEntryController::class, 'storeTelecon'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('store.telecon');
     // store sup
     Route::post('/timesheetEntry_supStore', [TimesheetEntryController::class, 'storeSup'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('store.sup');
+
+    // la vue du teleconseiller
+    Route::get('/myTimesheet', [TimesheetEntryController::class, 'myTimesheet'])->middleware('timesheetEntry.access:TC')->name('index.times');
 });
 
 Route::middleware('auth')->group(function () {
