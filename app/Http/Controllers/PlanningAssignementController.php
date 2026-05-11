@@ -117,6 +117,18 @@ class PlanningAssignementController extends Controller
 
         $planningAssignment->update($updateData);
 
+        // Mettre à jour le statut du modèle
+        $model = $planningAssignment->planningModel;
+        if ($validated['status'] === 'validé') {
+            $model->update(['status' => 'actif']);
+        } elseif (in_array($validated['status'], ['suspendu', 'terminé'])) {
+            // Vérifier si il reste des assignations validées
+            $hasValidated = $model->planningAssignment()->where('status', 'validé')->exists();
+            if (!$hasValidated) {
+                $model->update(['status' => 'inactif']);
+            }
+        }
+
         return redirect()->back()->with('success', 'Statut mis à jour avec succès.');
     }
 
