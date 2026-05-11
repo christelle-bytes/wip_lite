@@ -17,11 +17,10 @@ class PreventBackHistory
     {
         $response = $next($request);
 
-        // On vérifie si la réponse est un objet Response classique (pas un stream par exemple)
         if (method_exists($response, 'header')) {
             return $response->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
                 ->header('Pragma', 'no-cache')
-                ->header('Expires', 'Sun, 02 Jan 1990 00:00:00 GMT');
+                ->header('Expires', 'Fri, 01 Jan 1990 00:00:00 GMT');
         }
 
         return $response;

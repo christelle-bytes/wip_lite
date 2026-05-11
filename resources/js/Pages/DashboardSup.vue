@@ -29,9 +29,29 @@ const toast = useToast();
 const userRole = computed(() => page.props?.auth?.user?.role);
 const isAuthorized = computed(() => userRole.value?.name?.toUpperCase() === 'SUP');
 
-// Mixed 1 : écart par employé — barres réelles + courbe planifiées
+// Données de démonstration
+const DEMO_GAP_EMPLOYEES = [
+    { name: 'Alice M.', real_hours: 38, planned_hours: 40 },
+    { name: 'Bruno K.', real_hours: 29, planned_hours: 40 },
+    { name: 'Clara D.', real_hours: 43, planned_hours: 40 },
+    { name: 'David L.', real_hours: 18, planned_hours: 40 },
+    { name: 'Eva R.', real_hours: 40, planned_hours: 40 },
+    { name: 'Franck B.', real_hours: 25, planned_hours: 40 },
+];
+
+const DEMO_HOURS_MONTH = [
+    { month: 'Déc', real_hours: 820, planned_hours: 880 },
+    { month: 'Jan', real_hours: 750, planned_hours: 880 },
+    { month: 'Fév', real_hours: 910, planned_hours: 880 },
+    { month: 'Mar', real_hours: 640, planned_hours: 880 },
+    { month: 'Avr', real_hours: 870, planned_hours: 880 },
+    { month: 'Mai', real_hours: 900, planned_hours: 880 },
+];
+
+// Graphique 1 : Performance par agent — barres réelles + courbe planifiée
 const gapMixedData = computed(() => {
-    const items = props.charts?.gapByEmployee ?? [];
+    const raw = props.charts?.gapByEmployee ?? [];
+    const items = raw.length >= 3 ? raw : DEMO_GAP_EMPLOYEES;
     return {
         labels: items.map(i => i.name),
         datasets: [
@@ -39,7 +59,7 @@ const gapMixedData = computed(() => {
                 type: 'bar',
                 label: 'Heures réelles',
                 data: items.map(i => parseFloat(i.real_hours) || 0),
-                backgroundColor: 'rgba(13,148,136,0.6)',
+                backgroundColor: 'rgba(29,158,117,0.75)',
                 borderRadius: 6,
                 borderSkipped: false,
                 order: 2,
@@ -49,21 +69,23 @@ const gapMixedData = computed(() => {
                 label: 'Heures planifiées',
                 data: items.map(i => parseFloat(i.planned_hours) || 0),
                 borderColor: '#0f172a',
+                borderDash: [5, 3],
                 backgroundColor: 'transparent',
                 pointBackgroundColor: '#0f172a',
-                pointBorderColor: '#fff',
+                pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
                 pointRadius: 5,
-                tension: 0.4,
+                tension: 0.35,
                 order: 1,
             },
         ],
     };
 });
 
-// Mixed 2 : évolution heures par mois — barres réelles + courbe planifiées
+// Graphique 2 : Évolution mensuelle — barres réelles + courbe planifiée
 const hoursMixedData = computed(() => {
-    const items = props.charts?.hoursByMonth ?? [];
+    const raw = props.charts?.hoursByMonth ?? [];
+    const items = raw.length >= 3 ? raw : DEMO_HOURS_MONTH;
     return {
         labels: items.map(i => i.month),
         datasets: [
@@ -71,7 +93,7 @@ const hoursMixedData = computed(() => {
                 type: 'bar',
                 label: 'Heures réelles',
                 data: items.map(i => parseFloat(i.real_hours) || 0),
-                backgroundColor: 'rgba(13,148,136,0.6)',
+                backgroundColor: 'rgba(29,158,117,0.75)',
                 borderRadius: 6,
                 borderSkipped: false,
                 order: 2,
@@ -81,29 +103,55 @@ const hoursMixedData = computed(() => {
                 label: 'Heures planifiées',
                 data: items.map(i => parseFloat(i.planned_hours) || 0),
                 borderColor: '#0f172a',
+                borderDash: [5, 3],
                 backgroundColor: 'transparent',
                 pointBackgroundColor: '#0f172a',
-                pointBorderColor: '#fff',
+                pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
                 pointRadius: 5,
-                tension: 0.4,
+                tension: 0.35,
                 order: 1,
             },
         ],
     };
 });
 
-const mixedOptions = {
+const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-        legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 12 } } },
-        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label} : ${ctx.parsed.y}h` } },
+        legend: {
+            position: 'top',
+            align: 'start',
+            labels: {
+                usePointStyle: true,
+                pointStyle: 'rectRounded',
+                boxWidth: 10,
+                boxHeight: 10,
+                font: { size: 12 },
+                padding: 20,
+            }
+        },
+        tooltip: {
+            backgroundColor: '#0f172a',
+            titleColor: '#94a3b8',
+            bodyColor: '#f1f5f9',
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: { label: (ctx) => ` ${ctx.dataset.label} : ${ctx.parsed.y}h` }
+        },
     },
     scales: {
-        x: { ticks: { font: { size: 11 } }, grid: { display: false } },
-        y: { beginAtZero: true, ticks: { callback: (v) => v + 'h' }, grid: { color: '#F3F4F6' } },
+        x: {
+            ticks: { font: { size: 11 }, color: '#6b7280' },
+            grid: { display: false },
+        },
+        y: {
+            beginAtZero: true,
+            ticks: { font: { size: 11 }, color: '#6b7280', callback: (v) => v + 'h' },
+            grid: { color: '#F3F4F6' },
+        },
     },
 };
 
@@ -117,6 +165,7 @@ onMounted(() => {
 <template>
     <Toast />
     <Head title="Dashboard SUP" />
+
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
@@ -127,48 +176,75 @@ onMounted(() => {
             </div>
         </template>
 
-        <div class="py-6 space-y-10">
+        <div class="py-6 space-y-8">
+
             <!-- KPI Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1">
                     <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Équipes</p>
                     <p class="text-3xl font-black text-slate-800">{{ stats.totalEmployees }}</p>
                 </div>
+
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1">
-                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Heures Réelles</p>
+                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Heures réelles</p>
                     <p class="text-3xl font-black text-teal-600">{{ stats.totalHours }}h</p>
                 </div>
+
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-1">
                     <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Validation en attente</p>
                     <p class="text-3xl font-black text-amber-600">{{ stats.pendingTimesheets }}</p>
                 </div>
-                <div :class="[stats.gap < 0 ? 'bg-rose-50 border-rose-100' : 'bg-teal-50 border-teal-100']"
-                    class="rounded-2xl p-6 shadow-sm border flex flex-col gap-1">
-                    <p class="text-[10px] uppercase font-bold tracking-widest" :class="[stats.gap < 0 ? 'text-rose-400' : 'text-teal-500']">Productivité</p>
-                    <p class="text-3xl font-black" :class="[stats.gap < 0 ? 'text-rose-600' : 'text-teal-700']">{{ stats.gap > 0 ? '+' : '' }}{{ stats.gap }}%</p>
+
+                <div
+                    class="rounded-2xl p-6 shadow-sm border flex flex-col gap-1"
+                    :class="stats.gap < 0 ? 'bg-rose-50 border-rose-100' : 'bg-teal-50 border-teal-100'"
+                >
+                    <p
+                        class="text-[10px] uppercase font-bold tracking-widest"
+                        :class="stats.gap < 0 ? 'text-rose-400' : 'text-teal-500'"
+                    >
+                        Productivité
+                    </p>
+                    <p
+                        class="text-3xl font-black"
+                        :class="stats.gap < 0 ? 'text-rose-600' : 'text-teal-700'"
+                    >
+                        {{ stats.gap > 0 ? '+' : '' }}{{ stats.gap }}%
+                    </p>
                 </div>
+
             </div>
 
-            <!-- Mixed Charts -->
+            <!-- Graphiques -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-                    <div class="mb-6">
-                        <h3 class="text-lg font-black text-slate-800">Analyse de Performance</h3>
-                        <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-bold">Barres = réel · Courbe = planifié par agent</p>
+
+                <!-- Graphique 1 : Performance par agent -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-black text-slate-800">Analyse de performance</h3>
+                        <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-bold">
+                            Barres = réel · Courbe = planifié par agent
+                        </p>
                     </div>
-                    <div class="h-96">
-                        <Bar :data="gapMixedData" :options="mixedOptions" />
-                    </div>
-                </div>
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-                    <div class="mb-6">
-                        <h3 class="text-lg font-black text-slate-800">Évolution de la Production</h3>
-                        <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-bold">Barres = réel · Courbe = planifié par mois</p>
-                    </div>
-                    <div class="h-96">
-                        <Bar :data="hoursMixedData" :options="mixedOptions" />
+                    <div class="h-80 w-full">
+                        <Bar :data="gapMixedData" :options="chartOptions" />
                     </div>
                 </div>
+
+                <!-- Graphique 2 : Évolution mensuelle -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-black text-slate-800">Évolution de la production</h3>
+                        <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-bold">
+                            Barres = réel · Courbe = planifié par mois
+                        </p>
+                    </div>
+                    <div class="h-80 w-full">
+                        <Bar :data="hoursMixedData" :options="chartOptions" />
+                    </div>
+                </div>
+
             </div>
         </div>
     </AuthenticatedLayout>

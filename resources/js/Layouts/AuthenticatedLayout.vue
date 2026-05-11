@@ -47,6 +47,13 @@ const markAllAsRead = async () => {
 };
 
 onMounted(() => {
+    // Sécurité : Empêcher le retour en arrière après déconnexion (bfcache)
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
     if (user.value) {
         fetchNotifications();
         // Optionnel: rafraîchir toutes les 5 minutes
@@ -188,10 +195,6 @@ watch(
 
                 <!-- CP Specific Links -->
                 <template v-else-if="roleName === 'CP'">
-                    <Link href="/gestion-employees" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-users mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
-                        Employés
-                    </Link>
                     <Link :href="route('campaigns.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
@@ -360,7 +363,7 @@ watch(
                             <DropdownLink :href="route('profile.edit')" class="hover:bg-slate-50 text-slate-700">
                                 <i class="pi pi-cog mr-2 text-xs text-slate-400"></i> Paramètres
                             </DropdownLink>
-                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50">
+                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50 w-full text-left" @click="() => window.location.href = '/'">
                                 <i class="pi pi-power-off mr-2 text-xs"></i> Déconnexion
                             </DropdownLink>
                         </template>
