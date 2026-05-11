@@ -1,6 +1,5 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import { Head } from '@inertiajs/vue3';
@@ -63,19 +62,6 @@ defineProps({
                             </div>
                         </div>
                         <UpdatePasswordForm class="max-w-2xl" />
-                    </div>
-                </div>
-
-                <!-- Section Danger Zone -->
-                <div class="bg-rose-50/30 rounded-[40px] border border-rose-100 shadow-sm overflow-hidden">
-                    <div class="px-8 py-6 bg-rose-50 border-b border-rose-100 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600">
-                            <i class="pi pi-trash text-lg"></i>
-                        </div>
-                        <h2 class="text-xl font-black text-rose-900 tracking-tight">Zone de Danger</h2>
-                    </div>
-                    <div class="p-10">
-                        <DeleteUserForm class="max-w-2xl" />
                     </div>
                 </div>
             </div>

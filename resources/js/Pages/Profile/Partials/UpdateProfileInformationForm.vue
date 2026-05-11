@@ -39,7 +39,7 @@ const form = useForm({
             class="mt-8 space-y-6"
         >
             <div class="grid gap-6">
-                <div class="flex flex-col gap-2">
+                <!-- <div class="flex flex-col gap-2">
                     <InputLabel for="name" value="Nom complet" class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1" />
                     <div class="relative group">
                         <i class="pi pi-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"></i>
@@ -55,7 +55,7 @@ const form = useForm({
                         />
                     </div>
                     <InputError class="mt-1" :message="form.errors.name" />
-                </div>
+                </div> -->
 
                 <div class="flex flex-col gap-2">
                     <InputLabel for="email" value="Adresse Email" class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1" />

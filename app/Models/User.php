@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['email', 'password', 'role_id', 'must_change_password'])]
+#[Fillable(['email', 'password', 'role_id', 'must_change_password', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -76,8 +76,8 @@ class User extends Authenticatable
     {
         return $this->hasRole('TC');
     }
-    public function notif()
+    public function notifications()
     {
-        return $this->morphMany(Notification::class, 'model');
+        return $this->morphMany(Notification::class, 'notifiable');
     }
 }

@@ -1,257 +1,120 @@
 <script setup>
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { router } from "@inertiajs/vue3";
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Button from "primevue/button";
-import Tag from "primevue/tag";
 
 const props = defineProps({
     assignments: Array,
-    auth: Object,
 });
 
-const activeFilter = ref("en attente");
-
-const filters = [
-    { label: "En attente", value: "en attente" },
-    { label: "Validés",    value: "validé" },
-    { label: "Suspendus",  value: "suspendu" },
-    { label: "Terminés",   value: "terminé" },
-];
-
-const filteredAssignments = computed(() =>
-    (props.assignments ?? []).filter((a) => a.status === activeFilter.value)
-);
-
-function countByStatus(status) {
-    return (props.assignments ?? []).filter((a) => a.status === status).length;
-}
-
-function initials(name) {
-    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
-function avatarColor(name) {
-    const colors = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626"];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return colors[Math.abs(hash) % colors.length];
-}
+const pendingAssignments = computed(() => {
+    return (props.assignments ?? []).filter(a => a.status === 'en attente');
+});
 
 function formatDate(date) {
     if (!date) return "—";
-    return new Date(date).toLocaleDateString("fr-FR", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-    });
+    return new Date(date).toLocaleDateString("fr-FR");
 }
 
-function statusSeverity(status) {
-    const map = {
-        "en attente": "warn",
-        "validé":     "success",
-        "suspendu":   "danger",
-        "terminé":    "secondary",
-    };
-    return map[status] ?? "secondary";
+function employeeName(employee) {
+    if (!employee) return "—";
+    return `${employee.first_name} ${employee.last_name}`;
 }
 
-function statusLabel(status) {
-    const map = {
-        "en attente": "En attente",
-        "validé":     "Validé",
-        "suspendu":   "Suspendu",
-        "terminé":    "Terminé",
-    };
-    return map[status] ?? status;
-}
-
-// Appel unique vers ta route changeStatus
 function changeStatus(assignment, status) {
-    router.patch(
-        route('planning-assignments.changeStatus', assignment.id),
-        { status },
-        { onError: () => alert("Erreur lors du changement de statut.") }
-    );
+    router.patch(route("planning-assignments.changeStatus", assignment.id), {
+        status: status,
+    });
 }
 </script>
 
 <template>
     <AuthenticatedLayout>
-        <div class="validation-page">
-
-            <!-- Header -->
-            <div class="page-header">
-                <div class="back-link" @click="router.get('/planning')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-                    Retour aux plannings
+        <div class="py-6 space-y-8">
+            <!-- Header Section -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <button @click="router.get('/planning')" class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-teal-50 hover:text-teal-600 transition-all">
+                            <i class="pi pi-arrow-left text-xs"></i>
+                        </button>
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retour aux plannings</span>
+                    </div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Validation des Plannings</h1>
+                    <p class="mt-1 text-sm text-slate-500 font-medium">Approuvez ou rejetez les demandes d'affectation en attente.</p>
                 </div>
             </div>
 
-            <!-- Filtres onglets -->
-            <div class="filter-tabs">
-                <button
-                    v-for="f in filters"
-                    :key="f.value"
-                    :class="['filter-tab', activeFilter === f.value && 'active']"
-                    @click="activeFilter = f.value"
-                >
-                    {{ f.label }}
-                    <span class="count">{{ countByStatus(f.value) }}</span>
-                </button>
+            <!-- Stats Summary -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div class="h-12 w-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shadow-sm">
+                        <i class="pi pi-clock"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">En attente</p>
+                        <p class="text-2xl font-black text-slate-900">{{ pendingAssignments.length }}</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Tableau PrimeVue -->
-            <div class="table-wrapper">
-                <DataTable
-                    :value="filteredAssignments"
-                    :rows="10"
-                    :paginator="filteredAssignments.length > 10"
-                    stripedRows
-                    emptyMessage="Aucun assignment trouvé."
-                >
-                    <Column selectionMode="multiple" style="width: 3rem" />
+            <!-- Content Card -->
+            <div class="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8 overflow-hidden">
+                <div class="flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm shadow-sm">
+                        <i class="pi pi-check-square"></i>
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Demandes à traiter</h2>
+                </div>
 
-                    <!-- Employé -->
-                    <Column header="Employé" style="min-width: 200px">
-                        <template #body="{ data }">
-                            <div class="employee-cell">
-                                <div
-                                    class="avatar"
-                                    :style="{ background: avatarColor(data.employee?.full_name ?? 'U') }"
-                                >
-                                    {{ initials(data.employee?.full_name ?? 'U') }}
-                                </div>
-                                <span class="employee-name">{{ data.employee?.full_name ?? '—' }}</span>
-                            </div>
-                        </template>
-                    </Column>
-
-                    <!-- Rôle -->
-                    <Column header="Rôle" style="min-width: 140px">
-                        <template #body="{ data }">
-                            <span class="role-badge">{{ data.employee?.role ?? '—' }}</span>
-                        </template>
-                    </Column>
-
-                    <!-- Modèle -->
-                    <Column header="Modèle" style="min-width: 200px">
-                        <template #body="{ data }">
-                            {{ data.planning_model?.name ?? '—' }}
-                        </template>
-                    </Column>
-
-                    <!-- Période -->
-                    <Column header="Période" style="min-width: 220px">
-                        <template #body="{ data }">
-                            {{ formatDate(data.start_date) }} – {{ formatDate(data.end_date) }}
-                        </template>
-                    </Column>
-
-                    <!-- Statut -->
-                    <Column header="Statut" style="min-width: 130px">
-                        <template #body="{ data }">
-                            <Tag
-                                :severity="statusSeverity(data.status)"
-                                :value="statusLabel(data.status)"
-                            />
-                        </template>
-                    </Column>
-
-                    <!-- Actions -->
-                    <Column header="Actions" style="min-width: 130px">
-                        <template #body="{ data }">
-                            <div class="actions">
-                                <!-- Valider (si en attente) -->
-                                <Button
-                                    v-if="data.status === 'en attente'"
-                                    icon="pi pi-check"
-                                    severity="success"
-                                    variant="text"
-                                    rounded
-                                    title="Valider"
-                                    @click="changeStatus(data, 'validé')"
-                                />
-                                <!-- Suspendre (si validé) -->
-                                <Button
-                                    v-if="data.status === 'validé'"
-                                    icon="pi pi-pause"
-                                    severity="warn"
-                                    variant="text"
-                                    rounded
-                                    title="Suspendre"
-                                    @click="changeStatus(data, 'suspendu')"
-                                />
-                                <!-- Remettre en attente (si suspendu) -->
-                                <Button
-                                    v-if="data.status === 'suspendu'"
-                                    icon="pi pi-undo"
-                                    severity="secondary"
-                                    variant="text"
-                                    rounded
-                                    title="Remettre en attente"
-                                    @click="changeStatus(data, 'en attente')"
-                                />
-                                <!-- Rejeter (si en attente ou validé) -->
-                                <Button
-                                    v-if="['en attente', 'validé'].includes(data.status)"
-                                    icon="pi pi-times"
-                                    severity="danger"
-                                    variant="text"
-                                    rounded
-                                    title="Rejeter"
-                                    @click="changeStatus(data, 'rejeté')"
-                                />
-                            </div>
-                        </template>
-                    </Column>
-                </DataTable>
+                <div class="overflow-x-auto rounded-3xl border border-slate-50">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-50/50">
+                                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Collaborateur</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Modèle Demandé</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Période</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <tr v-if="pendingAssignments.length === 0">
+                                <td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">Aucune demande en attente de validation.</td>
+                            </tr>
+                            <tr v-for="assignment in pendingAssignments" :key="assignment.id" class="hover:bg-slate-50/30 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-slate-900/10">
+                                            {{ assignment.employee?.first_name?.[0] }}{{ assignment.employee?.last_name?.[0] }}
+                                        </div>
+                                        <div>
+                                            <p class="font-black text-slate-800 leading-tight">{{ employeeName(assignment.employee) }}</p>
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Superviseur</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-100">
+                                        {{ assignment.planning_model?.name }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 font-medium">
+                                    Du {{ formatDate(assignment.start_date) }} au {{ formatDate(assignment.end_date) }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <Button label="Rejeter" icon="pi pi-times" @click="changeStatus(assignment, 'suspendu')"
+                                            class="p-button-text p-button-danger font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 rounded-xl px-4 py-2" />
+                                        <Button label="Approuver" icon="pi pi-check" @click="changeStatus(assignment, 'validé')"
+                                            class="bg-emerald-600 border-none text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all" />
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
         </div>
     </AuthenticatedLayout>
 </template>
-
-<style scoped>
-.validation-page {
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
-    padding: 1.5rem 2.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    color: #111;
-}
-.page-header { margin-bottom: 1.25rem; }
-.back-link {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    font-size: 0.875rem; color: #6b7280; cursor: pointer; transition: color 0.15s;
-}
-.back-link:hover { color: #111; }
-.filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-.filter-tab {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.45rem 1rem; border-radius: 20px; border: 1px solid #e5e7eb;
-    background: #fff; font-size: 0.875rem; cursor: pointer;
-    color: #374151; transition: all 0.15s;
-}
-.filter-tab:hover { background: #f3f4f6; }
-.filter-tab.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 500; }
-.count {
-    background: #f3f4f6; color: #6b7280; border-radius: 20px;
-    padding: 0.05rem 0.5rem; font-size: 0.75rem; font-weight: 500;
-}
-.filter-tab.active .count { background: #dbeafe; color: #2563eb; }
-.table-wrapper { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
-.employee-cell { display: flex; align-items: center; gap: 0.75rem; }
-.avatar {
-    width: 36px; height: 36px; border-radius: 50%; color: #fff;
-    font-size: 0.8rem; font-weight: 600;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.employee-name { font-weight: 500; }
-.role-badge {
-    display: inline-block; padding: 0.2rem 0.65rem; border-radius: 20px;
-    background: #d1fae5; color: #065f46; font-size: 0.78rem; font-weight: 500;
-}
-.actions { display: flex; align-items: center; gap: 0.25rem; }
-</style>

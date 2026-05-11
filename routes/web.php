@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlanningAssignementController;
 use App\Http\Controllers\PlanningModelController;
 use App\Http\Controllers\AssignmentController;
@@ -80,6 +81,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/create', [UserController::class, 'create'])->name('create');
             Route::post('/', [UserController::class, 'store'])->name('store');
             Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+            Route::patch('/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
         });
     });
 });
@@ -113,7 +115,13 @@ Route::patch('/planning-assignments/{planningAssignment}/status', [PlanningAssig
     
 Route::resource('campaigns', CampaignController::class);
 
-Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('read');
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('readAll');
+    });
+
+    Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
 Route::post('/assignments/cp', [AssignmentController::class, 'assignCP'])->name('assignments.assignCP');
 Route::post('/assignments/sup', [AssignmentController::class, 'assignSUP'])->name('assignments.assignSUP');
 Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name('assignments.assignTC');

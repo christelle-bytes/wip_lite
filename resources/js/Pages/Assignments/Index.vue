@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { Head, useForm, router } from '@inertiajs/vue3'
+import { Head, useForm, router, Link } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -326,10 +326,14 @@ const totalUnassigned = computed(() =>
                                         <div v-for="cp in campaign.tree" :key="cp.id" class="rounded-2xl border border-slate-100 p-6 bg-slate-50/30">
                                             <div class="flex items-center justify-between gap-4 mb-6">
                                                 <div class="flex items-center gap-4">
-                                                    <div class="h-12 w-12 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-slate-900/10">CP</div>
+                                                    <div class="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-slate-900/10">
+                                                        {{ cp.employee.first_name[0] }}{{ cp.employee.last_name[0] }}
+                                                    </div>
                                                     <div>
-                                                        <p class="font-black text-slate-800 text-lg">{{ cp.employee.first_name }} {{ cp.employee.last_name }}</p>
-                                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assigné le {{ formatDate(cp.start_date) }}</p>
+                                                        <Link :href="route('employees.show', cp.employee.id)" :data="{ from: 'assignments' }" class="font-black text-slate-800 leading-tight hover:text-teal-600 transition-colors cursor-pointer">
+                                                            {{ cp.employee.first_name }} {{ cp.employee.last_name }}
+                                                        </Link>
+                                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Chef de Plateau</p>
                                                     </div>
                                                 </div>
                                                 <Button v-if="isAdmin" @click="openRelease(cp, `${cp.employee.first_name} ${cp.employee.last_name}`)" 
@@ -343,7 +347,9 @@ const totalUnassigned = computed(() =>
                                                         <div class="flex items-center gap-4">
                                                             <div class="h-10 w-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-black text-[10px] shadow-lg shadow-teal-600/10">SUP</div>
                                                             <div>
-                                                                <p class="font-black text-slate-800">{{ sup.employee.first_name }} {{ sup.employee.last_name }}</p>
+                                                                <Link :href="route('employees.show', sup.employee.id)" :data="{ from: 'assignments' }" class="font-black text-slate-800 hover:text-teal-600 transition-colors cursor-pointer">
+                                                                    {{ sup.employee.first_name }} {{ sup.employee.last_name }}
+                                                                </Link>
                                                                 <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Depuis {{ formatDate(sup.start_date) }}</p>
                                                             </div>
                                                         </div>
