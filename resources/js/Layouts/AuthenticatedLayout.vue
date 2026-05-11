@@ -112,6 +112,8 @@ watch(
                         <i class="pi pi-flag mr-3 text-lg" :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Campagnes
                     </Link>
+       
+
                     <Link :href="route('assignments.index')" 
                         :class="[route().current('assignments.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
@@ -151,6 +153,8 @@ watch(
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
                     </Link>
+                    
+                    
                     <Link :href="route('assignments.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-link mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Affectations

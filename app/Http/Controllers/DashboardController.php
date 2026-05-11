@@ -33,6 +33,7 @@ class DashboardController extends Controller
         $totalAssignments = DB::table('assignments')->count();
         $totalRealHours   = DB::table('timesheet_entries')->sum('total_hours') ?? 0;
         $plannedHours     = DB::table('timesheet_entries')->sum('planned_hours') ?? 0;
+        
         $gap = $plannedHours > 0
             ? round((($totalRealHours - $plannedHours) / $plannedHours) * 100, 1)
             : 0;
