@@ -63,6 +63,10 @@ class UserController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('users.index')->with('error', 'Vous ne pouvez pas désactiver votre propre compte.');
+        }
+
         $user->update(['is_active' => false]);
 
         return redirect()->route('users.index')->with('success', 'Utilisateur désactivé.');
@@ -70,6 +74,10 @@ class UserController extends Controller
 
     public function toggleStatus(User $user): RedirectResponse
     {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('users.index')->with('error', 'Vous ne pouvez pas modifier le statut de votre propre compte.');
+        }
+
         $user->update(['is_active' => !$user->is_active]);
         $status = $user->is_active ? 'activé' : 'désactivé';
 

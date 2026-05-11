@@ -97,6 +97,9 @@ class AssignmentController extends Controller
 
         // ── CP : voit ses campagnes, peut affecter SUP/TC ─────────────────────
         if ($user->isCP()) {
+            if (!$employee) {
+                return redirect()->route('dashboard')->with('error', 'Votre compte CP n\'est pas lié à une fiche employé.');
+            }
             $myCampaignIds = Assignment::where('employee_id', $employee->id)
                 ->where('position_id', $cpPosition->id)
                 ->where('status', 'actif')
@@ -174,6 +177,9 @@ class AssignmentController extends Controller
 
         // ── SUP : voit uniquement sa hiérarchie (ses TC) ──────────────────────
         if ($user->isSUP()) {
+            if (!$employee) {
+                return redirect()->route('dashboard')->with('error', 'Votre compte SUP n\'est pas lié à une fiche employé.');
+            }
             $myAssignment = Assignment::where('employee_id', $employee->id)
                 ->where('status', 'actif')
                 ->first();
@@ -203,6 +209,9 @@ class AssignmentController extends Controller
 
         // ── TC : voit uniquement son affectation ──────────────────────────────
         if ($user->isTC()) {
+            if (!$employee) {
+                return redirect()->route('dashboard')->with('error', 'Votre compte TC n\'est pas lié à une fiche employé.');
+            }
             $myAssignment = Assignment::where('employee_id', $employee->id)
                 ->where('status', 'actif')
                 ->with([
