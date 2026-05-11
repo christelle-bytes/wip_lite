@@ -188,10 +188,6 @@ watch(
 
                 <!-- CP Specific Links -->
                 <template v-else-if="roleName === 'CP'">
-                    <Link href="/gestion-employees" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-users mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
-                        Employés
-                    </Link>
                     <Link :href="route('campaigns.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
