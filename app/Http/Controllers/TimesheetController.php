@@ -77,7 +77,9 @@ class TimesheetController extends Controller
         $manager = Auth::user()->employee;
         
         if (!$manager) return redirect()->back()->with('error', "Vous n'êtes assigné à aucun téléconseiller.");
-
+// ->whereHas('assignments', function ($query) use ($manager) {
+//                 $query->where('manager_id', $manager->id);
+//             })
         // 2. Récupérer les téléconseillers assignés à ce manager
         $telecons = Employee::with('position')
             ->whereHas('assignments', function ($query) use ($manager) {

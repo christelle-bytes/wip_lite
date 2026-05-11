@@ -47,6 +47,13 @@ const markAllAsRead = async () => {
 };
 
 onMounted(() => {
+    // Sécurité : Empêcher le retour en arrière après déconnexion (bfcache)
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
     if (user.value) {
         fetchNotifications();
         // Optionnel: rafraîchir toutes les 5 minutes
@@ -356,7 +363,7 @@ watch(
                             <DropdownLink :href="route('profile.edit')" class="hover:bg-slate-50 text-slate-700">
                                 <i class="pi pi-cog mr-2 text-xs text-slate-400"></i> Paramètres
                             </DropdownLink>
-                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50">
+                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50 w-full text-left" @click="() => window.location.href = '/'">
                                 <i class="pi pi-power-off mr-2 text-xs"></i> Déconnexion
                             </DropdownLink>
                         </template>
