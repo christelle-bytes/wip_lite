@@ -32,8 +32,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user()?->loadMissing(['role', 'employee']),
             ],
+            'flash'=> [
+                'success' => $request->session()->get('success'),
+                'error'   => $request->session()->get('error'),
+                'info'    => $request->session()->get('info'),
+                'warning' => $request->session()->get('warning'),
+            ]
         ];
     }
 }

@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
@@ -28,7 +28,12 @@ onMounted(()=>{
             >
                 Dashboard
             </h2>
+
+
+
         </template>
+
+       
 
 
         
@@ -48,5 +53,8 @@ onMounted(()=>{
                 </div>
             </div>
         </div>
+
+            <Link href="/Dashboard/Admin">Admin</Link>
+
     </AuthenticatedLayout>
 </template>

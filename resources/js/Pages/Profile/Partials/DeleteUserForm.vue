@@ -41,66 +41,64 @@ const closeModal = () => {
 <template>
     <section class="space-y-6">
         <header>
-            <h2 class="text-lg font-medium text-gray-900">
-                Delete Account
+            <h2 class="text-sm font-black text-rose-900 uppercase tracking-widest">
+                Supprimer le compte
             </h2>
 
-            <p class="mt-1 text-sm text-gray-600">
-                Once your account is deleted, all of its resources and data will
-                be permanently deleted. Before deleting your account, please
-                download any data or information that you wish to retain.
+            <p class="mt-1 text-sm text-rose-700/70 font-medium">
+                Une fois votre compte supprimé, toutes ses ressources et données seront définitivement effacées.
             </p>
         </header>
 
-        <DangerButton @click="confirmUserDeletion">Delete Account</DangerButton>
+        <button
+            @click="confirmUserDeletion"
+            class="bg-rose-600 hover:bg-rose-700 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-rose-600/20 transition-all"
+        >
+            Supprimer mon compte
+        </button>
 
         <Modal :show="confirmingUserDeletion" @close="closeModal">
-            <div class="p-6">
-                <h2
-                    class="text-lg font-medium text-gray-900"
-                >
-                    Are you sure you want to delete your account?
+            <div class="p-10 bg-white rounded-[40px]">
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">
+                    Êtes-vous sûr de vouloir supprimer votre compte ?
                 </h2>
 
-                <p class="mt-1 text-sm text-gray-600">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Please enter your password to
-                    confirm you would like to permanently delete your account.
+                <p class="mt-4 text-sm text-slate-500 font-medium leading-relaxed">
+                    Une fois votre compte supprimé, toutes ses ressources et données seront définitivement effacées. Veuillez saisir votre mot de passe pour confirmer que vous souhaitez supprimer définitivement votre compte.
                 </p>
 
-                <div class="mt-6">
-                    <InputLabel
-                        for="password"
-                        value="Password"
-                        class="sr-only"
-                    />
-
-                    <TextInput
-                        id="password"
-                        ref="passwordInput"
-                        v-model="form.password"
-                        type="password"
-                        class="mt-1 block w-3/4"
-                        placeholder="Password"
-                        @keyup.enter="deleteUser"
-                    />
-
-                    <InputError :message="form.errors.password" class="mt-2" />
+                <div class="mt-8 flex flex-col gap-2">
+                    <InputLabel for="password" value="Mot de passe" class="sr-only" />
+                    <div class="relative group">
+                        <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"></i>
+                        <input
+                            id="password"
+                            ref="passwordInput"
+                            v-model="form.password"
+                            type="password"
+                            class="w-full pl-12 pr-4 py-3 bg-slate-50 border-slate-100 rounded-2xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium"
+                            placeholder="Saisissez votre mot de passe pour confirmer"
+                            @keyup.enter="deleteUser"
+                        />
+                    </div>
+                    <InputError :message="form.errors.password" class="mt-1" />
                 </div>
 
-                <div class="mt-6 flex justify-end">
-                    <SecondaryButton @click="closeModal">
-                        Cancel
-                    </SecondaryButton>
+                <div class="mt-10 flex justify-end gap-4">
+                    <button 
+                        @click="closeModal"
+                        class="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                        Annuler
+                    </button>
 
-                    <DangerButton
-                        class="ms-3"
-                        :class="{ 'opacity-25': form.processing }"
+                    <button
+                        class="bg-rose-600 hover:bg-rose-700 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-rose-600/20 transition-all disabled:opacity-50"
                         :disabled="form.processing"
                         @click="deleteUser"
                     >
-                        Delete Account
-                    </DangerButton>
+                        Confirmer la suppression
+                    </button>
                 </div>
             </div>
         </Modal>
