@@ -37,7 +37,8 @@ const visible = ref(false);
 const filters = ref();
 
 const form = useForm({
-    employee_ids: [],
+    tc_ids: [],
+    sup_id: "",
     date: "",
     check_in: "",
     break_duration: "",
@@ -47,8 +48,16 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.employee_ids = selectedTelecon.value.map((sup) => sup.id);
-    console.log(selectedTelecon.value);
+    if (form.date) {
+        // Force une string sans fuseau
+        const year = form.date.getFullYear();
+        const month = String(form.date.getMonth() + 1).padStart(2, '0');
+        const day = String(form.date.getDate()).padStart(2, '0');
+        
+        form.date = `${year}-${month}-${day}`; 
+    }
+    form.tc_ids = selectedTelecon.value.map((tc) => tc.id);
+    form.sup_id = props.auth.user.employee.id;
     form.post(route("store.telecon"));
     visible.value = false;
 };
@@ -87,7 +96,6 @@ const initFilters = () => {
 initFilters();
 
 onMounted(() => {
-    console.log(props.telecon);
     initFilters();
 });
 
@@ -96,26 +104,37 @@ const clearFilter = () => {
 };
 
 const createEntry = () => {
-    const supervisorIds = selectedTelecon.value
+    
+const teleconIds = selectedTelecon.value
         .map((tc) => {
-            return tc.assignments && tc.assignments.length > 0
-                ? tc.assignments[0].manager_id
-                : null;
+            return tc.id
         })
         .filter((id, index, self) => id !== null && self.indexOf(id) === index);
-
-    if (supervisorIds.length === 0) {
-       return toast.add({
-        severity: 'error',
-        summary: 'Alerte',
-        detail: 'Certains teleconseillers ne sont pas assigné à de superviseur',
-        life: 5000,
-    });
-    }
-
-    form.employee_ids = supervisorIds;
+    form.tc_ids = teleconIds;
+    form.sup_id = props.auth.user.employee.id;
     visible.value = true;
 };
+// const createEntry = () => {
+//     const supervisorIds = selectedTelecon.value
+//         .map((tc) => {
+//             return tc.assignments && tc.assignments.length > 0
+//                 ? tc.assignments[0].manager_id
+//                 : null;
+//         })
+//         .filter((id, index, self) => id !== null && self.indexOf(id) === index);
+
+//     if (supervisorIds.length === 0) {
+//        return toast.add({
+//         severity: 'error',
+//         summary: 'Alerte',
+//         detail: 'Certains teleconseillers ne sont pas assigné à de superviseur',
+//         life: 5000,
+//     });
+//     }
+
+//     form.employee_ids = supervisorIds;
+//     visible.value = true;
+// };
 </script>
 
 <template>

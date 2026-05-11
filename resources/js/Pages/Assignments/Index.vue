@@ -298,7 +298,7 @@ const totalUnassigned = computed(() =>
                             </div>
                         </div>
                         
-                        <div class="grid gap-8">
+                        <div v-if="filteredCampaigns.length > 0" class="grid gap-8">
                             <div
                                 v-for="campaign in filteredCampaigns"
                                 :key="campaign.id"
@@ -376,6 +376,15 @@ const totalUnassigned = computed(() =>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        <div v-else class="flex flex-col items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-slate-200">
+                            <div class="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-300 mb-6">
+                                <i class="pi pi-id-card text-4xl"></i>
+                            </div>
+                            <h3 class="text-xl font-black text-slate-800 mb-2">Aucune affectation active</h3>
+                            <p class="text-slate-500 font-medium max-w-xs text-center">
+                                Vous n'avez pas d'affectation en cours pour vos campagnes.
+                            </p>
                         </div>
                     </TabPanel>
 

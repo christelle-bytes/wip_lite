@@ -1,18 +1,40 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
+import Select from "primevue/select";
+import FloatLabel from "primevue/floatlabel";
 import AuthenticatedLayout from "../../Layouts/AuthenticatedLayout.vue";
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 
 const props = defineProps({
     telecon: Array,
+    allPeriods: Array,
+    selectedPeriod: Object,
     auth: Object,
     currentMonth: String,
 });
 
 const expandedRows = ref([]);
+
+// Sélection de la période
+const selectedPeriod = ref(props.selectedPeriod);
+
+// Options sécurisées pour le sélecteur
+const periodOptions = computed(() => {
+    return Array.isArray(props.allPeriods) ? props.allPeriods : [];
+});
+
+// Watcher pour déclencher la navigation lors du changement de période
+watch(selectedPeriod, (newPeriod) => {
+    if (newPeriod) {
+        router.get(route('index.telecon'), {
+            start_date: newPeriod.period_start,
+            end_date: newPeriod.period_end
+        }, { preserveState: true, replace: true });
+    }
+});
 
 // Formattage simple
 const formatH = (v) =>
@@ -27,20 +49,21 @@ const formatD = (d) =>
         month: "2-digit",
     });
 
-// Récupère toutes les entrées des timesheets
-const getEntries = (employee) => employee.timesheet.flatMap((ts) => ts.entries);
+// Récupère toutes les entrées de l'employé
+const getEntries = (employee) => {
+    if (!employee.timesheet || employee.timesheet.length === 0) return [];
+    
+    return employee.timesheet.flatMap((ts) => ts.entries || []);
+};
 
 // Calcul du total pour l'employé
 const getTotal = (employee) => {
-    if (!employee.timesheet || employee.timesheet.length === 0) return 0;
-
-    const entries = employee.timesheet.flatMap((ts) => ts.entries || []);
+    const entries = getEntries(employee);
     return entries.reduce((acc, curr) => {
         const val = parseFloat(curr.total_hours);
         return acc + (isNaN(val) ? 0 : val);
     }, 0);
 };
-console.log(props.telecon);
 </script>
 
 <template>
@@ -62,6 +85,16 @@ console.log(props.telecon);
                     </div>
 
                     <div class="flex items-center gap-4">
+                        <FloatLabel variant="on" class="min-w-64">
+                            <Select
+                                v-model="selectedPeriod"
+                                :options="periodOptions"
+                                optionLabel="label"
+                                placeholder="Sélectionner une période"
+                                class="w-full border-slate-200 shadow-none focus:ring-0 text-sm font-semibold text-slate-700 rounded-xl"
+                            />
+                        </FloatLabel>
+
                         <Tag
                             :value="props.telecon.length + ' Téléconseillers'"
                             severity="secondary"
