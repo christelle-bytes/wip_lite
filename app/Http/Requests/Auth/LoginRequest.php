@@ -42,16 +42,25 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt(array_merge($this->only('email', 'password'), ), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        $user = \App\Models\User::where('email', $this->email)->first();
 
-            // Vérifier si l'utilisateur existe mais est désactivé
-            $user = \App\Models\User::where('email', $this->email)->first();
-            if ($user && !$user->is_active) {
-                throw ValidationException::withMessages([
-                    'email' => 'Votre compte a été désactivé. Veuillez contacter l\'administrateur.',
-                ]);
-            }
+        // 1. L'utilisateur n'existe pas du tout
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'email' => "Aucun compte n'est associé à cette adresse email. Veuillez contacter l'administrateur du système pour créer votre accès.",
+            ]);
+        }
+
+        // 2. L'utilisateur existe mais est désactivé
+        if (!$user->is_active) {
+            throw ValidationException::withMessages([
+                'email' => "Votre compte est actuellement désactivé. Veuillez contacter l'administrateur du système pour le réactiver.",
+            ]);
+        }
+
+        // 3. Tentative d'authentification classique
+        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
