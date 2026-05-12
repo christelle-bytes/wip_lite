@@ -1,12 +1,20 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
 import Select from "primevue/select";
 import FloatLabel from "primevue/floatlabel";
+import InputText from "primevue/inputtext";
+import IconField from "primevue/iconfield";
+import InputIcon from "primevue/inputicon";
+import Dialog from "primevue/dialog";
+import DatePicker from "primevue/datepicker";
+import InputNumber from "primevue/inputnumber";
+import Button from "primevue/button";
 import AuthenticatedLayout from "../../Layouts/AuthenticatedLayout.vue";
-import { Link } from "@inertiajs/vue3";
+import { Link, router, useForm } from "@inertiajs/vue3";
+import { FilterMatchMode } from "@primevue/core/api";
 
 
 const props = defineProps({
@@ -17,9 +25,24 @@ const props = defineProps({
 });
 
 const expandedRows = ref([]);
+const filters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+});
 
 // Sélection
 const selectedPeriod = ref(props.selectedPeriod);
+
+// Watcher pour le filtrage
+watch(selectedPeriod, (newPeriod) => {
+    if (newPeriod) {
+        router.get(route('index.sup'), {
+            start_date: newPeriod.period_start,
+            end_date: newPeriod.period_end
+        }, { preserveState: true, replace: true });
+    } else {
+        router.get(route('index.sup'), {}, { preserveState: true, replace: true });
+    }
+});
 
 // Options sécurisées
 const periodOptions = computed(() => {
@@ -27,14 +50,89 @@ const periodOptions = computed(() => {
 });
 
 const getFilteredEntries = (supervisor) => {
-    return supervisor.timesheet?.flatMap(ts => ts.entries || []) || [];
+    return supervisor.timesheet?.flatMap(ts => (ts.entries || []).map(entry => ({
+        ...entry,
+        timesheet_status: ts.status
+    }))) || [];
 };
 
-const formatHours = (v) =>
-    v ? `${Math.floor(v)}h${Math.round((v % 1) * 60).toString().padStart(2, "0")}` : "0h00";
+const formatHours = (v) => {
+    const num = parseFloat(v);
+    if (isNaN(num)) return "0h00";
+    const hours = Math.floor(num);
+    const minutes = Math.round((num % 1) * 60);
+    return `${hours}h${minutes.toString().padStart(2, "0")}`;
+};
+
 
 const formatDate = (d) =>
     d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "-";
+
+// --- Modification des entrées ---
+const editDialogVisible = ref(false);
+const editingEntry = ref(null);
+
+const editForm = useForm({
+    employee_ids: [], // Le controller attend un tableau d'IDs
+    date: null,
+    check_in: null,
+    check_out: null,
+    break_duration: 0,
+    comment: "",
+});
+
+const openEditDialog = (entry) => {
+    editingEntry.value = entry;
+    
+    // On parse les dates/heures pour le DatePicker
+    const entryDate = new Date(entry.date);
+    
+    // Pour check_in et check_out, on crée des objets Date
+    const [hIn, mIn] = entry.check_in.split(':');
+    const checkInDate = new Date();
+    checkInDate.setHours(parseInt(hIn), parseInt(mIn), 0);
+
+    const [hOut, mOut] = entry.check_out.split(':');
+    const checkOutDate = new Date();
+    checkOutDate.setHours(parseInt(hOut), parseInt(mOut), 0);
+
+    editForm.employee_ids = [entry.employee_id];
+    editForm.date = entryDate;
+    editForm.check_in = checkInDate;
+    editForm.check_out = checkOutDate;
+    editForm.break_duration = parseInt(entry.break_duration);
+    editForm.comment = entry.comment || "";
+    
+    editDialogVisible.value = true;
+};
+
+const submitEdit = () => {
+    // Formattage de la date locale (Y-m-d)
+    const year = editForm.date.getFullYear();
+    const month = String(editForm.date.getMonth() + 1).padStart(2, '0');
+    const day = String(editForm.date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
+    // Formattage des heures locales (HH:mm) pour éviter le décalage UTC
+    const formatLocalTime = (date) => {
+        if (!date) return null;
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+    };
+
+    router.post(route("store.sup"), {
+        ...editForm.data(),
+        date: formattedDate,
+        check_in: formatLocalTime(editForm.check_in),
+        check_out: formatLocalTime(editForm.check_out),
+    }, {
+        onSuccess: () => {
+            editDialogVisible.value = false;
+            editingEntry.value = null;
+        }
+    });
+};
 </script>
 
 <template>
@@ -82,20 +180,35 @@ const formatDate = (d) =>
 
             <!-- Tableau Principal -->
             <div class="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm space-y-8 overflow-hidden">
-                <div class="flex items-center gap-3">
-                    <div class="h-8 w-8 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm shadow-sm">
-                        <i class="pi pi-table"></i>
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="flex items-center gap-3">
+                        <div class="h-8 w-8 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm shadow-sm">
+                            <i class="pi pi-table"></i>
+                        </div>
+                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Détails par collaborateur</h2>
                     </div>
-                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Détails par collaborateur</h2>
+
+                    <IconField iconPosition="left" class="w-full md:max-w-md">
+                        <InputIcon class="pi pi-search text-slate-400" />
+                        <InputText
+                            v-model="filters['global'].value"
+                            placeholder="Rechercher un superviseur (nom, matricule...)"
+                            class="w-full border-slate-100 bg-slate-50 rounded-xl text-sm"
+                        />
+                    </IconField>
                 </div>
 
                 <div class="overflow-x-auto rounded-3xl border border-slate-50">
                     <DataTable
                         v-model:expandedRows="expandedRows"
+                        v-model:filters="filters"
                         :value="props.supervisors"
                         dataKey="id"
                         class="p-datatable-modern border-none"
                         rowHover
+                        paginator
+                        :rows="10"
+                        :globalFilterFields="['first_name', 'last_name', 'matricule']"
                     >
                         <Column expander style="width: 4rem" />
 
@@ -198,6 +311,22 @@ const formatDate = (d) =>
                                             <span v-else class="text-slate-300 text-xs font-bold">—</span>
                                         </template>
                                     </Column>
+                                    <Column header="Action" style="width: 100px">
+                                        <template #body="sp">
+                                            <div class="flex items-center gap-2">
+                                                <Button
+                                                    v-if="sp.data.timesheet_status !== 'validated'"
+                                                    icon="pi pi-pencil"
+                                                    text
+                                                    rounded
+                                                    severity="secondary"
+                                                    size="small"
+                                                    @click="openEditDialog(sp.data)"
+                                                />
+                                                <Tag v-else value="Validé" severity="success" class="text-[8px]" />
+                                            </div>
+                                        </template>
+                                    </Column>
                                 </DataTable>
                             </div>
                         </template>
@@ -205,6 +334,51 @@ const formatDate = (d) =>
                 </div>
             </div>
         </div>
+
+        <!-- Dialog de modification -->
+        <Dialog
+            v-model:visible="editDialogVisible"
+            modal
+            header="Modifier l'entrée"
+            :style="{ width: '30rem' }"
+            class="p-fluid"
+        >
+            <div class="space-y-6 py-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-black uppercase text-slate-400 tracking-widest">Date</label>
+                        <DatePicker v-model="editForm.date" dateFormat="dd/mm/yy" disabled class="bg-slate-50" />
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-black uppercase text-slate-400 tracking-widest">Pause (min)</label>
+                        <InputNumber v-model="editForm.break_duration" :min="0" :max="120" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-black uppercase text-slate-400 tracking-widest">Arrivée</label>
+                        <DatePicker v-model="editForm.check_in" timeOnly showIcon />
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-black uppercase text-slate-400 tracking-widest">Départ</label>
+                        <DatePicker v-model="editForm.check_out" timeOnly showIcon />
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-black uppercase text-slate-400 tracking-widest">Commentaire</label>
+                    <InputText v-model="editForm.comment" placeholder="Optionnel..." />
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex gap-3 justify-end mt-4">
+                    <Button label="Annuler" text severity="secondary" @click="editDialogVisible = false" class="font-bold" />
+                    <Button label="Enregistrer" severity="primary" @click="submitEdit" :loading="editForm.processing" class="font-bold px-6" />
+                </div>
+            </template>
+        </Dialog>
     </AuthenticatedLayout>
 </template>
 

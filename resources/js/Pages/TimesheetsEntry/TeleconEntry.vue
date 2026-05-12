@@ -24,6 +24,7 @@ const selectedTelecon = ref([]);
 const props = defineProps({
     telecon: Array,
     auth: Object,
+    periodLabel: String,
 });
 
 const formattedSup = computed(() => {
@@ -48,18 +49,37 @@ const form = useForm({
 });
 
 const submit = () => {
+    // Formattage local pour éviter les décalages UTC
+    const formatLocalTime = (date) => {
+        if (!(date instanceof Date)) return date;
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+    };
+
     if (form.date) {
-        // Force une string sans fuseau
         const year = form.date.getFullYear();
         const month = String(form.date.getMonth() + 1).padStart(2, '0');
         const day = String(form.date.getDate()).padStart(2, '0');
-        
         form.date = `${year}-${month}-${day}`; 
     }
-    form.tc_ids = selectedTelecon.value.map((tc) => tc.id);
-    form.sup_id = props.auth.user.employee.id;
-    form.post(route("store.telecon"));
-    visible.value = false;
+
+    // Préparation des données pour l'envoi
+    const payload = {
+        ...form.data(),
+        check_in: formatLocalTime(form.check_in),
+        check_out: formatLocalTime(form.check_out),
+        tc_ids: selectedTelecon.value.map((tc) => tc.id),
+        sup_id: props.auth.user.employee.id
+    };
+
+    router.post(route("store.telecon"), payload, {
+        onSuccess: () => {
+            visible.value = false;
+            form.reset();
+            selectedTelecon.value = [];
+        }
+    });
 };
 
 const typeAbs = ref([
@@ -147,9 +167,15 @@ const teleconIds = selectedTelecon.value
                         <h1 class="text-3xl font-semibold text-slate-800">
                             Saisie d'heures - Téléconseillers
                         </h1>
-                        <p class="text-slate-500 mt-1">
-                            Sélectionnez un ou plusieurs téléconseillers pour créer une nouvelle saisie
-                        </p>
+                        <div class="flex items-center gap-3 mt-1">
+                            <p class="text-slate-500">
+                                Sélectionnez un ou plusieurs téléconseillers pour créer une nouvelle saisie
+                            </p>
+                            <span v-if="props.periodLabel" class="px-3 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold border border-amber-100 flex items-center gap-2">
+                                <i class="pi pi-calendar"></i>
+                                {{ props.periodLabel }}
+                            </span>
+                        </div>
                     </div>
 
                     <Link

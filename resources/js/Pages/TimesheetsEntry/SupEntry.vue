@@ -38,17 +38,36 @@ const form = useForm({
 });
 
 const submit = () => {
+    // Formattage local pour éviter les décalages UTC
+    const formatLocalTime = (date) => {
+        if (!(date instanceof Date)) return date;
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+    };
+
     if (form.date) {
-        // Force une string sans fuseau
         const year = form.date.getFullYear();
         const month = String(form.date.getMonth() + 1).padStart(2, '0');
         const day = String(form.date.getDate()).padStart(2, '0');
-        
         form.date = `${year}-${month}-${day}`; 
     }
-    form.employee_ids = selectedSuperior.value.map((sup) => sup.id);
-    form.post(route("store.sup"));
-    visible.value = false;
+
+    // Préparation des données pour l'envoi
+    const payload = {
+        ...form.data(),
+        check_in: formatLocalTime(form.check_in),
+        check_out: formatLocalTime(form.check_out),
+        employee_ids: selectedSuperior.value.map((sup) => sup.id)
+    };
+
+    router.post(route("store.sup"), payload, {
+        onSuccess: () => {
+            visible.value = false;
+            form.reset();
+            selectedSuperior.value = [];
+        }
+    });
 };
 
 const typeAbs = ref([
@@ -67,6 +86,8 @@ const formatDate = (date) => {
         day: "numeric",
     });
 };
+console.log(props.superior)
+
 
 // Initialisation des filtres adaptés aux Timesheets
 const initFilters = () => {
