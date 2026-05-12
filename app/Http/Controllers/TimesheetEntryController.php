@@ -438,7 +438,7 @@ class TimesheetEntryController extends Controller
             }
 
             // Calcul du planning/overtime
-            $planningAssignment = PlanningAssignment::where('employee_id', $managerEmployeeId)->first();
+            $planningAssignment = PlanningAssignment::where('employee_id', $managerEmployeeId)->where('status', 'validé')->first();
             $plannedHours = 0;
             if ($planningAssignment && $planningAssignment->planningModel) {
                 $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';

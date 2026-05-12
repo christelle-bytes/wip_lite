@@ -1,16 +1,19 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { router } from "@inertiajs/vue3";
 import { useToast } from "primevue/usetoast";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Button from "primevue/button";
+import Paginator from "primevue/paginator";
+import InputText from "primevue/inputtext";
 
 const props = defineProps({
-    assignments: Array,
+    assignments: Object, // Maintenant un objet avec pagination
 });
 
 const toast = useToast();
 const activeFilter = ref("en attente");
+const search = ref("");
 
 const filters = [
     { label: "En attente", value: "en attente" },
@@ -20,11 +23,11 @@ const filters = [
 ];
 
 const filteredAssignments = computed(() =>
-    (props.assignments ?? []).filter((a) => a.status === activeFilter.value)
+    (props.assignments?.data ?? []).filter((a) => a.status === activeFilter.value)
 );
 
 function countByStatus(status) {
-    return (props.assignments ?? []).filter((a) => a.status === status).length;
+    return (props.assignments?.data ?? []).filter((a) => a.status === status).length;
 }
 
 function employeeFullName(employee) {
@@ -65,6 +68,54 @@ function changeStatus(assignment, status) {
     );
 }
 
+// Gestion de la recherche
+function performSearch() {
+    const params = new URLSearchParams(window.location.search);
+    if (search.value.trim()) {
+        params.set('search', search.value.trim());
+    } else {
+        params.delete('search');
+    }
+    params.delete('page'); // Reset to first page on new search
+    
+    router.get(window.location.pathname, Object.fromEntries(params), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
+
+// Gestion de la pagination
+function onPageChange(event) {
+    const page = event.page + 1; // PrimeVue utilise 0-based index
+    const rows = event.rows;
+    
+    // Conserver les filtres et recherche existants
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', page);
+    params.set('per_page', rows);
+    
+    router.get(window.location.pathname, Object.fromEntries(params), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
+
+// Gestion du filtre de statut
+function filterByStatus(status) {
+    const params = new URLSearchParams(window.location.search);
+    if (status === 'all') {
+        params.delete('status');
+    } else {
+        params.set('status', status);
+    }
+    params.delete('page'); // Reset to first page on new filter
+    
+    router.get(window.location.pathname, Object.fromEntries(params), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
+
 function deleteAssignment(assignment) {
     router.delete(route('planning-assignments.destroy', assignment.id), {
         onError: () => toast.add({ severity: 'error', summary: 'Alerte', detail: 'Impossible de supprimer cette assignation.', life: 4000 }),
@@ -85,6 +136,21 @@ function deleteAssignment(assignment) {
                     </div>
                     <h1 class="title">Validation des assignations</h1>
                     <p class="subtitle">Gérez et validez les assignations de planning en attente.</p>
+                </div>
+                <!-- Recherche -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        <InputText 
+                            v-model="search" 
+                            placeholder="Rechercher un employé ou un planning..." 
+                            @keyup.enter="performSearch"
+                            class="search-input"
+                        />
+                        <Button @click="performSearch" class="search-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -148,7 +214,7 @@ function deleteAssignment(assignment) {
                             <!-- Statut -->
                             <td>
                                 <span :class="['status-badge', assignment.status.replace(' ', '-')]">
-                                    {{ statusLabel(assignment.status) }}
+                                    {{ assignment.status }}
                                 </span>
                             </td>
                             <!-- Actions -->
@@ -215,6 +281,18 @@ function deleteAssignment(assignment) {
                     </tbody>
                 </table>
                 <div v-else class="empty">Aucune assignation trouvée.</div>
+                
+                <!-- Pagination -->
+                <div v-if="props.assignments?.data?.length > 0" class="mt-6">
+                    <Paginator 
+                        :rows="10"
+                        :totalRecords="props.assignments.total"
+                        :first="props.assignments.from - 1"
+                        @page="onPageChange"
+                        template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 20, 50]"
+                    />
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>
