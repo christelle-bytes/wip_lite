@@ -309,15 +309,16 @@ class AssignmentController extends Controller
                 ]);
             }
             
-            // RÈGLE : Un seul CP par campagne
-            $existingCP = Assignment::where('campaign_id', $campaign->id)
+            // On vérifie si l'employé est déjà assigné comme CP à cette campagne
+            $alreadyAssigned = Assignment::where('campaign_id', $campaign->id)
+                ->where('employee_id', $data['employee_id'])
                 ->where('position_id', $cpPosition->id)
                 ->where('status', 'actif')
-                ->first();
+                ->exists();
 
-            if ($existingCP) {
+            if ($alreadyAssigned) {
                 return back()->withErrors([
-                    'campaign_ids' => "La campagne « {$campaign->name} » a déjà un Chef de Plateau assigné ({$existingCP->employee->first_name} {$existingCP->employee->last_name})."
+                    'campaign_ids' => "L'employé est déjà assigné comme Chef de Plateau à la campagne « {$campaign->name} »."
                 ]);
             }
         }
@@ -438,14 +439,14 @@ class AssignmentController extends Controller
         return back()->with('success', 'Téléconseiller(s) affecté(s) avec succès.');
     }
 
-    // ─── Libérer une ressource avec cascade ───────────────────────────────────
-    public function release(Assignment $assignment)
+    // ─── Libérer une ressource avec option de remplacement ──────────────────
+    public function release(Request $request, Assignment $assignment)
     {
         $user     = Auth::user();
         $employee = $user->employee;
 
         // Seuls admin et CP peuvent libérer
-        if (!$user->isAdmin() && $employee?->position->code !== 'CP') {
+        if (!$user->isAdmin() && $employee?->position?->code !== 'CP') {
             abort(403);
         }
 
@@ -462,39 +463,69 @@ class AssignmentController extends Controller
             }
         }
 
+        $data = $request->validate([
+            'replacement_employee_id' => 'nullable|exists:employees,id',
+        ]);
+
         $cpPosition  = Position::where('code', 'CP')->firstOrFail();
         $supPosition = Position::where('code', 'SUP')->firstOrFail();
+        $tcPosition  = Position::where('code', 'TC')->firstOrFail();
 
-        // Cascade si CP
-        if ($assignment->position_id === $cpPosition->id) {
-            $sups = Assignment::where('manager_id', $assignment->employee_id)
-                ->where('campaign_id', $assignment->campaign_id)
+        $oldEmployeeId = $assignment->employee_id;
+        $campaignId    = $assignment->campaign_id;
+
+        if ($data['replacement_employee_id']) {
+            // Remplacement
+            $newAssignment = Assignment::create([
+                'employee_id' => $data['replacement_employee_id'],
+                'campaign_id' => $campaignId,
+                'position_id' => $assignment->position_id,
+                'manager_id'  => $assignment->manager_id,
+                'status'      => 'actif',
+                'start_date'  => now(),
+            ]);
+
+            // Transférer les subordonnés directs
+            Assignment::where('manager_id', $oldEmployeeId)
+                ->where('campaign_id', $campaignId)
                 ->where('status', 'actif')
-                ->get();
+                ->update(['manager_id' => $data['replacement_employee_id']]);
 
-            foreach ($sups as $sup) {
-                Assignment::where('manager_id', $sup->employee_id)
-                    ->where('campaign_id', $assignment->campaign_id)
+            $assignment->update(['status' => 'terminé', 'end_date' => now()]);
+            
+            return redirect()->back()->with('success', 'Ressource remplacée et subordonnés transférés.');
+        } else {
+            // Cascade si CP
+            if ($assignment->position_id === $cpPosition->id) {
+                $sups = Assignment::where('manager_id', $oldEmployeeId)
+                    ->where('campaign_id', $campaignId)
+                    ->where('status', 'actif')
+                    ->get();
+
+                foreach ($sups as $sup) {
+                    Assignment::where('manager_id', $sup->employee_id)
+                        ->where('campaign_id', $campaignId)
+                        ->where('status', 'actif')
+                        ->update(['status' => 'terminé', 'end_date' => now()]);
+                }
+
+                Assignment::where('manager_id', $oldEmployeeId)
+                    ->where('campaign_id', $campaignId)
                     ->where('status', 'actif')
                     ->update(['status' => 'terminé', 'end_date' => now()]);
             }
 
-            Assignment::where('manager_id', $assignment->employee_id)
-                ->where('campaign_id', $assignment->campaign_id)
-                ->where('status', 'actif')
-                ->update(['status' => 'terminé', 'end_date' => now()]);
+            // Cascade si SUP
+            if ($assignment->position_id === $supPosition->id) {
+                Assignment::where('manager_id', $oldEmployeeId)
+                    ->where('campaign_id', $campaignId)
+                    ->where('status', 'actif')
+                    ->update(['status' => 'terminé', 'end_date' => now()]);
+            }
+
+            $assignment->update(['status' => 'terminé', 'end_date' => now()]);
+
+            return redirect()->back()->with('success', 'Ressource libérée avec succès (cascade effectuée).');
         }
-
-        // Cascade si SUP
-        if ($assignment->position_id === $supPosition->id) {
-            Assignment::where('manager_id', $assignment->employee_id)
-                ->where('campaign_id', $assignment->campaign_id)
-                ->where('status', 'actif')
-                ->update(['status' => 'terminé', 'end_date' => now()]);
-        }
-
-        $assignment->update(['status' => 'terminé', 'end_date' => now()]);
-
-        return redirect()->back()->with('success', 'Ressource libérée avec succès.');
     }
 }

@@ -64,6 +64,22 @@ const supDialogVisible     = ref(false)
 const tcDialogVisible      = ref(false)
 const releaseDialogVisible = ref(false)
 const assignmentToRelease  = ref(null)
+const replacementEmployeeId = ref(null)
+
+const availableReplacements = computed(() => {
+    if (!assignmentToRelease.value) return []
+    const code = assignmentToRelease.value.position?.code
+    if (code === 'CP') return props.unassignedCPs
+    if (code === 'SUP') return props.unassignedSUPs
+    return []
+})
+
+const replacementOptions = computed(() =>
+    availableReplacements.value.map(e => ({
+        label: `${e.first_name} ${e.last_name} (${e.matricule})`,
+        value: e.id
+    }))
+)
 
 // ── Forms ─────────────────────────────────────────────────────────────────────
 const cpForm  = useForm({ employee_id: null, campaign_ids: [], start_date: null })
@@ -139,13 +155,17 @@ const submitTC = () => {
 }
 
 // ── Libération ────────────────────────────────────────────────────────────────
-const openRelease = (assignment, name) => {
+const openRelease = (assignment, name, campaign = null) => {
     assignmentToRelease.value = { ...assignment, displayName: name }
+    if (campaign) assignmentToRelease.value.campaign = campaign
+    replacementEmployeeId.value = null
     releaseDialogVisible.value = true
 }
 const confirmRelease = () => {
-    router.patch(route('assignments.release', assignmentToRelease.value.id), {}, {
-        onSuccess: () => { releaseDialogVisible.value = false }
+    router.patch(route('assignments.release', assignmentToRelease.value.id), {
+        replacement_employee_id: replacementEmployeeId.value
+    }, {
+        onSuccess: () => { releaseDialogVisible.value = false; replacementEmployeeId.value = null }
     })
 }
 
@@ -336,7 +356,7 @@ const totalUnassigned = computed(() =>
                                                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Chef de Plateau</p>
                                                     </div>
                                                 </div>
-                                                <Button v-if="isAdmin" @click="openRelease(cp, `${cp.employee.first_name} ${cp.employee.last_name}`)" 
+                                                <Button v-if="isAdmin" @click="openRelease(cp, `${cp.employee.first_name} ${cp.employee.last_name}`, campaign)" 
                                                     icon="pi pi-sign-out" label="Libérer" class="p-button-text p-button-danger font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 rounded-xl" />
                                             </div>
 
@@ -353,7 +373,7 @@ const totalUnassigned = computed(() =>
                                                                 <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Depuis {{ formatDate(sup.start_date) }}</p>
                                                             </div>
                                                         </div>
-                                                        <Button v-if="isAdmin || isCP" @click="openRelease(sup, `${sup.employee.first_name} ${sup.employee.last_name}`)" 
+                                                        <Button v-if="isAdmin || isCP" @click="openRelease(sup, `${sup.employee.first_name} ${sup.employee.last_name}`, campaign)" 
                                                             icon="pi pi-sign-out" class="p-button-text p-button-danger p-button-sm rounded-lg" />
                                                     </div>
 
@@ -362,7 +382,7 @@ const totalUnassigned = computed(() =>
                                                         <div v-for="tc in sup.children" :key="tc.id" class="flex items-center gap-2.5 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl group transition-all hover:border-teal-200 hover:bg-white">
                                                             <div class="h-6 w-6 rounded-lg bg-slate-200 flex items-center justify-center text-slate-600 font-black text-[8px] group-hover:bg-teal-100 group-hover:text-teal-600 transition-colors">TC</div>
                                                             <span class="text-xs font-bold text-slate-700">{{ tc.employee.first_name }} {{ tc.employee.last_name }}</span>
-                                                            <button v-if="isAdmin || isCP" @click="openRelease(tc, `${tc.employee.first_name} ${tc.employee.last_name}`)" 
+                                                            <button v-if="isAdmin || isCP" @click="openRelease(tc, `${tc.employee.first_name} ${tc.employee.last_name}`, campaign)" 
                                                                 class="ml-1 text-slate-300 hover:text-rose-500 transition-colors">
                                                                 <i class="pi pi-times-circle text-xs"></i>
                                                             </button>
@@ -532,7 +552,7 @@ const totalUnassigned = computed(() =>
         </Dialog>
 
         <!-- Release Dialog -->
-        <Dialog v-model:visible="releaseDialogVisible" modal header="Confirmer la Libération" class="rounded-3xl shadow-2xl border-none" :style="{ width: '400px' }"
+        <Dialog v-model:visible="releaseDialogVisible" modal header="Confirmer la Libération" class="rounded-3xl shadow-2xl border-none" :style="{ width: '450px' }"
             :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
             <div v-if="assignmentToRelease" class="space-y-6">
                 <div class="rounded-2xl bg-rose-50 border border-rose-100 p-4">
@@ -540,18 +560,31 @@ const totalUnassigned = computed(() =>
                         <i class="pi pi-exclamation-triangle mt-0.5"></i>
                         <div>
                             <p class="text-[10px] font-black uppercase tracking-widest">Impact en cascade</p>
-                            <p class="text-xs font-medium mt-1">La libération d'un responsable désassigne également toute sa hiérarchie inférieure.</p>
+                            <p class="text-xs font-medium mt-1">
+                                {{ replacementEmployeeId ? 'La hiérarchie inférieure sera transférée au remplaçant.' : 'La libération sans remplacement désassigne également toute sa hiérarchie inférieure.' }}
+                            </p>
                         </div>
                     </div>
                 </div>
+
                 <p class="text-sm text-slate-600 leading-relaxed text-center">
-                    Libérer <span class="font-black text-slate-900">{{ assignmentToRelease.displayName }}</span> de ses fonctions actuelles ?
+                    Libérer <span class="font-black text-slate-900">{{ assignmentToRelease.displayName }}</span> de ses fonctions sur <span class="font-bold">{{ assignmentToRelease.campaign?.name }}</span> ?
                 </p>
+
+                <!-- Replacement Option -->
+                <div v-if="assignmentToRelease.position?.code === 'CP' || assignmentToRelease.position?.code === 'SUP'" class="space-y-4 pt-4 border-t border-slate-100">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Remplacer par (Optionnel)</label>
+                        <Dropdown v-model="replacementEmployeeId" :options="replacementOptions" optionLabel="label" optionValue="value" 
+                            placeholder="Choisir un remplaçant..." class="w-full rounded-xl border-slate-200" filter showClear />
+                        <p class="text-[10px] text-slate-400 italic">Si sélectionné, les subordonnés seront automatiquement transférés au nouveau responsable.</p>
+                    </div>
+                </div>
             </div>
             <template #footer>
                 <div class="flex gap-3 w-full">
                     <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-black text-xs uppercase" @click="releaseDialogVisible = false" />
-                    <Button label="Libérer" class="flex-1 bg-rose-600 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg shadow-rose-600/20" @click="confirmRelease" />
+                    <Button :label="replacementEmployeeId ? 'Remplacer' : 'Libérer'" class="flex-1 bg-rose-600 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg shadow-rose-600/20" @click="confirmRelease" />
                 </div>
             </template>
         </Dialog>
