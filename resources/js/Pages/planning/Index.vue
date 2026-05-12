@@ -49,13 +49,17 @@ const filteredModels = computed(() => {
     }
     return models;
 });
-console.log(props.planningModels)
+console.log(props.planningModels);
 const countAll = computed(() => props.planningModels?.total ?? 0);
 const countActifs = computed(
-    () => props.planningModels?.data.filter((m) => m.status === "actif").length ?? 0,
+    () =>
+        props.planningModels?.data.filter((m) => m.status === "actif").length ??
+        0,
 );
 const countInactifs = computed(
-    () => props.planningModels?.data.filter((m) => m.status !== "actif").length ?? 0,
+    () =>
+        props.planningModels?.data.filter((m) => m.status !== "actif").length ??
+        0,
 );
 
 const days = [
@@ -163,12 +167,12 @@ function formatDate(date) {
 function onPageChange(event) {
     const page = event.page + 1; // PrimeVue utilise 0-based index
     const rows = event.rows;
-    
+
     // Conserver les filtres et recherche existants
     const params = new URLSearchParams(window.location.search);
-    params.set('page', page);
-    params.set('per_page', rows);
-    
+    params.set("page", page);
+    params.set("per_page", rows);
+
     router.get(window.location.pathname, Object.fromEntries(params), {
         preserveState: true,
         preserveScroll: true,
@@ -251,6 +255,7 @@ function onPageChange(event) {
                 </div>
             </div>
 
+            <!-- Vue ADMIN / CP / SUP -->
             <template v-if="canManage">
                 <!-- Filtres -->
                 <div class="filters">
@@ -690,27 +695,23 @@ function onPageChange(event) {
                 </table>
                 
                 <!-- Pagination -->
-                <div v-if="props.planningModels && props.planningModels.total > 10" class="mt-6">
-                    <Paginator 
-                        :rows="10"
-                        :totalRecords="props.planningModels.total"
-                        :first="(props.planningModels.current_page - 1) * 10"
-                        @page="onPageChange"
-                        template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        :rowsPerPageOptions="[5, 10, 20, 50]"
-                    />
-                </div>
-                
-                <!-- Debug info (à supprimer plus tard) -->
-                <div v-if="props.planningModels" class="mt-4 p-4 bg-blue-50 rounded-lg text-xs">
-                    <p><strong>Debug Pagination:</strong></p>
-                    <p>Total: {{ props.planningModels.total }}</p>
-                    <p>Current page: {{ props.planningModels.current_page }}</p>
-                    <p>Data length: {{ props.planningModels.data?.length }}</p>
-                    <p>Last page: {{ props.planningModels.last_page }}</p>
-                </div>
+            <div
+                v-if="props.planningModels && props.planningModels.total > 10"
+                class="mt-6"
+            >
+                <Paginator
+                    :rows="10"
+                    :totalRecords="props.planningModels.total"
+                    :first="(props.planningModels.current_page - 1) * 10"
+                    @page="onPageChange"
+                    template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                    :rowsPerPageOptions="[5, 10, 20, 50]"
+                />
             </div>
-            <!-- </template> -->
+
+            
+        </div>
+        <!-- </template> -->
 
         <template v-if="isTC">
             <!-- Vue TC : affiche ses propres affectations -->
