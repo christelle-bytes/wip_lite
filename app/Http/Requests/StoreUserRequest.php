@@ -22,7 +22,8 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
+            'employee_ids' => ['required', 'array', 'min:1'],
+            'employee_ids.*' => ['required', 'exists:employees,id'],
             'role_id' => ['required', 'exists:roles,id'],
         ];
     }

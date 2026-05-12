@@ -3,11 +3,20 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { useToast } from "primevue/usetoast";
 import Toast from "primevue/toast";
-import { computed, watch } from 'vue';
+import { computed, watch, onMounted } from 'vue';
 
 const page = usePage();
 const toast = useToast();
 const flash = computed(() => page.props.flash);
+
+onMounted(() => {
+    // Empêcher l'utilisation du cache du navigateur (bfcache) pour la sécurité
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+});
 
 watch(
     flash,

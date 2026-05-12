@@ -12,6 +12,7 @@ class PlanningModel extends Model
 {
     use RecordsActivity;
     use HasFactory;
+
     protected $fillable = [
         'name',
         'description',
@@ -26,6 +27,25 @@ class PlanningModel extends Model
         'created_by',
         'status'
     ];
+
+    protected $appends = ['status'];
+
+    public function getStatusAttribute()
+    {
+        if (array_key_exists('active_assignment_count', $this->attributes)) {
+            return $this->attributes['active_assignment_count'] > 0 ? 'actif' : 'inactif';
+        }
+
+        if ($this->relationLoaded('planningAssignment')) {
+            return $this->planningAssignment->whereIn('status', ['validé', 'suspendu'])->isNotEmpty() ? 'actif' : 'inactif';
+        }
+
+        return $this->planningAssignment()
+            ->whereIn('status', ['validé', 'suspendu'])
+            ->exists()
+            ? 'actif'
+            : 'inactif';
+    }
 
     public function creator(): BelongsTo
     {

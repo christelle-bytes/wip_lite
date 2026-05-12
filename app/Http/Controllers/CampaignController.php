@@ -87,6 +87,11 @@ class CampaignController extends Controller
             'status' => 'required|in:active,inactive,terminée',
         ]);
 
+        // Si la date de fin est déjà passée, la campagne prend le statut "terminée"
+        if (now()->startOfDay()->gt(\Carbon\Carbon::parse($validated['end_date'])->startOfDay())) {
+            $validated['status'] = 'terminée';
+        }
+
         Campaign::create($validated);
 
         return redirect()->route('campaigns.index')->with('success', 'Campagne créée avec succès.');
@@ -175,6 +180,11 @@ class CampaignController extends Controller
             'end_date' => 'required|date|after:start_date',
             'status' => 'required|in:active,inactive,terminée',
         ]);
+
+        // Si la date de fin est déjà passée, la campagne prend le statut "terminée"
+        if (now()->startOfDay()->gt(\Carbon\Carbon::parse($validated['end_date'])->startOfDay())) {
+            $validated['status'] = 'terminée';
+        }
 
         // Si on passe au statut "terminée" ou "inactive" → désaffecter toutes les ressources
         $closingStatuses = ['terminée', 'inactive'];

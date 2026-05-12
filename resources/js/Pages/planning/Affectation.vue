@@ -1,16 +1,22 @@
 <script setup>
 import { computed, ref } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
+import { useToast } from "primevue/usetoast";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
+import Paginator from "primevue/paginator";
+import InputText from "primevue/inputtext";
 
 const props = defineProps({
     planningModels: Array,
     employees: Array,
-    assignments: Array,
+    assignments: Object, // Maintenant un objet avec pagination
     auth: Object,
 });
+
+const toast = useToast();
+const search = ref("");
 
 const isAdminOrCP = computed(() => {
     const role = props.auth?.user?.role?.name;
@@ -19,7 +25,7 @@ const isAdminOrCP = computed(() => {
 
 const form = useForm({
     planning_model_id: "",
-    employee_id: "",
+    employee_ids: [],
     start_date: "",
     end_date: "", // Ajout de la date de fin
 });
@@ -31,7 +37,7 @@ const statusLabel = {
     terminé: "Terminé",
 };
 
-const displayedAssignments = computed(() => props.assignments ?? []);
+const displayedAssignments = computed(() => props.assignments?.data ?? []);
 
 function employeeName(employee) {
     if (!employee) return "—";
@@ -43,19 +49,15 @@ function submitAssignment() {
         onSuccess: () => {
             form.reset();
         },
-        onError: () => {
-            alert("Erreur lors de la création de l’affectation.");
+        onError: (errors) => {
+            toast.add({ severity: 'error', summary: 'Alerte', detail: 'Erreur lors de la création de l’affectation.', life: 4000 });
         },
     });
 }
 
 function deleteAssignment(assignment) {
-    if (!confirm("Supprimer cette affectation ?")) {
-        return;
-    }
-
     router.delete(route("planning-assignments.destroy", assignment.id), {
-        onError: () => alert("Impossible de supprimer cette affectation."),
+        onError: () => toast.add({ severity: 'error', summary: 'Alerte', detail: 'Impossible de supprimer cette affectation.', life: 4000 }),
     });
 }
 </script>
@@ -95,11 +97,23 @@ function deleteAssignment(assignment) {
                         </select>
                     </div>
 
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Collaborateur</label>
-                        <select v-model="form.employee_id" class="w-full p-3 rounded-xl border-slate-200 bg-slate-50 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium">
-                            <option value="" disabled>Choisir un superviseur</option>
-                            <option v-for="employee in props.employees" :key="employee.id" :value="employee.id">{{ employee.name }}</option>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700"
+                            >Employés (plusieurs sélectionnables)</label
+                        >
+                        <select
+                            multiple
+                            v-model="form.employee_ids"
+                            class="mt-1 block w-full rounded border-slate-300 bg-white p-2 text-sm"
+                            size="5"
+                        >
+                            <option
+                                v-for="employee in props.employees"
+                                :key="employee.id"
+                                :value="employee.id"
+                            >
+                                {{ employee.name }}
+                            </option>
                         </select>
                     </div>
 
@@ -109,13 +123,16 @@ function deleteAssignment(assignment) {
                     </div>
 
                     <div class="flex flex-col gap-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date de fin</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date de fin (facultatif)</label>
                         <input type="date" v-model="form.end_date" class="w-full p-3 rounded-xl border-slate-200 bg-slate-50 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium" />
                     </div>
 
-                    <div class="md:col-span-4 flex justify-end pt-2">
-                        <Button label="Affecter le planning" type="submit" :loading="form.processing"
-                            class="bg-teal-600 border-none text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-teal-600/20 hover:bg-teal-700 transition-all" />
+                    <div class="md:col-span-4 flex justify-end">
+                        <Button
+                            label="Affecter"
+                            type="submit"
+                            class="p-button-sm"
+                        />
                     </div>
                 </form>
             </div>
@@ -178,3 +195,32 @@ function deleteAssignment(assignment) {
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.affectation-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .affectation-page { padding: 0 0.75rem; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .affectation-page form { display: grid; gap: 1rem; }
+    .affectation-page form .grid { width: 100%; }
+}
+
+@media (max-width: 640px) {
+    .affectation-page { padding: 0 0.5rem; }
+    .page-header { align-items: flex-start; }
+    .overflow-x-auto { overflow-x: auto; }
+    table { min-width: 640px; }
+}
+</style>

@@ -47,7 +47,6 @@ const markAllAsRead = async () => {
 };
 
 onMounted(() => {
-    // Sécurité : Empêcher le retour en arrière après déconnexion (bfcache)
     window.addEventListener('pageshow', (event) => {
         if (event.persisted) {
             window.location.reload();
@@ -56,65 +55,36 @@ onMounted(() => {
 
     if (user.value) {
         fetchNotifications();
-        // Optionnel: rafraîchir toutes les 5 minutes
         setInterval(fetchNotifications, 5 * 60 * 1000);
     }
 });
 
-// Calcul du rôle pour afficher les liens conditionnels
 const user = computed(() => page.props.auth.user);
 const roleName = computed(() => user.value?.role?.name?.toUpperCase() || '');
-
-// On crée une référence réactive sur les messages flash partagés par Laravel
 const flash = computed(() => page.props.flash);
 
-// Fonction pour déterminer si on doit afficher le menu de navigation complet
 const showFullNavigation = computed(() => {
     return !!roleName.value;
 });
 
-// Fonction pour déterminer si on doit afficher le bouton de déconnexion
 const showLogoutButton = computed(() => {
-    return user.value && page.props.auth; // Afficher si l'utilisateur est authentifié
+    return user.value && page.props.auth;
 });
 
 watch(
     flash,
     (newFlash) => {
         if (newFlash && newFlash.success) {
-            toast.add({
-                severity: "success",
-                summary: "Succès",
-                detail: newFlash.success,
-                life: 3000,
-            });
+            toast.add({ severity: "success", summary: "Succès", detail: newFlash.success, life: 3000 });
         }
-
         if (newFlash && newFlash.error) {
-            toast.add({
-                severity: "error",
-                summary: "Erreur",
-                detail: newFlash.error,
-                life: 5000,
-            });
+            toast.add({ severity: "error", summary: "Erreur", detail: newFlash.error, life: 5000 });
         }
-
         if (newFlash && newFlash.info) {
-            toast.add({
-                severity: "info",
-                summary: "Information",
-                detail: newFlash.info,
-                life: 3000,
-            });
+            toast.add({ severity: "info", summary: "Information", detail: newFlash.info, life: 3000 });
         }
-
         if (newFlash && newFlash.warning) {
-            toast.add({
-                severity: "warn",
-                summary: "Attention",
-                detail: newFlash.warning,
-                life: 4000,
-            });
+            toast.add({ severity: "warn", summary: "Attention", detail: newFlash.warning, life: 4000 });
         }
     },
     { deep: true },
@@ -134,10 +104,11 @@ watch(
 
             <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
                 <!-- Dashboard -->
-                <Link v-if="user" :href="route('dashboard')" 
+                <Link v-if="user" :href="route('dashboard')"
                     :class="[route().current('dashboard') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                     class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
-                    <i class="pi pi-home mr-3 text-lg" :class="[route().current('dashboard') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                    <i class="pi pi-home mr-3 text-lg"
+                        :class="[route().current('dashboard') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                     Tableau de bord
                 </Link>
 
@@ -145,112 +116,172 @@ watch(
 
                 <!-- Admin Specific Links -->
                 <template v-if="roleName === 'ADMIN'">
-                    <Link :href="route('users.index')" 
+                    <Link :href="route('users.index')"
                         :class="[route().current('users.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
-                        <i class="pi pi-user-plus mr-3 text-lg" :class="[route().current('users.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        <i class="pi pi-user-plus mr-3 text-lg"
+                            :class="[route().current('users.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Utilisateurs
                     </Link>
-                    <Link href="/gestion-employees" 
-                        class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-users mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('employees.gestion')"
+                        :class="[route().current('employees.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-users mr-3 text-lg"
+                            :class="[route().current('employees.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Employés
                     </Link>
-                    <Link :href="route('campaigns.index')" 
+
+                    <Link :href="route('campaigns.index')"
                         :class="[route().current('campaigns.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
-                        <i class="pi pi-flag mr-3 text-lg" :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        <i class="pi pi-flag mr-3 text-lg"
+                            :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Campagnes
                     </Link>
-       
 
-                    <Link :href="route('assignments.index')" 
+                    <Link :href="route('assignments.index')"
                         :class="[route().current('assignments.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
-                        <i class="pi pi-link mr-3 text-lg" :class="[route().current('assignments.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        <i class="pi pi-link mr-3 text-lg"
+                            :class="[route().current('assignments.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Affectations
                     </Link>
-                    <Link href="/planning" 
-                        class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-calendar mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('planning.index')"
+                        :class="[route().current('planning.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-calendar mr-3 text-lg"
+                            :class="[route().current('planning.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Plannings
                     </Link>
-                    <Link :href="route('index.sup')" 
-                        class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-clock mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('index.sup')"
+                        :class="[route().current('index.sup') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-clock mr-3 text-lg"
+                            :class="[route().current('index.sup') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Heures
                     </Link>
-                    <Link :href="route('timesheet.index')" 
-                        class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('timesheet.index')"
+                        :class="[route().current('timesheet.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-file-edit mr-3 text-lg"
+                            :class="[route().current('timesheet.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Feuille d'heures
                     </Link>
-                    <Link :href="route('admin.logs')" 
+
+                    <Link :href="route('admin.logs')"
                         :class="[route().current('admin.logs') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
-                        <i class="pi pi-history mr-3 text-lg" :class="[route().current('admin.logs') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        <i class="pi pi-history mr-3 text-lg"
+                            :class="[route().current('admin.logs') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Logs d'activité
                     </Link>
                 </template>
 
                 <!-- CP Specific Links -->
                 <template v-else-if="roleName === 'CP'">
-                    <Link :href="route('campaigns.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+                    <Link :href="route('campaigns.index')"
+                        :class="[route().current('campaigns.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-flag mr-3 text-lg"
+                            :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Campagnes
                     </Link>
-                    
-                    
-                    <Link :href="route('assignments.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-link mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('assignments.index')"
+                        :class="[route().current('assignments.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-link mr-3 text-lg"
+                            :class="[route().current('assignments.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Affectations
                     </Link>
-                    <Link href="/planning" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-calendar mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('planning.index')"
+                        :class="[route().current('planning.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-calendar mr-3 text-lg"
+                            :class="[route().current('planning.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Plannings
                     </Link>
-                    <Link :href="route('index.sup')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-clock mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('index.sup')"
+                        :class="[route().current('index.sup') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-clock mr-3 text-lg"
+                            :class="[route().current('index.sup') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Heures
                     </Link>
-                    <Link :href="route('timesheet.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('timesheet.index')"
+                        :class="[route().current('timesheet.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-file-edit mr-3 text-lg"
+                            :class="[route().current('timesheet.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Feuille d'heures
                     </Link>
                 </template>
 
                 <!-- SUP Specific Links -->
                 <template v-else-if="roleName === 'SUP'">
-                    <Link :href="route('campaigns.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+                    <Link :href="route('campaigns.index')"
+                        :class="[route().current('campaigns.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-flag mr-3 text-lg"
+                            :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Campagnes
                     </Link>
-                    <Link :href="route('assignments.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-link mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('assignments.index')"
+                        :class="[route().current('assignments.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-link mr-3 text-lg"
+                            :class="[route().current('assignments.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Affectations
                     </Link>
-                    <Link href="/planning" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-calendar mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('planning.index')"
+                        :class="[route().current('planning.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-calendar mr-3 text-lg"
+                            :class="[route().current('planning.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Plannings
                     </Link>
-                    <Link :href="route('index.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-clock mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('index.telecon')"
+                        :class="[route().current('index.telecon') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-clock mr-3 text-lg"
+                            :class="[route().current('index.telecon') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Heures
                     </Link>
-                    <Link :href="route('timesheet.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('timesheet.telecon')"
+                        :class="[route().current('timesheet.telecon') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-file-edit mr-3 text-lg"
+                            :class="[route().current('timesheet.telecon') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Feuille d'heures
                     </Link>
                 </template>
 
                 <!-- TC Specific Links -->
                 <template v-else-if="roleName === 'TC'">
-                    <Link :href="route('campaigns.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+                    <Link :href="route('campaigns.index')"
+                        :class="[route().current('campaigns.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-flag mr-3 text-lg"
+                            :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Campagnes
                     </Link>
-                    <Link :href="route('index.times')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
+
+                    <Link :href="route('index.times')"
+                        :class="[route().current('index.times') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-file-edit mr-3 text-lg"
+                            :class="[route().current('index.times') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Mes Heures
                     </Link>
                 </template>
@@ -264,7 +295,8 @@ watch(
                             {{ user?.employee?.first_name?.charAt(0) || 'U' }}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs font-bold text-slate-200 truncate">{{ user?.employee ? `${user.employee.first_name} ${user.employee.last_name}` : user?.email }}</p>
+                            <p class="text-xs font-bold text-slate-200 truncate">{{ user?.employee ?
+                                `${user.employee.first_name} ${user.employee.last_name}` : user?.email }}</p>
                             <p class="text-[10px] text-slate-500 truncate">{{ user?.role?.name }}</p>
                         </div>
                     </div>
@@ -281,7 +313,9 @@ watch(
                     </button>
                     <div class="text-slate-400 text-sm hidden md:flex items-center gap-2">
                         <i class="pi pi-clock"></i>
-                        <span>{{ new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) }}</span>
+                        <span>{{ new Date().toLocaleDateString('fr-FR', {
+                            weekday: 'long', day: 'numeric', month: 'long'
+                        }) }}</span>
                     </div>
                 </div>
 
@@ -291,7 +325,7 @@ watch(
                         <template #trigger>
                             <button class="relative text-slate-400 hover:text-teal-600 transition-colors p-2">
                                 <i class="pi pi-bell text-lg"></i>
-                                <span v-if="unreadCount > 0" 
+                                <span v-if="unreadCount > 0"
                                     class="absolute top-0 right-0 h-4 w-4 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
                                     {{ unreadCount }}
                                 </span>
@@ -302,24 +336,23 @@ watch(
                             <div class="w-80">
                                 <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                                     <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Notifications</h3>
-                                    <button v-if="unreadCount > 0" @click="markAllAsRead" 
+                                    <button v-if="unreadCount > 0" @click="markAllAsRead"
                                         class="text-[10px] font-bold text-teal-600 hover:text-teal-700">
                                         Tout marquer comme lu
                                     </button>
                                 </div>
-                                
+
                                 <div class="max-h-96 overflow-y-auto">
                                     <div v-if="notifications.length === 0" class="px-4 py-8 text-center">
                                         <i class="pi pi-bell-slash text-slate-200 text-3xl mb-2"></i>
                                         <p class="text-xs text-slate-400 font-medium">Aucune notification</p>
                                     </div>
-                                    
-                                    <div v-else v-for="notif in notifications" :key="notif.id" 
-                                        @click="markAsRead(notif)"
-                                        :class="[!notif.read_at ? 'bg-teal-50/50' : '']"
+
+                                    <div v-else v-for="notif in notifications" :key="notif.id"
+                                        @click="markAsRead(notif)" :class="[!notif.read_at ? 'bg-teal-50/50' : '']"
                                         class="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer group">
                                         <div class="flex gap-3">
-                                            <div :class="[!notif.read_at ? 'bg-teal-500' : 'bg-slate-200']" 
+                                            <div :class="[!notif.read_at ? 'bg-teal-500' : 'bg-slate-200']"
                                                 class="h-2 w-2 rounded-full mt-1.5 flex-shrink-0"></div>
                                             <div class="flex-1">
                                                 <p class="text-xs font-bold text-slate-800 mb-0.5 group-hover:text-teal-600 transition-colors">
@@ -329,13 +362,15 @@ watch(
                                                     {{ notif.data.message }}
                                                 </p>
                                                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
-                                                    {{ new Date(notif.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}
+                                                    {{ new Date(notif.created_at).toLocaleString('fr-FR', {
+                                                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                                    }) }}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="px-4 py-2 bg-slate-50 text-center rounded-b-lg">
                                     <button class="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-700 transition-colors">
                                         Voir toutes les notifications
@@ -363,14 +398,16 @@ watch(
                             <DropdownLink :href="route('profile.edit')" class="hover:bg-slate-50 text-slate-700">
                                 <i class="pi pi-cog mr-2 text-xs text-slate-400"></i> Paramètres
                             </DropdownLink>
-                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50 w-full text-left" @click="() => window.location.href = '/'">
+                            <DropdownLink :href="route('logout')" method="post" as="button"
+                                class="text-rose-600 hover:bg-rose-50 border-t border-slate-50 w-full text-left"
+                                @click="() => window.location.href = '/'">
                                 <i class="pi pi-power-off mr-2 text-xs"></i> Déconnexion
                             </DropdownLink>
                         </template>
                     </Dropdown>
                 </div>
 
-                <Link v-else :href="route('login')" 
+                <Link v-else :href="route('login')"
                     class="px-5 py-2 bg-teal-600 text-white text-sm font-bold rounded-lg hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20">
                     Se connecter
                 </Link>

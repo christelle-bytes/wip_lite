@@ -16,17 +16,30 @@
           <div class="p-6">
             <form @submit.prevent="submit" class="space-y-6">
               <div>
-                <InputLabel for="employee_id" value="Sélectionner un employé" />
-                <select id="employee_id" v-model="form.employee_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required autofocus>
-                  <option value="">Sélectionner un employé...</option>
-                  <option v-for="emp in props.employees" :key="emp.id" :value="emp.id">
-                    {{ emp.first_name }} {{ emp.last_name }} (#{{ emp.matricule }}) - {{ emp.email }}
-                  </option>
-                </select>
-                <InputError :message="form.errors.employee_id" class="mt-2" />
-                <p v-if="selectedEmployeeEmail" class="mt-2 text-[11px] text-teal-600 font-bold">
-                  <i class="pi pi-envelope mr-1"></i>
-                  L'email du compte sera : {{ selectedEmployeeEmail }}
+                <InputLabel for="employee_ids" value="Sélectionner des employés" />
+                <MultiSelect 
+                  id="employee_ids"
+                  v-model="form.employee_ids" 
+                  :options="employees" 
+                  optionLabel="full_name"
+                  optionValue="id"
+                  filter 
+                  placeholder="Sélectionner un ou plusieurs employés..." 
+                  :maxSelectedLabels="3" 
+                  class="mt-1 w-full border-gray-300 rounded-md shadow-sm" 
+                  required
+                >
+                  <template #option="slotProps">
+                    <div class="flex flex-col">
+                      <span class="font-bold">{{ slotProps.option.first_name }} {{ slotProps.option.last_name }}</span>
+                      <span class="text-[10px] text-slate-500 uppercase tracking-tighter">#{{ slotProps.option.matricule }} - {{ slotProps.option.email }}</span>
+                    </div>
+                  </template>
+                </MultiSelect>
+                <InputError :message="form.errors.employee_ids" class="mt-2" />
+                <p v-if="form.employee_ids.length > 0" class="mt-2 text-[11px] text-teal-600 font-bold">
+                  <i class="pi pi-users mr-1"></i>
+                  {{ form.employee_ids.length }} employé(s) sélectionné(s)
                 </p>
               </div>
 
@@ -43,7 +56,7 @@
 
               <div class="flex items-center gap-4">
                 <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                  Créer l'utilisateur
+                  Créer les comptes
                 </PrimaryButton>
 
                 <Transition 
@@ -52,7 +65,7 @@
                   class="transition ease-in-out"
                 >
                   <p v-if="form.recentlySuccessful" class="text-sm text-green-600">
-                    Créé avec succès !
+                    Comptes créés avec succès !
                   </p>
                 </Transition>
               </div>
@@ -83,21 +96,24 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import MultiSelect from 'primevue/multiselect';
 
 const props = defineProps({
   roles: Object,
   employees: Array,
 });
 
-const form = useForm({
-  employee_id: '',
-  role_id: '',
+// Préparer les données des employés pour le MultiSelect
+const employees = computed(() => {
+  return props.employees.map(emp => ({
+    ...emp,
+    full_name: `${emp.first_name} ${emp.last_name} (#${emp.matricule})`
+  }));
 });
 
-const selectedEmployeeEmail = computed(() => {
-  const emp = props.employees.find(e => e.id === form.employee_id);
-  return emp ? emp.email : null;
+const form = useForm({
+  employee_ids: [],
+  role_id: '',
 });
 
 const submit = () => {

@@ -25,66 +25,52 @@ class TimesheetEntryController extends Controller
     {
         $startDate = $request->input('start_date');
         $endDate   = $request->input('end_date');
+        $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
 
         $query = Employee::query()
-            ->with([
-                'position',
-                'timesheet' => function ($q) {
-                    $q->orderBy('period_start')
-                        ->with('entries');
+            ->with(['position', 'timesheet' => function ($q) use ($startDate, $endDate) {
+                if ($startDate && $endDate) {
+                    $q->where('period_start', $startDate)
+                      ->where('period_end', $endDate);
                 }
-            ])
+                $q->with('entries');
+            }])
             ->whereHas('position', fn($q) => $q->where('code', 'SUP'))
             ->where('status', 'actif');
 
-        if ($startDate && $endDate) {
-            $query->whereHas(
-                'timesheet',
-                fn($q) =>
-                $q->where('period_start', $startDate)
-                    ->where('period_end', $endDate)
-            );
-        } else {
-            $query->whereHas('timesheet');
-        }
-
         $supervisors = $query->get();
 
-        // === Toutes les périodes uniques ===
-        $allPeriods = Employee::whereHas('position', fn($q) => $q->where('code', 'SUP'))
-            ->where('status', 'actif')
-            ->whereHas('timesheet')
-            ->with(['timesheet:id,employee_id,period_start,period_end'])
+        // Filtrer les entrées pour ne garder que celles du superviseur lui-même
+        // (car sa timesheet contient aussi les entrées de ses TCs)
+        $supervisors->each(function ($sup) {
+            $sup->timesheet->each(function ($ts) use ($sup) {
+                $filteredEntries = $ts->entries->where('employee_id', $sup->id)->values();
+                $ts->setRelation('entries', $filteredEntries);
+            });
+        });
+
+        // Récupérer toutes les périodes uniques pour les superviseurs
+        $allPeriods = Timesheet::whereHas('employee.position', fn($q) => $q->where('code', 'SUP'))
+            ->select('period_start', 'period_end')
+            ->orderBy('period_start', 'desc')
             ->get()
-            ->flatMap(
-                fn($employee) =>
-                $employee->timesheet->map(fn($ts) => [
-                    'period_start' => $ts->period_start->format('Y-m-d'),   // ← Important
-                    'period_end'   => $ts->period_end->format('Y-m-d'),     // ← Important
-                    'label'        => $ts->period_start->format('d/m/Y') . ' → ' . $ts->period_end->format('d/m/Y'),
-                ])
-            )
+            ->map(fn($ts) => [
+                'period_start' => $ts->period_start->format('Y-m-d'),
+                'period_end'   => $ts->period_end->format('Y-m-d'),
+                'label'        => $ts->period_start->format('d/m/Y') . ' → ' . $ts->period_end->format('d/m/Y'),
+            ])
             ->unique(fn($p) => $p['period_start'] . '|' . $p['period_end'])
-            ->sortBy('period_start')
             ->values();
 
-        // Filtrage des timesheets si période sélectionnée
-        if ($startDate && $endDate) {
-            $supervisors->each(function ($sup) use ($startDate, $endDate) {
-                $filtered = $sup->timesheet->where('period_start', $startDate)
-                    ->where('period_end', $endDate);
-                $sup->setRelation('timesheet', $filtered);
-            });
-        }
-
         return Inertia::render('TimesheetsEntry/IndexSup', [
-            'supervisors'    => $supervisors,
-            'allPeriods'     => $allPeriods,
+            'supervisors' => $supervisors,
+            'allPeriods' => $allPeriods,
             'selectedPeriod' => $startDate && $endDate ? [
                 'period_start' => $startDate,
                 'period_end'   => $endDate,
                 'label'        => str_replace('-', '/', $startDate) . ' → ' . str_replace('-', '/', $endDate),
             ] : null,
+            'currentMonth' => $targetMonth
         ]);
     }
     // index telecon
@@ -187,20 +173,11 @@ class TimesheetEntryController extends Controller
     // entry tc
     public function entryTelecon()
     {
-
-        // $manager = Auth::user()->employee;
-        // if (!$manager) {
-        //     // Gérer le cas où l'utilisateur n'est pas lié à un employé
-        //     return redirect()->back()->with('error', 'Aucun profil employé lié.');
-        // }
-        // ->whereHas('assignments', function ($query) {
-        //     $query->where('manager_id', Auth::user()->employee->id);
-        // })
         $manager = Auth::user()->employee;
         if (!$manager) {
-            // Gérer le cas où l'utilisateur n'est pas lié à un employé
             return redirect()->route('entry.telecon')->with('error', 'Aucun profil employé lié.');
         }
+
         $telecon = Employee::with('position', 'assignments')
             ->whereHas('position', function ($query) {
                 $query->where('code', 'TC');
@@ -211,8 +188,19 @@ class TimesheetEntryController extends Controller
             ->where('status', 'actif')
             ->get();
 
+        // Récupérer la période en cours pour le manager (superviseur)
+        $currentTimesheet = Timesheet::where('employee_id', $manager->id)
+            ->where('status', '!=', 'validated')
+            ->orderBy('period_start', 'desc')
+            ->first();
+
+        $periodLabel = $currentTimesheet 
+            ? "Période du " . $currentTimesheet->period_start->format('d/m/Y') . " au " . $currentTimesheet->period_end->format('d/m/Y')
+            : "Aucune période active (ou toutes validées)";
+
         return Inertia::render('TimesheetsEntry/TeleconEntry', [
             'telecon' => $telecon,
+            'periodLabel' => $periodLabel
         ]);
     }
 
@@ -248,8 +236,18 @@ class TimesheetEntryController extends Controller
 
             if (!$timesheet) continue;
 
+            // Sécurité : Ne pas modifier si validé
+            if ($timesheet->status === 'validated') {
+                return redirect()->back()->with('error', "La feuille de temps pour cette période est déjà validée.");
+            }
+
             $startTime = Carbon::parse($validated['check_in']);
             $endTime = Carbon::parse($validated['check_out']);
+
+            // 2. Vérifier que l'heure d'entrée est avant l'heure de sortie
+            if ($startTime->greaterThanOrEqualTo($endTime)) {
+                return redirect()->back()->with('error', "L'heure d'arrivée doit être antérieure à l'heure de départ.");
+            }
 
             // Calcul de la durée en minutes, moins la pause
             $durationInMinutes = $startTime->diffInMinutes($endTime, false);
@@ -271,24 +269,27 @@ class TimesheetEntryController extends Controller
             $diff = $totalHours - $plannedHours;
             $overtime = $diff > 0 ? $diff : 0;
 
+            // Logique Upsert
+            TimesheetEntry::updateOrCreate(
+                [
+                    'employee_id' => $id,
+                    'date'        => Carbon::parse($validated['date'])->format('Y-m-d'),
+                ],
+                [
+                    'timesheet_id'   => $timesheet->id,
+                    'check_in'       => $startTime->format('H:i:s'),
+                    'check_out'      => $endTime->format('H:i:s'),
+                    'break_duration' => $breakMinutes,
+                    'total_hours'    => $totalHours,
+                    'planned_hours'  => $plannedHours,
+                    'overtime_hours' => $overtime,
+                    'comment'        => $validated['comment'] ?? null,
+                    'updated_at'     => now(),
+                ]
+            );
+        }
 
-            $entries[] = [
-                'timesheet_id'   => $timesheet->id,
-                'date'           => Carbon::parse($validated['date'])->format('Y-m-d'),
-                'check_in'       => Carbon::parse($startTime)->format('H:m:i'),
-                'check_out'      => Carbon::parse($endTime)->format('H:m:i'),
-                'break_duration' => $validated['break_duration'] ?? 0,
-                'total_hours'    => $totalHours,
-                'planned_hours'  => $plannedHours,
-                'overtime_hours' => $overtime,
-                'created_at'     => now(),
-                'updated_at'     => now(),
-            ];
-        }
-        if (!empty($entries)) {
-            TimesheetEntry::insert($entries);
-        }
-        return redirect()->back()->with('success', 'Entrées enregistrées.');
+        return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour.');
     }
 
     // saisie des heures d'un supervisor
@@ -306,20 +307,27 @@ class TimesheetEntryController extends Controller
             'comment'        => 'nullable|string',
         ]);
 
-        $entries = [];
         foreach ($validated['employee_ids'] as $id) {
             // 1. Récupérer la timesheet active pour cet employé à cette date
             $timesheet = Timesheet::where('employee_id', $id)
                 ->where('period_start', '<=', $validated['date'])
                 ->where('period_end', '>=', $validated['date'])
-                ->where('status', '=', 'draft')
                 ->first();
 
             if (!$timesheet) continue;
 
+            // Sécurité : Ne pas modifier si validé
+            if ($timesheet->status === 'validated') {
+                return redirect()->back()->with('error', "La feuille de temps pour cette période est déjà validée.");
+            }
 
             $startTime = Carbon::parse($validated['check_in']);
             $endTime = Carbon::parse($validated['check_out']);
+
+            // 2. Vérifier que l'heure d'entrée est avant l'heure de sortie
+            if ($startTime->greaterThanOrEqualTo($endTime)) {
+                return redirect()->back()->with('error', "L'heure d'arrivée doit être antérieure à l'heure de départ.");
+            }
 
             // Calcul de la durée en minutes, moins la pause
             $durationInMinutes = $startTime->diffInMinutes($endTime, false);
@@ -337,31 +345,31 @@ class TimesheetEntryController extends Controller
                 $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
             }
 
-
             // 4. Calcul de l'overtime
             $diff = $totalHours - $plannedHours;
             $overtime = $diff > 0 ? $diff : 0;
 
+            // Logique Upsert
+            TimesheetEntry::updateOrCreate(
+                [
+                    'employee_id' => $id,
+                    'date'        => Carbon::parse($validated['date'])->format('Y-m-d'),
+                ],
+                [
+                    'timesheet_id'   => $timesheet->id,
+                    'check_in'       => $startTime->format('H:i:s'),
+                    'check_out'      => $endTime->format('H:i:s'),
+                    'break_duration' => $breakMinutes,
+                    'total_hours'    => $totalHours,
+                    'planned_hours'  => $plannedHours,
+                    'overtime_hours' => $overtime,
+                    'comment'        => $validated['comment'] ?? null,
+                    'updated_at'     => now(),
+                ]
+            );
+        }
 
-            $entries[] = [
-                'timesheet_id'   => $timesheet->id,
-                'employee_id'   => $id,
-                'date'           => Carbon::parse($validated['date'])->format('Y-m-d'),
-                'check_in'       => Carbon::parse($startTime)->format('H:m:i'),
-                'check_out'      => Carbon::parse($endTime)->format('H:m:i'),
-                'break_duration' => $validated['break_duration'] ?? 0,
-                'total_hours'    => $totalHours,
-                'planned_hours'  => $plannedHours,
-                'overtime_hours' => $overtime,
-                'created_at'     => now(),
-                'updated_at'     => now(),
-            ];
-        }
-        if (!empty($entries)) {
-            TimesheetEntry::insert($entries);
-            return redirect()->back()->with('success', 'Entrées enregistrées.');
-        }
-        return redirect()->back()->with('error', 'La date entrée ne fais pas partie de la fiche d\'heure.');
+        return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour.');
     }
 
     // saisie des heures d'un teleconseiller
@@ -405,51 +413,59 @@ class TimesheetEntryController extends Controller
         $entries = [];
         $startTime = Carbon::parse($validated['check_in']);
         $endTime = Carbon::parse($validated['check_out']);
+
+        // 1. Vérifier que l'heure d'entrée est avant l'heure de sortie
+        if ($startTime->greaterThanOrEqualTo($endTime)) {
+            return redirect()->back()->with('error', "L'heure d'arrivée doit être antérieure à l'heure de départ.");
+        }
+
         $durationInMinutes = $startTime->diffInMinutes($endTime, false);
         $breakMinutes = $validated['break_duration'] ?? 0;
         $totalHours = max(0, ($durationInMinutes - $breakMinutes) / 60);
-        // $planningAssignment = PlanningAssignment::where('employee_id', $managerEmployeeId)->first();
-        // $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';
-        //         $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
-        // dd($plannedHours);
+
         foreach ($authorized_tc_ids as $tcId) {
             // Trouver la timesheet du TC pour cette date
             $timesheet = Timesheet::where('employee_id', $managerEmployeeId)
                 ->where('period_start', '<=', $validated['date'])
                 ->where('period_end', '>=', $validated['date'])
                 ->first();
-            // dd($timesheet);
-            // if (!$timesheet) continue;
+
+            if (!$timesheet) continue;
+
+            // Sécurité : Ne pas modifier si validé
+            if ($timesheet->status === 'validated') {
+                return redirect()->back()->with('error', "La feuille de temps pour cette période est déjà validée et verrouillée.");
+            }
 
             // Calcul du planning/overtime
-            $planningAssignment = PlanningAssignment::where('employee_id', $managerEmployeeId)->first();
+            $planningAssignment = PlanningAssignment::where('employee_id', $managerEmployeeId)->where('status', 'validé')->first();
             $plannedHours = 0;
             if ($planningAssignment && $planningAssignment->planningModel) {
                 $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';
                 $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
             }
 
-            $entries[] = [
-                'timesheet_id'   => $timesheet->id,
-                'employee_id'   => $tcId,
-                'date'           => $validated['date'],
-                'check_in'       => $startTime->format('H:i:s'),
-                'check_out'      => $endTime->format('H:i:s'),
-                'break_duration' => $breakMinutes,
-                'total_hours'    => $totalHours,
-                'planned_hours'  => $plannedHours,
-                'overtime_hours' => ($totalHours - $plannedHours) > 0 ? ($totalHours - $plannedHours) : 0,
-                'created_at'     => now(),
-                'updated_at'     => now(),
-            ];
+            // Logique de modification (Update or Create)
+            TimesheetEntry::updateOrCreate(
+                [
+                    'employee_id'  => $tcId,
+                    'date'         => $validated['date'],
+                ],
+                [
+                    'timesheet_id'   => $timesheet->id,
+                    'check_in'       => $startTime->format('H:i:s'),
+                    'check_out'      => $endTime->format('H:i:s'),
+                    'break_duration' => $breakMinutes,
+                    'total_hours'    => $totalHours,
+                    'planned_hours'  => $plannedHours,
+                    'overtime_hours' => ($totalHours - $plannedHours) > 0 ? ($totalHours - $plannedHours) : 0,
+                    'comment'        => $validated['comment'] ?? null,
+                    'updated_at'     => now(),
+                ]
+            );
         }
 
-        if (!empty($entries)) {
-            TimesheetEntry::insert($entries);
-            return redirect()->back()->with('success', count($entries) . ' entrées générées avec succès.');
-        }
-
-        return redirect()->back()->with('error', "La date entrée ne fais pas partie de la fiche d\'heure.");
+        return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour avec succès.');
     }
 
     // pour permettre au teleconseiller connecté de voir les entrées éffectué
