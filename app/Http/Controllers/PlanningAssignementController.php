@@ -141,12 +141,12 @@ class PlanningAssignementController extends Controller
         // Mettre à jour le statut du modèle
         $model = $planningAssignment->planningModel;
         if ($validated['status'] === 'validé') {
-            $model->update(['status' => 'actif']);
+            // $model->update(['status' => 'validé']);
         } elseif (in_array($validated['status'], ['suspendu', 'terminé'])) {
             // Vérifier si il reste des assignations validées
             $hasValidated = $model->planningAssignment()->where('status', 'validé')->exists();
             if (!$hasValidated) {
-                $model->update(['status' => 'inactif']);
+                $model->update(['status' => 'suspendu']);
             }
         }
 
@@ -167,40 +167,61 @@ class PlanningAssignementController extends Controller
         return redirect()->back()->with('success', 'Planning suspendu avec succès.');
     }
 
-    public function affectation()
+    public function affectation(Request $request)
     {
-        $user = auth()->user();
-        if (!$user->hasRole('CP') && !$user->hasRole('Admin')) {
+        if (!auth()->user()->hasRole('CP') && !auth()->user()->hasRole('Admin')) {
             abort(403, 'Action non autorisée.');
         }
 
-        $planningModels = PlanningModel::when($user->hasRole('CP'), function ($query) use ($user) {
-            return $query->where('created_by', $user->employee->id);
-        })->get();
+        $planningModels = PlanningModel::all();
         
         // Filtrage des employés en fonction du rôle
         $query = Employee::query()->with('user.role');
 
-        if ($user->hasRole('Admin')) {
+        if (auth()->user()->hasRole('Admin')) {
             // L'admin voit les CP et les SUP
             $query->whereHas('user.role', function ($q) {
                 $q->whereIn('name', ['CP', 'SUP']);
             });
-        } elseif ($user->hasRole('CP')) {
+        } elseif (auth()->user()->hasRole('CP')) {
             // Le CP ne voit que les SUP
             $query->whereHas('user.role', function ($q) {
                 $q->where('name', 'SUP');
             });
         }
 
-        $employees = $query->get()->map(function ($emp) {
+        $employees = $query->whereDoesntHave('planningAssignments', function ($subQuery) {
+            $subQuery->where('status', 'validé');
+        })->get()->map(function ($emp) {
             return [
                 'id' => $emp->id,
                 'name' => "[{$emp->user->role->name}] {$emp->first_name} {$emp->last_name}"
             ];
         });
 
-        $assignments = PlanningAssignment::with(['employee.user.role', 'planningModel'])->get();
+        // Pagination et recherche pour les assignations
+        $assignmentQuery = PlanningAssignment::with(['employee.user.role', 'planningModel']);
+
+        // Recherche
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $assignmentQuery->where(function ($q) use ($search) {
+                $q->whereHas('employee', function ($subQuery) use ($search) {
+                    $subQuery->where('first_name', 'like', "%{$search}%")
+                           ->orWhere('last_name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('planningModel', function ($subQuery) use ($search) {
+                    $subQuery->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Filtrage par statut
+        if ($request->filled('status')) {
+            $assignmentQuery->where('status', $request->input('status'));
+        }
+
+        $assignments = $assignmentQuery->paginate(10);
 
         return Inertia::render('planning/Affectation', [
             'planningModels' => $planningModels,
@@ -209,13 +230,34 @@ class PlanningAssignementController extends Controller
         ]);
     }
 
-    public function validation()
+    public function validation(Request $request)
     {
         if (!auth()->user()->hasRole('CP') && !auth()->user()->hasRole('Admin')) {
             abort(403, 'Action non autorisée.');
         }
 
-        $assignments = PlanningAssignment::with(['employee.user.role', 'planningModel'])->get();
+        $query = PlanningAssignment::with(['employee.user.role', 'planningModel']);
+
+        // Recherche
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('employee', function ($subQuery) use ($search) {
+                    $subQuery->where('first_name', 'like', "%{$search}%")
+                           ->orWhere('last_name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('planningModel', function ($subQuery) use ($search) {
+                    $subQuery->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Filtrage par statut
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $assignments = $query->paginate(10);
 
         return Inertia::render('planning/Validation', [
             'assignments' => $assignments

@@ -5,15 +5,18 @@ import { useToast } from "primevue/usetoast";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
+import Paginator from "primevue/paginator";
+import InputText from "primevue/inputtext";
 
 const props = defineProps({
     planningModels: Array,
     employees: Array,
-    assignments: Array,
+    assignments: Object, // Maintenant un objet avec pagination
     auth: Object,
 });
 
 const toast = useToast();
+const search = ref("");
 
 const isAdminOrCP = computed(() => {
     const role = props.auth?.user?.role?.name;
@@ -34,7 +37,7 @@ const statusLabel = {
     terminé: "Terminé",
 };
 
-const displayedAssignments = computed(() => props.assignments ?? []);
+const displayedAssignments = computed(() => props.assignments?.data ?? []);
 
 function employeeName(employee) {
     if (!employee) return "—";
@@ -120,22 +123,11 @@ function deleteAssignment(assignment) {
                     </div>
 
                     <div class="flex flex-col gap-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date de fin</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date de fin (facultatif)</label>
                         <input type="date" v-model="form.end_date" class="w-full p-3 rounded-xl border-slate-200 bg-slate-50 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium" />
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700"
-                            >Date de fin (facultatif)</label
-                        >
-                        <input
-                            type="date"
-                            v-model="form.end_date"
-                            class="mt-1 block w-full rounded border-slate-300 bg-white p-2 text-sm"
-                        />
-                    </div>
-
-                    <div class="md:col-span-3 flex justify-end">
+                    <div class="md:col-span-4 flex justify-end">
                         <Button
                             label="Affecter"
                             type="submit"

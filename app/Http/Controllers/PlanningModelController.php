@@ -27,7 +27,7 @@ class PlanningModelController extends Controller
                 return $query->where('created_by', $user->employee->id);
             })->withCount(['planningAssignment as active_assignment_count' => function ($query) {
                 $query->whereIn('status', ['validé', 'suspendu']);
-            }])->get();
+            }])->paginate(10);
 
             $assignments = PlanningAssignment::with(['employee.user.role', 'planningModel'])->get();
         } else {
