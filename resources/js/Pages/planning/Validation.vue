@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { router } from "@inertiajs/vue3";
+import { useToast } from "primevue/usetoast";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Button from "primevue/button";
 
@@ -9,6 +10,7 @@ const props = defineProps({
     auth: Object,
 });
 
+const toast = useToast();
 const activeFilter = ref("en attente");
 
 const filters = [
@@ -76,8 +78,16 @@ function changeStatus(assignment, status) {
     router.patch(
         route('planning-assignments.changeStatus', assignment.id),
         { status },
-        { onError: () => alert("Erreur lors du changement de statut.") }
+        {
+            onError: () => toast.add({ severity: 'error', summary: 'Alerte', detail: 'Erreur lors du changement de statut.', life: 4000 }),
+        }
     );
+}
+
+function deleteAssignment(assignment) {
+    router.delete(route('planning-assignments.destroy', assignment.id), {
+        onError: () => toast.add({ severity: 'error', summary: 'Alerte', detail: 'Impossible de supprimer cette assignation.', life: 4000 }),
+    });
 }
 </script>
 
@@ -206,6 +216,17 @@ function changeStatus(assignment, status) {
                                         class="action-btn"
                                         title="Terminer"
                                         @click="changeStatus(assignment, 'terminé')"
+                                    />
+                                    <!-- Supprimer (si en attente) -->
+                                    <Button
+                                        v-if="assignment.status === 'en attente'"
+                                        icon="pi pi-trash"
+                                        severity="danger"
+                                        variant="text"
+                                        rounded
+                                        class="action-btn"
+                                        title="Supprimer"
+                                        @click="deleteAssignment(assignment)"
                                     />
                                 </div>
                             </td>
@@ -477,5 +498,50 @@ tr:hover td {
     text-align: center;
     color: #9ca3af;
     padding: 3rem;
+}
+
+@media (max-width: 1024px) {
+    .validation-page {
+        padding: 1.5rem 1rem;
+    }
+    .header-content {
+        gap: 0.75rem;
+    }
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filter-tab {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .table-card {
+        overflow-x: auto;
+    }
+    table {
+        min-width: 700px;
+    }
+}
+
+@media (max-width: 640px) {
+    .validation-page {
+        padding: 1rem 0.75rem;
+    }
+    .header-content {
+        gap: 0.5rem;
+    }
+    th, td {
+        padding: 0.75rem 0.85rem;
+    }
+    .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+    .period-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
 }
 </style>

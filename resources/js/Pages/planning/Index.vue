@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
+import { useToast } from "primevue/usetoast";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
@@ -14,6 +15,8 @@ const props = defineProps({
     myAssignments: Array, // Ajouté
     auth: Object,
 });
+
+const toast = useToast();
 
 const userRole = computed(() => props.auth?.user?.role?.name?.toUpperCase());
 const isAdmin = computed(() => userRole.value === 'ADMIN');
@@ -54,11 +57,9 @@ const dayLabels = ["L", "M", "M", "J", "V", "S", "D"];
 // ─── Suppression ──────────────────────────────────────────────────────────────
 
 function deletePlanning(model) {
-    if (confirm("Supprimer ce planning ?")) {
-        router.delete(`/planning/${model.id}`, {
-            onError: () => alert("Suppression impossible."),
-        });
-    }
+    router.delete(`/planning/${model.id}`, {
+        onError: () => toast.add({ severity: 'error', summary: 'Alerte', detail: 'Suppression impossible.', life: 4000 }),
+    });
 }
 
 // ─── Dialog création / édition ────────────────────────────────────────────────
@@ -478,6 +479,26 @@ tr:hover td { background: #fafafa; }
 
 /* Dialog form */
 .dialog-form { display: flex; flex-direction: column; gap: 1.25rem; padding: 0.25rem 0; }
+
+@media (max-width: 1024px) {
+    .plannings-page { padding: 1.5rem 1rem; }
+    .header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .header-actions { width: 100%; justify-content: flex-start; gap: 0.5rem; }
+    .search-box { width: 100%; }
+    .btn-ghost { min-width: 160px; }
+    .filters { flex-direction: column; align-items: stretch; }
+    .filter-tab { width: 100%; justify-content: space-between; }
+    .table-card { overflow-x: auto; }
+    table { min-width: 720px; }
+}
+
+@media (max-width: 640px) {
+    .search-box { width: 100%; }
+    .header-actions { flex-direction: column; align-items: stretch; }
+    .day-pills { flex-wrap: wrap; gap: 0.35rem; }
+    .col-hours .day-pill { width: 100%; max-width: 48px; }
+    th, td { padding: 0.75rem 0.75rem; }
+}
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
 .field label { font-size: 0.875rem; font-weight: 500; color: #374151; }
 .required { color: #ef4444; margin-left: 2px; }

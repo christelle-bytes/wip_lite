@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
+import { useToast } from "primevue/usetoast";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
@@ -12,6 +13,8 @@ const props = defineProps({
     auth: Object,
 });
 
+const toast = useToast();
+
 const isAdminOrCP = computed(() => {
     const role = props.auth?.user?.role?.name;
     return role === "Admin" || role === "CP";
@@ -19,7 +22,7 @@ const isAdminOrCP = computed(() => {
 
 const form = useForm({
     planning_model_id: "",
-    employee_id: "",
+    employee_ids: [],
     start_date: "",
     end_date: "", // Ajout de la date de fin
 });
@@ -43,19 +46,15 @@ function submitAssignment() {
         onSuccess: () => {
             form.reset();
         },
-        onError: () => {
-            alert("Erreur lors de la création de l’affectation.");
+        onError: (errors) => {
+            toast.add({ severity: 'error', summary: 'Alerte', detail: 'Erreur lors de la création de l’affectation.', life: 4000 });
         },
     });
 }
 
 function deleteAssignment(assignment) {
-    if (!confirm("Supprimer cette affectation ?")) {
-        return;
-    }
-
     router.delete(route("planning-assignments.destroy", assignment.id), {
-        onError: () => alert("Impossible de supprimer cette affectation."),
+        onError: () => toast.add({ severity: 'error', summary: 'Alerte', detail: 'Impossible de supprimer cette affectation.', life: 4000 }),
     });
 }
 </script>
@@ -120,15 +119,14 @@ function deleteAssignment(assignment) {
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700"
-                            >Employé (Superviseurs uniquement)</label
+                            >Employés (plusieurs sélectionnables)</label
                         >
                         <select
-                            v-model="form.employee_id"
+                            multiple
+                            v-model="form.employee_ids"
                             class="mt-1 block w-full rounded border-slate-300 bg-white p-2 text-sm"
+                            size="5"
                         >
-                            <option value="" disabled>
-                                Choisir un superviseur
-                            </option>
                             <option
                                 v-for="employee in props.employees"
                                 :key="employee.id"
@@ -251,10 +249,27 @@ function deleteAssignment(assignment) {
 .affectation-page {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 1rem;
 }
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .affectation-page { padding: 0 0.75rem; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .affectation-page form { display: grid; gap: 1rem; }
+    .affectation-page form .grid { width: 100%; }
+}
+
+@media (max-width: 640px) {
+    .affectation-page { padding: 0 0.5rem; }
+    .page-header { align-items: flex-start; }
+    .overflow-x-auto { overflow-x: auto; }
+    table { min-width: 640px; }
 }
 </style>
