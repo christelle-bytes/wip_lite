@@ -178,13 +178,19 @@ const teleconIds = selectedTelecon.value
                         </div>
                     </div>
 
-                    <Link
-                        :href="route('index.telecon')"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl font-medium transition-all"
-                    >
-                        <i class="pi pi-chart-bar"></i>
-                        Récap des heures
-                    </Link>
+                    <div class="flex items-center gap-3">
+                        <Button @click="router.visit('/dashboard')"
+                            class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
+                            <i class="pi pi-arrow-left"></i> Retour
+                        </Button>
+                        <Link
+                            :href="route('index.telecon')"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl font-medium transition-all"
+                        >
+                            <i class="pi pi-chart-bar"></i>
+                            Récap des heures
+                        </Link>
+                    </div>
                 </div>
             </div>
 

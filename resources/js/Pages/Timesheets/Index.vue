@@ -57,21 +57,7 @@ const submit = () => {
         const day = String(d.getDate()).padStart(2, '0');
         form.period_end = `${year}-${month}-${day}`; 
     }
-    form.post(route("timesheet.store"), {
-        onSuccess: () => {
-            visible.value = false;
-            form.reset();
-            // Redirection vers la page timesheet après succès
-            router.visit('/timesheet');
-        },
-        onError: (errors) => {
-            // Redirection rollback en cas d'erreur
-            console.error('Erreurs de validation:', errors);
-            setTimeout(() => {
-                router.visit('/timesheet');
-            }, 2000);
-        },
-    });
+    form.post(route("timesheet.store"));
 };
 
 // --- Formatage & Style ---
@@ -151,6 +137,10 @@ const validation = (id) => {
                     <p class="mt-1 text-sm text-slate-500 font-medium">Suivez la saisie et validez les temps de travail de vos équipes.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
+                    <Button @click="$inertia.history.back()"
+                        class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
+                        <i class="pi pi-arrow-left"></i> Retour
+                    </Button>
                     <Button @click="visible = true"
                         class="bg-teal-600 border-none text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg shadow-teal-600/20 transition-all flex items-center gap-2">
                         <i class="pi pi-plus"></i> Nouvelle feuille

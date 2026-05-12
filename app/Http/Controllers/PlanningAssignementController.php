@@ -190,9 +190,11 @@ class PlanningAssignementController extends Controller
             });
         }
 
-        $employees = $query->whereDoesntHave('planningAssignments', function ($subQuery) {
-            $subQuery->where('status', 'validé');
-        })->get()->map(function ($emp) {
+        $employees = $query
+        // ->whereDoesntHave('planningAssignments', function ($subQuery) {
+        //     // $subQuery->where('status', 'validé');
+        // })
+        ->get()->map(function ($emp) {
             return [
                 'id' => $emp->id,
                 'name' => "[{$emp->user->role->name}] {$emp->first_name} {$emp->last_name}"
