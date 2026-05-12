@@ -130,7 +130,16 @@ const submitEdit = () => {
         onSuccess: () => {
             editDialogVisible.value = false;
             editingEntry.value = null;
-        }
+            // Redirection vers la page indexSup après succès
+            router.visit('/timesheets/entry/sup');
+        },
+        onError: (errors) => {
+            // Redirection rollback en cas d'erreur
+            console.error('Erreurs de validation:', errors);
+            setTimeout(() => {
+                router.visit('/timesheets/entry/sup');
+            }, 2000);
+        },
     });
 };
 console.log(props.supervisors)
@@ -146,6 +155,10 @@ console.log(props.supervisors)
                     <p class="mt-1 text-sm text-slate-500 font-medium">Visualisation détaillée des heures de travail par période.</p>
                 </div>
                 <div class="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+                    <Button @click="$inertia.history.back()"
+                        class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
+                        <i class="pi pi-arrow-left"></i> Retour
+                    </Button>
                     <Link
                         :href="route('entry.sup')"
                         class="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all flex items-center gap-2"

@@ -55,12 +55,7 @@ const submit = () => {
         period_end: formatDateForDB(form.period_end),
     };
 
-    router.post(route("timesheet.store"), payload, {
-        onSuccess: () => {
-            visible.value = false;
-            form.reset();
-        },
-    });
+    router.post(route("timesheet.store"), payload);
 };
 
 // --- Actions ---
@@ -141,6 +136,12 @@ const getStatusSeverity = (status) => {
                 <div>
                     <h1 class="text-3xl font-black text-slate-900 tracking-tight">Gestion des Temps (TC)</h1>
                     <p class="mt-1 text-sm text-slate-500 font-medium">Validation des feuilles d'heures téléconseillers basées sur le superviseur.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <Button @click="$inertia.history.back()"
+                        class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
+                        <i class="pi pi-arrow-left"></i> Retour
+                    </Button>
                 </div>
             </div>
 
