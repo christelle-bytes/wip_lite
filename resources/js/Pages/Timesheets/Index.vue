@@ -61,6 +61,15 @@ const submit = () => {
         onSuccess: () => {
             visible.value = false;
             form.reset();
+            // Redirection vers la page timesheet après succès
+            router.visit('/timesheet');
+        },
+        onError: (errors) => {
+            // Redirection rollback en cas d'erreur
+            console.error('Erreurs de validation:', errors);
+            setTimeout(() => {
+                router.visit('/timesheet');
+            }, 2000);
         },
     });
 };
@@ -103,6 +112,7 @@ const initFilters = () => {
 };
 
 onMounted(() => {
+    console.log(props)
     initFilters();
 });
 

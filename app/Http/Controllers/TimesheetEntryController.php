@@ -23,6 +23,10 @@ class TimesheetEntryController extends Controller
     // index sup
     public function indexSup(Request $request)
     {
+        // Récupérer l'utilisateur connecté
+        $user = auth()->user();
+        $manager = $user->employee;
+
         $startDate = $request->input('start_date');
         $endDate   = $request->input('end_date');
         $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
@@ -38,6 +42,14 @@ class TimesheetEntryController extends Controller
             ->whereHas('position', fn($q) => $q->where('code', 'SUP'))
             ->where('status', 'actif');
 
+        // Si l'utilisateur est un CP, il ne voit que les superviseurs qui lui sont assignés
+        if ($user->hasRole('CP')) {
+            $query->whereHas('assignments', function ($query) use ($manager) {
+                $query->where('manager_id', $manager->id);
+            });
+        }
+        // L'admin peut voir tous les superviseurs (pas de restriction supplémentaire)
+
         $supervisors = $query->get();
 
         // Filtrer les entrées pour ne garder que celles du superviseur lui-même
@@ -48,9 +60,22 @@ class TimesheetEntryController extends Controller
                 $ts->setRelation('entries', $filteredEntries);
             });
         });
-
+ 
         // Récupérer toutes les périodes uniques pour les superviseurs
-        $allPeriods = Timesheet::whereHas('employee.position', fn($q) => $q->where('code', 'SUP'))
+
+$AlltimesheetsSup = Timesheet::with('employee')
+->whereHas('employee.position', function ($query) {
+                $query->where('code', 'SUP');
+            })
+    ->latest();
+
+if ($user->hasRole('CP')) {
+            $AlltimesheetsSup = $AlltimesheetsSup->whereHas('employee.assignments', function ($query) use ($manager) {
+                $query->where('manager_id', $manager->id);
+            });
+        }
+
+        $allPeriods = $AlltimesheetsSup
             ->select('period_start', 'period_end')
             ->orderBy('period_start', 'desc')
             ->get()
@@ -61,7 +86,7 @@ class TimesheetEntryController extends Controller
             ])
             ->unique(fn($p) => $p['period_start'] . '|' . $p['period_end'])
             ->values();
-
+ 
         return Inertia::render('TimesheetsEntry/IndexSup', [
             'supervisors' => $supervisors,
             'allPeriods' => $allPeriods,
@@ -81,15 +106,15 @@ class TimesheetEntryController extends Controller
             // Gérer le cas où l'utilisateur n'est pas lié à un employé
             return redirect()->back()->with('error', 'Aucun profil employé lié.');
         }
-
+ 
         $startDate = $request->input('start_date');
         $endDate   = $request->input('end_date');
         $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
-
+ 
         // 1. Les périodes viennent des timesheets du manager (Supervisor)
         $managerTimesheetsQuery = Timesheet::where('employee_id', $manager->id)
             ->orderBy('period_start', 'desc');
-
+ 
         // Récupérer toutes les périodes disponibles pour ce manager
         $allPeriods = Timesheet::where('employee_id', $manager->id)
             ->select('period_start', 'period_end')
@@ -102,15 +127,15 @@ class TimesheetEntryController extends Controller
             ])
             ->unique(fn($p) => $p['period_start'] . '|' . $p['period_end'])
             ->values();
-
+ 
         // Filtrer les timesheets du manager si une période est spécifiée
         if ($startDate && $endDate) {
             $managerTimesheetsQuery->where('period_start', $startDate)
                 ->where('period_end', $endDate);
         }
-
+ 
         $managerTimesheets = $managerTimesheetsQuery->with('entries')->get();
-
+ 
         // 2. Récupérer les téléconseillers assignés au manager
         $teleconseillers = Employee::query()
             ->with(['position', 'assignments'])
@@ -120,7 +145,7 @@ class TimesheetEntryController extends Controller
             })
             ->where('status', 'actif')
             ->get();
-
+ 
         // 3. Attacher les entrées à chaque TC via la structure "timesheet" attendue par le front
         $teleconseillers->each(function ($tc) use ($managerTimesheets) {
             $tcTimesheets = $managerTimesheets->map(function ($ts) use ($tc) {
@@ -128,17 +153,17 @@ class TimesheetEntryController extends Controller
                 $clonedTs = $ts->replicate();
                 $clonedTs->id = $ts->id;
                 $clonedTs->exists = true;
-
+ 
                 // On ne garde que les entrées qui concernent ce TC spécifique
                 $filteredEntries = $ts->entries->where('employee_id', $tc->id);
                 $clonedTs->setRelation('entries', $filteredEntries->values());
-
+ 
                 return $clonedTs;
             });
-
+ 
             $tc->setRelation('timesheet', $tcTimesheets);
         });
-
+ 
         return Inertia::render('TimesheetsEntry/IndexTelecon', [
             'telecon' => $teleconseillers,
             'allPeriods' => $allPeriods,
@@ -150,26 +175,40 @@ class TimesheetEntryController extends Controller
             'currentMonth' => $targetMonth
         ]);
     }
+ 
 
 
     // entry sup
     public function entrySup()
     {
-        $superior = Employee::with('position', 'timesheet')
+        // Récupérer l'utilisateur connecté
+        $user = auth()->user();
+        $manager = $user->employee;
+
+        $query = Employee::with('position', 'timesheet')
             ->whereHas('position', function ($query) {
                 $query->where('code', 'SUP');
             })
             ->whereHas('timesheet', function ($query) {
                 $query->where('status', '!=', 'validated');
             })
-            ->where('status', 'actif')
-            ->get();
+            ->where('status', 'actif');
+
+        // Si l'utilisateur est un CP, il ne voit que les superviseurs qui lui sont assignés
+        if ($user->hasRole('CP')) {
+            $query->whereHas('assignments', function ($query) use ($manager) {
+                $query->where('manager_id', $manager->id);
+            });
+        }
+        // L'admin peut voir tous les superviseurs (pas de restriction supplémentaire)
+
+        $superior = $query->get();
 
         return Inertia::render('TimesheetsEntry/SupEntry', [
             'superior' => $superior,
         ]);
     }
-
+ 
     // entry tc
     public function entryTelecon()
     {
@@ -177,7 +216,7 @@ class TimesheetEntryController extends Controller
         if (!$manager) {
             return redirect()->route('entry.telecon')->with('error', 'Aucun profil employé lié.');
         }
-
+ 
         $telecon = Employee::with('position', 'assignments')
             ->whereHas('position', function ($query) {
                 $query->where('code', 'TC');
@@ -187,22 +226,23 @@ class TimesheetEntryController extends Controller
             })
             ->where('status', 'actif')
             ->get();
-
+ 
         // Récupérer la période en cours pour le manager (superviseur)
         $currentTimesheet = Timesheet::where('employee_id', $manager->id)
             ->where('status', '!=', 'validated')
             ->orderBy('period_start', 'desc')
             ->first();
-
-        $periodLabel = $currentTimesheet 
+ 
+        $periodLabel = $currentTimesheet
             ? "Période du " . $currentTimesheet->period_start->format('d/m/Y') . " au " . $currentTimesheet->period_end->format('d/m/Y')
             : "Aucune période active (ou toutes validées)";
-
+ 
         return Inertia::render('TimesheetsEntry/TeleconEntry', [
             'telecon' => $telecon,
             'periodLabel' => $periodLabel
         ]);
     }
+ 
 
     /**
      * Show the form for creating a new resource.
@@ -214,7 +254,7 @@ class TimesheetEntryController extends Controller
      */
     public function store(Request $request)
     {
-
+ 
         $validated = $request->validate([
             'employee_ids'    => 'required|array',
             'employee_ids.*'  => 'exists:employees,id',
@@ -225,7 +265,7 @@ class TimesheetEntryController extends Controller
             'absence_type'   => 'nullable|string',
             'comment'        => 'nullable|string',
         ]);
-
+ 
         $entries = [];
         foreach ($validated['employee_ids'] as $id) {
             // 1. Récupérer la timesheet active pour cet employé à cette date
@@ -233,42 +273,42 @@ class TimesheetEntryController extends Controller
                 ->where('period_start', '<=', $validated['date'])
                 ->where('period_end', '>=', $validated['date'])
                 ->first();
-
+ 
             if (!$timesheet) continue;
-
+ 
             // Sécurité : Ne pas modifier si validé
             if ($timesheet->status === 'validated') {
                 return redirect()->back()->with('error', "La feuille de temps pour cette période est déjà validée.");
             }
-
+ 
             $startTime = Carbon::parse($validated['check_in']);
             $endTime = Carbon::parse($validated['check_out']);
-
+ 
             // 2. Vérifier que l'heure d'entrée est avant l'heure de sortie
             if ($startTime->greaterThanOrEqualTo($endTime)) {
                 return redirect()->back()->with('error', "L'heure d'arrivée doit être antérieure à l'heure de départ.");
             }
-
+ 
             // Calcul de la durée en minutes, moins la pause
             $durationInMinutes = $startTime->diffInMinutes($endTime, false);
             $breakMinutes = $validated['break_duration'] ?? 0;
-
+ 
             // Conversion en heures décimales (ex: 8.5)
             $totalHours = max(0, ($durationInMinutes - $breakMinutes) / 60);
-
+ 
             // 3. Récupérer le planning de l'employé
             $planningAssignment = PlanningAssignment::where('employee_id', $id)->first();
-
+ 
             $plannedHours = 0;
             if ($planningAssignment && $planningAssignment->planningModel) {
                 $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';
                 $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
             }
-
+ 
             // 4. Calcul de l'overtime
             $diff = $totalHours - $plannedHours;
             $overtime = $diff > 0 ? $diff : 0;
-
+ 
             // Logique Upsert
             TimesheetEntry::updateOrCreate(
                 [
@@ -288,14 +328,14 @@ class TimesheetEntryController extends Controller
                 ]
             );
         }
-
+ 
         return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour.');
     }
-
+ 
     // saisie des heures d'un supervisor
     public function storeSup(Request $request)
     {
-
+ 
         $validated = $request->validate([
             'employee_ids'    => 'required|array',
             'employee_ids.*'  => 'exists:employees,id',
@@ -306,49 +346,49 @@ class TimesheetEntryController extends Controller
             'absence_type'   => 'nullable|string',
             'comment'        => 'nullable|string',
         ]);
-
+ 
         foreach ($validated['employee_ids'] as $id) {
             // 1. Récupérer la timesheet active pour cet employé à cette date
             $timesheet = Timesheet::where('employee_id', $id)
                 ->where('period_start', '<=', $validated['date'])
                 ->where('period_end', '>=', $validated['date'])
                 ->first();
-
+ 
             if (!$timesheet) continue;
-
+ 
             // Sécurité : Ne pas modifier si validé
             if ($timesheet->status === 'validated') {
                 return redirect()->back()->with('error', "La feuille de temps pour cette période est déjà validée.");
             }
-
+ 
             $startTime = Carbon::parse($validated['check_in']);
             $endTime = Carbon::parse($validated['check_out']);
-
+ 
             // 2. Vérifier que l'heure d'entrée est avant l'heure de sortie
             if ($startTime->greaterThanOrEqualTo($endTime)) {
                 return redirect()->back()->with('error', "L'heure d'arrivée doit être antérieure à l'heure de départ.");
             }
-
+ 
             // Calcul de la durée en minutes, moins la pause
             $durationInMinutes = $startTime->diffInMinutes($endTime, false);
             $breakMinutes = $validated['break_duration'] ?? 0;
-
+ 
             // Conversion en heures décimales (ex: 8.5)
             $totalHours = max(0, ($durationInMinutes - $breakMinutes) / 60);
-
+ 
             // 3. Récupérer le planning de l'employé
             $planningAssignment = PlanningAssignment::where('employee_id', $id)->first();
-
+ 
             $plannedHours = 0;
             if ($planningAssignment && $planningAssignment->planningModel) {
                 $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';
                 $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
             }
-
+ 
             // 4. Calcul de l'overtime
             $diff = $totalHours - $plannedHours;
             $overtime = $diff > 0 ? $diff : 0;
-
+ 
             // Logique Upsert
             TimesheetEntry::updateOrCreate(
                 [
@@ -368,10 +408,10 @@ class TimesheetEntryController extends Controller
                 ]
             );
         }
-
+ 
         return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour.');
     }
-
+ 
     // saisie des heures d'un teleconseiller
     public function storeTelecon(Request $request)
     {
@@ -386,57 +426,57 @@ class TimesheetEntryController extends Controller
             'break_duration'  => 'nullable|integer',
             'comment'         => 'nullable|string',
         ]);
-
+ 
         // \Log::info('Données validées:', $validated);
-
+ 
         // 1. Récupérer l'ID du manager (superviseur) connecté
         $managerEmployeeId = $validated['sup_id'];
         // \Log::info('Manager ID:', ['manager_id' => $managerEmployeeId]);
-
+ 
         // 2. Filtrer les IDs envoyés pour ne garder que ceux qui sont RÉELLEMENT assignés à ce manager
         // Sécurité : évite qu'un manager injecte des IDs de TCs qui ne lui appartiennent pas.
-
+ 
         $authorized_tc_ids = Assignment::where('manager_id', $managerEmployeeId)
             ->whereIn('employee_id', $validated['tc_ids'])
             ->where('status', 'actif')
             ->pluck('employee_id')
             ->toArray();
-
-
-
-
+ 
+ 
+ 
+ 
         if (empty($authorized_tc_ids)) {
             return redirect()->back()->with('error', "Aucun téléconseiller valide sélectionné ou assigné.");
         }
-
-
+ 
+ 
         $entries = [];
         $startTime = Carbon::parse($validated['check_in']);
         $endTime = Carbon::parse($validated['check_out']);
-
+ 
         // 1. Vérifier que l'heure d'entrée est avant l'heure de sortie
         if ($startTime->greaterThanOrEqualTo($endTime)) {
             return redirect()->back()->with('error', "L'heure d'arrivée doit être antérieure à l'heure de départ.");
         }
-
+ 
         $durationInMinutes = $startTime->diffInMinutes($endTime, false);
         $breakMinutes = $validated['break_duration'] ?? 0;
         $totalHours = max(0, ($durationInMinutes - $breakMinutes) / 60);
-
+ 
         foreach ($authorized_tc_ids as $tcId) {
             // Trouver la timesheet du TC pour cette date
             $timesheet = Timesheet::where('employee_id', $managerEmployeeId)
                 ->where('period_start', '<=', $validated['date'])
                 ->where('period_end', '>=', $validated['date'])
                 ->first();
-
+ 
             if (!$timesheet) continue;
-
+ 
             // Sécurité : Ne pas modifier si validé
             if ($timesheet->status === 'validated') {
                 return redirect()->back()->with('error', "La feuille de temps pour cette période est déjà validée et verrouillée.");
             }
-
+ 
             // Calcul du planning/overtime
             $planningAssignment = PlanningAssignment::where('employee_id', $managerEmployeeId)->where('status', 'validé')->first();
             $plannedHours = 0;
@@ -444,7 +484,7 @@ class TimesheetEntryController extends Controller
                 $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';
                 $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
             }
-
+ 
             // Logique de modification (Update or Create)
             TimesheetEntry::updateOrCreate(
                 [
@@ -464,10 +504,10 @@ class TimesheetEntryController extends Controller
                 ]
             );
         }
-
+ 
         return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour avec succès.');
     }
-
+ 
     // pour permettre au teleconseiller connecté de voir les entrées éffectué
     public function myTimesheet(Request $request)
     {
@@ -475,10 +515,10 @@ class TimesheetEntryController extends Controller
         if (!$employee) {
             return redirect()->back()->with('error', 'Aucun profil employé lié.');
         }
-
+ 
         $startDate = $request->input('start_date');
         $endDate   = $request->input('end_date');
-
+ 
         // Récupérer les périodes via les timesheets du superviseur auxquelles le TC est lié
         // OU si le TC a ses propres timesheets (selon l'évolution future)
         // Ici, on cherche toutes les timesheets qui contiennent des entrées pour cet employé
@@ -490,13 +530,13 @@ class TimesheetEntryController extends Controller
             }, 'validator'])
             ->orderBy('period_start', 'desc')
             ->get();
-
+ 
         $allPeriods = $timesheets->map(fn($ts) => [
             'period_start' => $ts->period_start->format('Y-m-d'),
             'period_end'   => $ts->period_end->format('Y-m-d'),
             'label'        => $ts->period_start->format('d/m/Y') . ' → ' . $ts->period_end->format('d/m/Y'),
         ])->unique(fn($p) => $p['period_start'] . '|' . $p['period_end'])->values();
-
+ 
         // Filtrage si période sélectionnée
         if ($startDate && $endDate) {
             $timesheets = $timesheets->filter(function ($ts) use ($startDate, $endDate) {
@@ -504,7 +544,7 @@ class TimesheetEntryController extends Controller
                     $ts->period_end->format('Y-m-d') === $endDate;
             });
         }
-
+ 
         return Inertia::render('TimesheetsEntry/MyTimesheet', [
             'timesheets' => $timesheets->values(),
             'allPeriods' => $allPeriods,
@@ -516,6 +556,7 @@ class TimesheetEntryController extends Controller
             'employee' => $employee->load('position')
         ]);
     }
+ 
 
     /**
      * Display the specified resource.
