@@ -24,6 +24,7 @@ const selectedTelecon = ref([]);
 const props = defineProps({
     telecon: Array,
     auth: Object,
+    periodLabel: String,
 });
 
 const formattedSup = computed(() => {
@@ -37,7 +38,8 @@ const visible = ref(false);
 const filters = ref();
 
 const form = useForm({
-    employee_ids: [],
+    tc_ids: [],
+    sup_id: "",
     date: "",
     check_in: "",
     break_duration: "",
@@ -47,10 +49,37 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.employee_ids = selectedTelecon.value.map((sup) => sup.id);
-    console.log(selectedTelecon.value);
-    form.post(route("store.telecon"));
-    visible.value = false;
+    // Formattage local pour éviter les décalages UTC
+    const formatLocalTime = (date) => {
+        if (!(date instanceof Date)) return date;
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+    };
+
+    if (form.date) {
+        const year = form.date.getFullYear();
+        const month = String(form.date.getMonth() + 1).padStart(2, '0');
+        const day = String(form.date.getDate()).padStart(2, '0');
+        form.date = `${year}-${month}-${day}`; 
+    }
+
+    // Préparation des données pour l'envoi
+    const payload = {
+        ...form.data(),
+        check_in: formatLocalTime(form.check_in),
+        check_out: formatLocalTime(form.check_out),
+        tc_ids: selectedTelecon.value.map((tc) => tc.id),
+        sup_id: props.auth.user.employee.id
+    };
+
+    router.post(route("store.telecon"), payload, {
+        onSuccess: () => {
+            visible.value = false;
+            form.reset();
+            selectedTelecon.value = [];
+        }
+    });
 };
 
 const typeAbs = ref([
@@ -87,7 +116,6 @@ const initFilters = () => {
 initFilters();
 
 onMounted(() => {
-    console.log(props.telecon);
     initFilters();
 });
 
@@ -96,26 +124,37 @@ const clearFilter = () => {
 };
 
 const createEntry = () => {
-    const supervisorIds = selectedTelecon.value
+    
+const teleconIds = selectedTelecon.value
         .map((tc) => {
-            return tc.assignments && tc.assignments.length > 0
-                ? tc.assignments[0].manager_id
-                : null;
+            return tc.id
         })
         .filter((id, index, self) => id !== null && self.indexOf(id) === index);
-
-    if (supervisorIds.length === 0) {
-       return toast.add({
-        severity: 'error',
-        summary: 'Alerte',
-        detail: 'Certains teleconseillers ne sont pas assigné à de superviseur',
-        life: 5000,
-    });
-    }
-
-    form.employee_ids = supervisorIds;
+    form.tc_ids = teleconIds;
+    form.sup_id = props.auth.user.employee.id;
     visible.value = true;
 };
+// const createEntry = () => {
+//     const supervisorIds = selectedTelecon.value
+//         .map((tc) => {
+//             return tc.assignments && tc.assignments.length > 0
+//                 ? tc.assignments[0].manager_id
+//                 : null;
+//         })
+//         .filter((id, index, self) => id !== null && self.indexOf(id) === index);
+
+//     if (supervisorIds.length === 0) {
+//        return toast.add({
+//         severity: 'error',
+//         summary: 'Alerte',
+//         detail: 'Certains teleconseillers ne sont pas assigné à de superviseur',
+//         life: 5000,
+//     });
+//     }
+
+//     form.employee_ids = supervisorIds;
+//     visible.value = true;
+// };
 </script>
 
 <template>
@@ -128,9 +167,15 @@ const createEntry = () => {
                         <h1 class="text-3xl font-semibold text-slate-800">
                             Saisie d'heures - Téléconseillers
                         </h1>
-                        <p class="text-slate-500 mt-1">
-                            Sélectionnez un ou plusieurs téléconseillers pour créer une nouvelle saisie
-                        </p>
+                        <div class="flex items-center gap-3 mt-1">
+                            <p class="text-slate-500">
+                                Sélectionnez un ou plusieurs téléconseillers pour créer une nouvelle saisie
+                            </p>
+                            <span v-if="props.periodLabel" class="px-3 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold border border-amber-100 flex items-center gap-2">
+                                <i class="pi pi-calendar"></i>
+                                {{ props.periodLabel }}
+                            </span>
+                        </div>
                     </div>
 
                     <Link

@@ -76,8 +76,8 @@ class User extends Authenticatable
     {
         return $this->hasRole('TC');
     }
-    public function notif()
+    public function notifications()
     {
-        return $this->morphMany(Notification::class, 'model');
+        return $this->morphMany(Notification::class, 'notifiable');
     }
 }

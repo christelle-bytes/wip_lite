@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlanningAssignementController;
 use App\Http\Controllers\PlanningModelController;
 use App\Http\Controllers\AssignmentController;
@@ -14,6 +15,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\ReportingController;
+use App\Http\Controllers\CampaignStatsController;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -29,11 +32,13 @@ Route::get('/', function () {
 
 
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
-Route::resource('/timesheet', TimesheetController::class);
+
+
 
 Route::middleware('auth')->group(function () {
-    Route::resource('/timesheet', TimesheetController::class)->middleware(['timesheet.access:ADMIN,CP']);
+    Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
+    Route::get('/timesheetTelecon', [TimesheetController::class, 'indexTelecon'])->name('timesheet.telecon');
+    Route::resource('/timesheet', TimesheetController::class)->middleware(['timesheet.access:ADMIN,CP,SUP']);
     Route::resource('/timesheetEntry', TimesheetEntryController::class);
     // saisie heure sup
     Route::get('/timesheetEntry_supEntry', [TimesheetEntryController::class, 'entrySup'])->middleware('timesheetEntry.access:Admin,CP')->name('entry.sup');
@@ -49,6 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/timesheetEntry_teleconStore', [TimesheetEntryController::class, 'storeTelecon'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('store.telecon');
     // store sup
     Route::post('/timesheetEntry_supStore', [TimesheetEntryController::class, 'storeSup'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('store.sup');
+
+    // la vue du teleconseiller
+    Route::get('/myTimesheet', [TimesheetEntryController::class, 'myTimesheet'])->middleware('timesheetEntry.access:TC')->name('index.times');
 });
 
 Route::middleware('auth')->group(function () {
@@ -84,39 +92,54 @@ Route::middleware('auth')->group(function () {
 });
 
 //Tout ce qui concerne planning chez Breton
-//planningModel
-Route::get('/planning', [PlanningModelController::class, 'index'])->name('planning.index');
-Route::post('/planning', [PlanningModelController::class, 'store'])->name('planning.store');
-Route::put('/planning/{planningModel}', [PlanningModelController::class, 'update'])->name('planning.update');
-Route::delete('/planning/{planningModel}', [PlanningModelController::class, 'destroy'])->name('planning.destroy');
-Route::post('/planning/{planningModel}/suspend', [PlanningModelController::class, 'suspend'])->name('planning.suspend');
+Route::middleware('auth')->group(function () {
+    //planningModel
+    Route::get('/planning', [PlanningModelController::class, 'index'])->name('planning.index');
+    Route::post('/planning', [PlanningModelController::class, 'store'])->name('planning.store');
+    Route::put('/planning/{planningModel}', [PlanningModelController::class, 'update'])->name('planning.update');
+    Route::delete('/planning/{planningModel}', [PlanningModelController::class, 'destroy'])->name('planning.destroy');
+    Route::post('/planning/{planningModel}/suspend', [PlanningModelController::class, 'suspend'])->name('planning.suspend');
 
-// Planning Assignments
-Route::post('/planning-assignment', [PlanningAssignementController::class, 'store'])->name('planning-assignment.store');
-Route::put('/planning-assignment/{planningAssignment}', [PlanningAssignementController::class, 'update'])->name('planning-assignment.update');
-Route::delete('/planning-assignment/{planningAssignment}', [PlanningAssignementController::class, 'destroy'])->name('planning-assignment.destroy');
-Route::patch('/planning-assignment/{planningAssignment}/status', [PlanningAssignementController::class, 'changeStatus'])->name('planning-assignment.change-status');
+    // Planning Assignments
+    Route::post('/planning-assignment', [PlanningAssignementController::class, 'store'])->name('planning-assignment.store');
+    Route::put('/planning-assignment/{planningAssignment}', [PlanningAssignementController::class, 'update'])->name('planning-assignment.update');
+    Route::delete('/planning-assignment/{planningAssignment}', [PlanningAssignementController::class, 'destroy'])->name('planning-assignment.destroy');
+    Route::patch('/planning-assignment/{planningAssignment}/status', [PlanningAssignementController::class, 'changeStatus'])->name('planning-assignment.change-status');
 
-// planning assignment page
-Route::get('/planning/affectation', [PlanningAssignementController::class, 'affectation'])->name('planning.affectation');
-Route::get('/planning/validation', [PlanningAssignementController::class, 'validation'])
-    ->name('planning.validation');
+    // planning assignment page
+    Route::get('/planning/affectation', [PlanningAssignementController::class, 'affectation'])->name('planning.affectation');
+    Route::get('/planning/validation', [PlanningAssignementController::class, 'validation'])
+        ->name('planning.validation');
 
-//planningAssignment
-Route::post('/planning-assignments', [PlanningAssignementController::class, 'store'])->name('planning-assignments.store');
-Route::put('/planning-assignments/{planningAssignment}', [PlanningAssignementController::class, 'update'])->name('planning-assignments.update');
-Route::delete('/planning-assignments/{planningAssignment}', [PlanningAssignementController::class, 'destroy'])->name('planning-assignments.destroy');
-Route::patch('/planning-assignments/{planningAssignment}/status', [PlanningAssignementController::class, 'changeStatus'])->name('planning-assignments.changeStatus');
+    //planningAssignment
+    Route::post('/planning-assignments', [PlanningAssignementController::class, 'store'])->name('planning-assignments.store');
+    Route::put('/planning-assignments/{planningAssignment}', [PlanningAssignementController::class, 'update'])->name('planning-assignments.update');
+    Route::delete('/planning-assignments/{planningAssignment}', [PlanningAssignementController::class, 'destroy'])->name('planning-assignments.destroy');
+    Route::patch('/planning-assignments/{planningAssignment}/status', [PlanningAssignementController::class, 'changeStatus'])->name('planning-assignments.changeStatus');
+
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('read');
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('readAll');
+    });
+
+    Route::resource('campaigns', CampaignController::class);
+    Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+    Route::post('/assignments/cp', [AssignmentController::class, 'assignCP'])->name('assignments.assignCP');
+    Route::post('/assignments/sup', [AssignmentController::class, 'assignSUP'])->name('assignments.assignSUP');
+    Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name('assignments.assignTC');
+    Route::patch('/assignments/{assignment}/release', [AssignmentController::class, 'release'])->name('assignments.release');
+
+    Route::get('/statistiques', [ReportingController::class, 'index'])->name('reporting.index');
+    Route::get('/statistiques/campagnes', [CampaignStatsController::class, 'index'])->name('campaigns.stats');
+    Route::get('/statistiques/campagnes/export', [CampaignStatsController::class, 'export'])->name('campaigns.stats.export');
+    Route::get('/statistiques/campagnes/export-pdf', [CampaignStatsController::class, 'exportPdf'])->name('campaigns.stats.export.pdf');
+});
 
 
-    
-Route::resource('campaigns', CampaignController::class);
 
-Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
-Route::post('/assignments/cp', [AssignmentController::class, 'assignCP'])->name('assignments.assignCP');
-Route::post('/assignments/sup', [AssignmentController::class, 'assignSUP'])->name('assignments.assignSUP');
-Route::post('/assignments/tc', [AssignmentController::class, 'assignTC'])->name('assignments.assignTC');
-Route::patch('/assignments/{assignment}/release', [AssignmentController::class, 'release'])->name('assignments.release');
-Route::get('/statistiques', [ReportingController::class, 'index'])->name('reporting.index');
+
+
+
 
 require __DIR__ . '/auth.php';

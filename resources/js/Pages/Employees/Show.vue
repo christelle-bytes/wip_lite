@@ -4,7 +4,16 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
-    employee: Object
+    employee: Object,
+    from: String
+});
+
+const backRoute = computed(() => {
+    return props.from === 'assignments' ? route('assignments.index') : route('employees.gestion');
+});
+
+const backLabel = computed(() => {
+    return props.from === 'assignments' ? 'Retour aux affectations' : 'Retour aux employés';
 });
 
 const formatDate = (dateString) => {
@@ -49,9 +58,9 @@ const getStatusClass = (status) => {
             
             <!-- Breadcrumb & Actions -->
             <div class="flex items-center justify-between">
-                <Link :href="route('assignments.index')" class="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-teal-600 uppercase tracking-widest transition-colors">
+                <Link :href="backRoute" class="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-teal-600 uppercase tracking-widest transition-colors">
                     <i class="pi pi-arrow-left text-[10px]"></i>
-                    Retour aux affectations
+                    {{ backLabel }}
                 </Link>
                 <div class="flex gap-3">
                     <button @click="$inertia.visit(route('employees.gestion'))" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm">

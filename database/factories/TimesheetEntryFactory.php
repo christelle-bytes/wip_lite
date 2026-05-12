@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
+use App\Models\Employee;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,6 +25,7 @@ class TimesheetEntryFactory extends Factory
 
     return [
         'timesheet_id'   => Timesheet::factory(),
+        'employee_id'    => \App\Models\Employee::factory(), // Utiliser une factory séparée pour l'employé
         'date'           => fake()->date(),
         'check_in'       => $checkIn,
         'check_out'      => $checkOut,

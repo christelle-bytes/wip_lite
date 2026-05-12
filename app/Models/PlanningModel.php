@@ -24,7 +24,8 @@ class PlanningModel extends Model
         'saturday_hours',
         'sunday_hours',
         'total_hours',
-        'created_by'
+        'created_by',
+        'status'
     ];
 
     protected $appends = ['status'];

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { router } from "@inertiajs/vue3";
 import { useToast } from "primevue/usetoast";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -7,7 +7,6 @@ import Button from "primevue/button";
 
 const props = defineProps({
     assignments: Array,
-    auth: Object,
 });
 
 const toast = useToast();
@@ -48,32 +47,14 @@ function avatarColor(employee) {
 
 function formatDate(date) {
     if (!date) return "—";
-    return new Date(date).toLocaleDateString("fr-FR", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-    });
+    return new Date(date).toLocaleDateString("fr-FR");
 }
 
-function statusSeverity(status) {
-    const map = {
-        "en attente": "warn",
-        "validé":     "success",
-        "suspendu":   "danger",
-        "terminé":    "secondary",
-    };
-    return map[status] ?? "secondary";
+function employeeName(employee) {
+    if (!employee) return "—";
+    return `${employee.first_name} ${employee.last_name}`;
 }
 
-function statusLabel(status) {
-    const map = {
-        "en attente": "En attente",
-        "validé":     "Validé",
-        "suspendu":   "Suspendu",
-        "terminé":    "Terminé",
-    };
-    return map[status] ?? status;
-}
-
-// Appel unique vers ta route changeStatus
 function changeStatus(assignment, status) {
     router.patch(
         route('planning-assignments.changeStatus', assignment.id),
@@ -235,7 +216,6 @@ function deleteAssignment(assignment) {
                 </table>
                 <div v-else class="empty">Aucune assignation trouvée.</div>
             </div>
-
         </div>
     </AuthenticatedLayout>
 </template>

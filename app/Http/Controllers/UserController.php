@@ -45,20 +45,38 @@ class UserController extends Controller
     {
         $data = $request->validated();
         
-        // Récupérer l'employé pour obtenir son email
-        $employee = Employee::findOrFail($data['employee_id']);
-        
-        $user = User::create([
-            'email' => $employee->email,
-            'role_id' => $data['role_id'],
-            'password' => bcrypt('Welcome123!'),
-            'must_change_password' => true,
-        ]);
+        $employeeIds = (array) $data['employee_ids'];
+        $count = 0;
 
-        // Lier l'utilisateur à l'employé
-        $employee->update(['user_id' => $user->id]);
+        foreach ($employeeIds as $employeeId) {
+            $employee = Employee::findOrFail($employeeId);
+            
+            // Vérifier si l'employé n'a pas déjà un utilisateur (sécurité supplémentaire)
+            if ($employee->user_id || User::where('email', $employee->email)->exists()) {
+                continue;
+            }
 
-        return redirect()->route('users.index')->with('success', "Compte créé pour {$employee->first_name} {$employee->last_name} avec l'email {$employee->email}. Mot de passe par défaut: Welcome123!");
+            $user = User::create([
+                'email' => $employee->email,
+                'role_id' => $data['role_id'],
+                'password' => bcrypt('Welcome123!'),
+                'must_change_password' => true,
+            ]);
+
+            // Lier l'utilisateur à l'employé
+            $employee->update(['user_id' => $user->id]);
+            $count++;
+        }
+
+        if ($count === 0) {
+            return redirect()->route('users.index')->with('error', "Aucun compte n'a pu être créé.");
+        }
+
+        $message = $count === 1 
+            ? "1 compte utilisateur a été créé avec succès." 
+            : "{$count} comptes utilisateurs ont été créés avec succès.";
+
+        return redirect()->route('users.index')->with('success', $message . " Mot de passe par défaut: Welcome123!");
     }
 
     public function destroy(User $user): RedirectResponse

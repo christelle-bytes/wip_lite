@@ -56,6 +56,9 @@ const dayLabels = ["L", "M", "M", "J", "V", "S", "D"];
 
 // ─── Suppression ──────────────────────────────────────────────────────────────
 
+const confirmDeleteVisible = ref(false);
+const modelToDelete = ref(null);
+
 function deletePlanning(model) {
     router.delete(`/planning/${model.id}`, {
         onError: () => toast.add({ severity: 'error', summary: 'Alerte', detail: 'Suppression impossible.', life: 4000 }),
@@ -128,6 +131,11 @@ function submit() {
             onSuccess: () => closeDialog(),
         });
     }
+}
+
+function formatDate(date) {
+    if (!date) return '—';
+    return new Date(date).toLocaleDateString('fr-FR');
 }
 </script>
 
@@ -282,87 +290,173 @@ function submit() {
                 </div>
             </div>
 
-            <!-- Dialog PrimeVue création / édition -->
-            <Dialog
-                :visible="showDialog"
-                @update:visible="closeDialog"
-                :header="isEdit ? 'Modifier le planning' : 'Créer un modèle de planning'"
-                :modal="true"
-                :closable="true"
-                :draggable="false"
-                :style="{ width: '560px' }"
-            >
-                <form @submit.prevent="submit" class="dialog-form">
-
-                    <div class="field">
-                        <label>Nom <span class="required">*</span></label>
-                        <InputText
-                            v-model="form.name"
-                            placeholder="ex: Planning 35h standard"
-                            :invalid="!!form.errors.name"
-                            class="w-full"
-                        />
-                        <span v-if="form.errors.name" class="error">{{ form.errors.name }}</span>
-                    </div>
-
-                    <div class="field">
-                        <label>Description</label>
-                        <Textarea
-                            v-model="form.description"
-                            placeholder="Description optionnelle..."
-                            :autoResize="true"
-                            rows="2"
-                            class="w-full"
-                        />
-                    </div>
-
-                    <div class="field">
-                        <label>Heures par jour <span class="required">*</span></label>
-                        <div class="days-grid">
-                            <div
-                                v-for="(day, i) in days"
-                                :key="day"
-                                :class="['day-field', form[day + '_hours'] > 0 && 'has-hours']"
-                            >
-                                <span class="day-label">{{ dayLabels[i] }}</span>
-                                <InputNumber
-                                    v-model="form[day + '_hours']"
-                                    :min="0"
-                                    :max="24"
-                                    :step="0.5"
-                                    :minFractionDigits="0"
-                                    :maxFractionDigits="1"
-                                    inputClass="day-input"
-                                />
-                            </div>
+                        <!-- Filter Tabs -->
+                        <div class="flex items-center gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+                            <button v-for="tab in [{l: 'Tous', v: 'tous', c: countAll}, {l: 'Actifs', v: 'actifs', c: countActifs}, {l: 'Inactifs', v: 'inactifs', c: countInactifs}]"
+                                :key="tab.v" @click="activeFilter = tab.v"
+                                :class="[activeFilter === tab.v ? 'bg-white text-teal-600 shadow-sm border-teal-100' : 'text-slate-400 hover:text-slate-600 border-transparent']"
+                                class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2">
+                                {{ tab.l }}
+                                <span :class="[activeFilter === tab.v ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500', 'px-1.5 py-0.5 rounded text-[8px] font-black']">{{ tab.c }}</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="total-bar">
-                        <span class="total-label">Total semaine</span>
-                        <span class="total-value">{{ totalHours }}h</span>
+                    <!-- DataTable -->
+                    <div class="overflow-x-auto rounded-2xl border border-slate-50">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50">
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Modèle</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Répartition Hebdomadaire</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Total</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</th>
+                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50">
+                                <tr v-for="model in filteredModels" :key="model.id" class="hover:bg-slate-50/30 transition-colors group">
+                                    <td class="px-6 py-4">
+                                        <p class="text-sm font-black text-slate-800">{{ model.name }}</p>
+                                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">{{ model.description || 'Sans description' }}</p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex gap-1">
+                                            <div v-for="(day, idx) in days" :key="day" 
+                                                class="flex flex-col items-center gap-1 group/day">
+                                                <span class="text-[8px] font-black text-slate-300 uppercase group-hover/day:text-teal-500 transition-colors">{{ dayLabels[idx] }}</span>
+                                                <div :class="['h-6 w-6 rounded-md flex items-center justify-center text-[9px] font-black', model[day + '_hours'] > 0 ? 'bg-teal-50 text-teal-600 border border-teal-100' : 'bg-slate-50 text-slate-300 border border-slate-100 opacity-40']">
+                                                    {{ model[day + '_hours'] }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="text-sm font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
+                                            {{ days.reduce((sum, d) => sum + (Number(model[d + '_hours']) || 0), 0) }}h
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span :class="['rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest', model.status === 'actif' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200']">
+                                            {{ model.status === 'actif' ? 'Actif' : 'Inactif' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-1">
+                                            <Button icon="pi pi-pencil" @click="openEdit(model)" class="p-button-text p-button-secondary p-button-sm rounded-lg hover:text-teal-600" />
+                                            <Button icon="pi pi-trash" @click="deletePlanning(model)" class="p-button-text p-button-danger p-button-sm rounded-lg" />
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredModels.length === 0">
+                                    <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">Aucun modèle trouvé.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </template>
+            <template v-else-if="isTC">
+                 <!-- Vue TC : affiche ses propres affectations -->
+                 <div class="header">
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Mes Plannings</h1>
+                </div>
 
-                </form>
-
-                <template #footer>
-                    <Button
-                        label="Annuler"
-                        severity="secondary"
-                        variant="outlined"
-                        @click="closeDialog"
-                        :disabled="form.processing"
-                    />
-                    <Button
-                        :label="isEdit ? 'Mettre à jour' : 'Créer'"
-                        :icon="isEdit ? 'pi pi-check' : 'pi pi-plus'"
-                        :loading="form.processing"
-                        @click="submit"
-                    />
-                </template>
-            </Dialog>
-
+                <div v-if="props.myAssignments?.length" class="grid gap-6 md:grid-cols-2">
+                    <div v-for="assign in props.myAssignments" :key="assign.id" class="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm group hover:border-teal-100 transition-all">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 class="font-black text-slate-900 text-xl">{{ assign.planning_model?.name }}</h3>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                    Du {{ formatDate(assign.start_date) }} au {{ formatDate(assign.end_date) }}
+                                </p>
+                            </div>
+                            <span :class="['rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest', assign.status === 'validé' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100']">
+                                {{ assign.status }}
+                            </span>
+                        </div>
+                        <div class="flex gap-1.5">
+                             <div v-for="(day, idx) in days" :key="day" 
+                                class="flex flex-col items-center gap-1 group/day">
+                                <span class="text-[8px] font-black text-slate-300 uppercase">{{ dayLabels[idx] }}</span>
+                                <div :class="['h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-black', assign.planning_model[day + '_hours'] > 0 ? 'bg-teal-50 text-teal-600 border border-teal-100' : 'bg-slate-50 text-slate-300 border border-slate-100 opacity-40']">
+                                    {{ assign.planning_model[day + '_hours'] }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="text-center py-24 bg-white rounded-[40px] border border-dashed border-slate-200">
+                    <i class="pi pi-calendar-times text-5xl text-slate-200 mb-4"></i>
+                    <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">Aucun planning ne vous est assigné</p>
+                </div>
+            </template>
         </div>
+
+        <!-- Dialog PrimeVue création / édition -->
+        <Dialog v-model:visible="showDialog" :header="isEdit ? 'Modifier le modèle' : 'Nouveau modèle'" modal 
+            class="rounded-3xl shadow-2xl border-none" :style="{ width: '500px' }"
+            :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
+            <div class="space-y-6">
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nom du modèle</label>
+                    <InputText v-model="form.name" placeholder="ex: 40h Standard" class="w-full p-3 rounded-xl border-slate-200 focus:border-teal-500" />
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description (optionnel)</label>
+                    <Textarea v-model="form.description" rows="2" class="w-full p-3 rounded-xl border-slate-200 focus:border-teal-500" />
+                </div>
+
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Heures par jour</label>
+                    <div class="grid grid-cols-4 gap-3">
+                        <div v-for="(day, idx) in days" :key="day" class="flex flex-col gap-1.5">
+                            <label class="text-[9px] font-bold text-slate-500 text-center">{{ dayLabels[idx] }}</label>
+                            <InputNumber v-model="form[day + '_hours']" :min="0" :max="24" 
+                                inputClass="w-full p-2 text-center rounded-lg border-slate-200 text-sm font-black" />
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[9px] font-bold text-teal-600 text-center">TOTAL</label>
+                            <div class="w-full p-2 text-center rounded-lg bg-teal-50 border border-teal-100 text-teal-700 text-sm font-black">
+                                {{ totalHours }}h
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <template #footer>
+                <div class="flex gap-3 w-full">
+                    <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-black text-xs uppercase" @click="closeDialog" />
+                    <Button :label="isEdit ? 'Enregistrer' : 'Créer'" @click="submit" :loading="form.processing"
+                        class="flex-1 bg-teal-600 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg shadow-teal-600/20" />
+                </div>
+            </template>
+        </Dialog>
+
+        <!-- Delete Confirmation Dialog -->
+        <Dialog v-model:visible="confirmDeleteVisible" modal header="Supprimer le modèle" 
+            class="rounded-3xl shadow-2xl border-none" :style="{ width: '400px' }"
+            :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
+            <div v-if="modelToDelete" class="space-y-4">
+                <div class="h-16 w-16 rounded-2xl bg-rose-50 text-rose-500 mx-auto flex items-center justify-center mb-4">
+                    <i class="pi pi-trash text-2xl"></i>
+                </div>
+                <p class="text-sm text-slate-600 text-center leading-relaxed">
+                    Êtes-vous sûr de vouloir supprimer le modèle 
+                    <span class="font-black text-slate-900">{{ modelToDelete.name }}</span> ?
+                </p>
+                <p class="text-[10px] text-slate-400 text-center font-medium">
+                    Cette action est irréversible et supprimera définitivement le modèle.
+                </p>
+            </div>
+            <template #footer>
+                <div class="flex gap-3 w-full">
+                    <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-black text-xs uppercase" @click="confirmDeleteVisible = false" />
+                    <Button label="Supprimer" @click="confirmDelete"
+                        class="flex-1 bg-rose-600 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg shadow-rose-600/20" />
+                </div>
+            </template>
+        </Dialog>
     </AuthenticatedLayout>
 </template>
 

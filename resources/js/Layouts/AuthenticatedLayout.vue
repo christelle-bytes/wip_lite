@@ -1,15 +1,65 @@
 <script setup>
-import { ref, watch, computed } from "vue";
-import { Link, usePage } from "@inertiajs/vue3";
+import { ref, watch, computed, onMounted } from "vue";
+import { Link, usePage, router } from "@inertiajs/vue3";
 import ApplicationLogo from "@/Components/ApplicationLogo.vue";
 import Dropdown from "@/Components/Dropdown.vue";
 import DropdownLink from "@/Components/DropdownLink.vue";
 import { useToast } from "primevue/usetoast";
 import Toast from "primevue/toast";
+import axios from "axios";
 
 const page = usePage();
 const showingNavigationDropdown = ref(false);
 const toast = useToast();
+
+const notifications = ref([]);
+const unreadCount = computed(() => notifications.value.filter(n => !n.read_at).length);
+
+const fetchNotifications = async () => {
+    try {
+        const response = await axios.get(route('notifications.index'));
+        notifications.value = response.data;
+    } catch (error) {
+        console.error("Erreur lors de la récupération des notifications:", error);
+    }
+};
+
+const markAsRead = async (notification) => {
+    if (notification.read_at) return;
+    try {
+        await axios.post(route('notifications.read', notification.id));
+        notification.read_at = new Date().toISOString();
+        if (notification.data.url) {
+            router.visit(notification.data.url);
+        }
+    } catch (error) {
+        console.error("Erreur lors du marquage de la notification comme lue:", error);
+    }
+};
+
+const markAllAsRead = async () => {
+    try {
+        await axios.post(route('notifications.readAll'));
+        notifications.value.forEach(n => n.read_at = new Date().toISOString());
+    } catch (error) {
+        console.error("Erreur lors du marquage de toutes les notifications comme lues:", error);
+    }
+};
+
+onMounted(() => {
+    // Sécurité : Empêcher le retour en arrière après déconnexion (bfcache)
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
+    if (user.value) {
+        fetchNotifications();
+        // Optionnel: rafraîchir toutes les 5 minutes
+        setInterval(fetchNotifications, 5 * 60 * 1000);
+    }
+});
 
 // Calcul du rôle pour afficher les liens conditionnels
 const user = computed(() => page.props.auth.user);
@@ -112,6 +162,8 @@ watch(
                         <i class="pi pi-flag mr-3 text-lg" :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Campagnes
                     </Link>
+       
+
                     <Link :href="route('assignments.index')" 
                         :class="[route().current('assignments.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
@@ -143,14 +195,12 @@ watch(
 
                 <!-- CP Specific Links -->
                 <template v-else-if="roleName === 'CP'">
-                    <Link href="/gestion-employees" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-users mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
-                        Employés
-                    </Link>
                     <Link :href="route('campaigns.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
                     </Link>
+                    
+                    
                     <Link :href="route('assignments.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-link mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Affectations
@@ -183,11 +233,11 @@ watch(
                         <i class="pi pi-calendar mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Plannings
                     </Link>
-                    <Link :href="route('index.sup')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('index.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-clock mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Heures
                     </Link>
-                    <Link :href="route('timesheet.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('timesheet.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Feuille d'heures
                     </Link>
@@ -199,9 +249,9 @@ watch(
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
                     </Link>
-                    <Link :href="route('timesheet.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('index.times')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
-                        Feuille d'heures
+                        Mes Heures
                     </Link>
                 </template>
             </nav>
@@ -236,10 +286,64 @@ watch(
                 </div>
 
                 <div v-if="showLogoutButton" class="flex items-center gap-6">
-                    <!-- Notifications Icon (Visual Only) -->
-                    <button class="text-slate-400 hover:text-teal-600 transition-colors">
-                        <i class="pi pi-bell text-lg"></i>
-                    </button>
+                    <!-- Notifications Dropdown -->
+                    <Dropdown align="right" width="80">
+                        <template #trigger>
+                            <button class="relative text-slate-400 hover:text-teal-600 transition-colors p-2">
+                                <i class="pi pi-bell text-lg"></i>
+                                <span v-if="unreadCount > 0" 
+                                    class="absolute top-0 right-0 h-4 w-4 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                    {{ unreadCount }}
+                                </span>
+                            </button>
+                        </template>
+
+                        <template #content>
+                            <div class="w-80">
+                                <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Notifications</h3>
+                                    <button v-if="unreadCount > 0" @click="markAllAsRead" 
+                                        class="text-[10px] font-bold text-teal-600 hover:text-teal-700">
+                                        Tout marquer comme lu
+                                    </button>
+                                </div>
+                                
+                                <div class="max-h-96 overflow-y-auto">
+                                    <div v-if="notifications.length === 0" class="px-4 py-8 text-center">
+                                        <i class="pi pi-bell-slash text-slate-200 text-3xl mb-2"></i>
+                                        <p class="text-xs text-slate-400 font-medium">Aucune notification</p>
+                                    </div>
+                                    
+                                    <div v-else v-for="notif in notifications" :key="notif.id" 
+                                        @click="markAsRead(notif)"
+                                        :class="[!notif.read_at ? 'bg-teal-50/50' : '']"
+                                        class="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer group">
+                                        <div class="flex gap-3">
+                                            <div :class="[!notif.read_at ? 'bg-teal-500' : 'bg-slate-200']" 
+                                                class="h-2 w-2 rounded-full mt-1.5 flex-shrink-0"></div>
+                                            <div class="flex-1">
+                                                <p class="text-xs font-bold text-slate-800 mb-0.5 group-hover:text-teal-600 transition-colors">
+                                                    {{ notif.data.title || 'Notification' }}
+                                                </p>
+                                                <p class="text-[11px] text-slate-500 leading-relaxed mb-1">
+                                                    {{ notif.data.message }}
+                                                </p>
+                                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                                                    {{ new Date(notif.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="px-4 py-2 bg-slate-50 text-center rounded-b-lg">
+                                    <button class="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-700 transition-colors">
+                                        Voir toutes les notifications
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </Dropdown>
 
                     <Dropdown align="right" width="48">
                         <template #trigger>
@@ -259,7 +363,7 @@ watch(
                             <DropdownLink :href="route('profile.edit')" class="hover:bg-slate-50 text-slate-700">
                                 <i class="pi pi-cog mr-2 text-xs text-slate-400"></i> Paramètres
                             </DropdownLink>
-                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50">
+                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50 w-full text-left" @click="() => window.location.href = '/'">
                                 <i class="pi pi-power-off mr-2 text-xs"></i> Déconnexion
                             </DropdownLink>
                         </template>

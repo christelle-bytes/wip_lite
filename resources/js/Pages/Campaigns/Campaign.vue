@@ -22,7 +22,7 @@ const filteredCampaigns = computed(() => {
         const matchesSearch =
             !searchQuery.value ||
             campaign.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-            campaign.description.toLowerCase().includes(searchQuery.value.toLowerCase());
+            (campaign.description && campaign.description.toLowerCase().includes(searchQuery.value.toLowerCase()));
 
         let matchesStatus = true;
         if (activeFilter.value === "Actives") matchesStatus = campaign.status === "active";
@@ -169,7 +169,7 @@ const confirmDeactivate = () => {
                 </button>
             </div>
 
-            <div class="grid gap-8 xl:grid-cols-3 lg:grid-cols-2">
+            <div v-if="filteredCampaigns.length > 0" class="grid gap-8 xl:grid-cols-3 lg:grid-cols-2">
                 <div
                     v-for="campaign in filteredCampaigns"
                     :key="campaign.id"
@@ -242,6 +242,17 @@ const confirmDeactivate = () => {
                         </template>
                     </div>
                 </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="flex flex-col items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-slate-200">
+                <div class="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-300 mb-6">
+                    <i class="pi pi-briefcase text-4xl"></i>
+                </div>
+                <h3 class="text-xl font-black text-slate-800 mb-2">Aucune campagne en cours</h3>
+                <p class="text-slate-500 font-medium max-w-xs text-center">
+                    Vous n'avez pas de campagne active assignée pour le moment.
+                </p>
             </div>
 
             <!-- Create Dialog -->
