@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\PlanningAssignment;
 use App\Models\PlanningModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 
 class PlanningAssignementController extends Controller
@@ -49,14 +50,34 @@ class PlanningAssignementController extends Controller
 
         $validated = $request->validate([
             'planning_model_id' => 'required|exists:planning_models,id',
-            'employee_id'       => 'required|exists:employees,id',
+            'employee_ids'      => 'nullable|array|min:1',
+            'employee_ids.*'    => 'required_with:employee_ids|exists:employees,id',
+            'employee_id'       => 'nullable|exists:employees,id',
             'start_date'        => 'required|date',
-            'end_date'          => 'nullable|date|after_or_equal:start_date',
+            'end_date'          => 'nullable|date|after:start_date',
         ]);
 
-        $validated['status'] = 'en attente';
+        $employeeIds = Arr::wrap($validated['employee_ids'] ?? $validated['employee_id'] ?? []);
 
-        PlanningAssignment::create($validated);
+        if (empty($employeeIds)) {
+            return redirect()->back()->withErrors(['employee_ids' => 'Veuillez sélectionner au moins un employé.']);
+        }
+
+        $now = now();
+
+        $assignmentsData = array_map(function ($employeeId) use ($validated, $now) {
+            return [
+                'planning_model_id' => $validated['planning_model_id'],
+                'employee_id'       => $employeeId,
+                'start_date'        => $validated['start_date'],
+                'end_date'          => $validated['end_date'] ?? null,
+                'status'            => 'en attente',
+                'created_at'        => $now,
+                'updated_at'        => $now,
+            ];
+        }, $employeeIds);
+
+        PlanningAssignment::insert($assignmentsData);
 
         return redirect()->back()->with('success', 'Assignation créée avec succès.');
     }
@@ -75,7 +96,7 @@ class PlanningAssignementController extends Controller
             'planning_model_id' => 'required|exists:planning_models,id',
             'employee_id'       => 'required|exists:employees,id',
             'start_date'        => 'required|date',
-            'end_date'          => 'nullable|date|after_or_equal:start_date',
+            'end_date'          => 'nullable|date|after:start_date',
         ]);
 
         $planningAssignment->update($validated);
@@ -153,7 +174,9 @@ class PlanningAssignementController extends Controller
             abort(403, 'Action non autorisée.');
         }
 
-        $planningModels = PlanningModel::all();
+        $planningModels = PlanningModel::when($user->hasRole('CP'), function ($query) use ($user) {
+            return $query->where('created_by', $user->employee->id);
+        })->get();
         
         // Filtrage des employés en fonction du rôle
         $query = Employee::query()->with('user.role');

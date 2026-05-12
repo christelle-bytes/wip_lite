@@ -20,9 +20,15 @@ class PlanningModelController extends Controller
             ? $employee->planningAssignments()->with(['planningModel', 'employee.user.role'])->get() 
             : collect();
 
-        // Si l'utilisateur est Admin ou CP, il voit les modèles et toutes les assignations
+        // Si l'utilisateur est Admin, il voit tous les modèles.
+        // Si c'est un CP, il ne voit que les modèles qu'il a créés.
         if ($user->hasRole('Admin') || $user->hasRole('CP')) {
-            $planningModels = PlanningModel::all();
+            $planningModels = PlanningModel::when($user->hasRole('CP'), function ($query) use ($user) {
+                return $query->where('created_by', $user->employee->id);
+            })->withCount(['planningAssignment as active_assignment_count' => function ($query) {
+                $query->whereIn('status', ['validé', 'suspendu']);
+            }])->get();
+
             $assignments = PlanningAssignment::with(['employee.user.role', 'planningModel'])->get();
         } else {
             // Les SUP et TC ne voient pas les modèles globaux ni les autres assignations
