@@ -2,10 +2,7 @@
 import { ref, computed } from "vue";
 import { router } from "@inertiajs/vue3";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
 import Button from "primevue/button";
-import Tag from "primevue/tag";
 
 const props = defineProps({
     assignments: Array,
@@ -89,15 +86,19 @@ function changeStatus(assignment, status) {
         <div class="validation-page">
 
             <!-- Header -->
-            <div class="page-header">
-                <div class="back-link" @click="router.get('/planning')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-                    Retour aux plannings
+            <div class="header">
+                <div class="header-content">
+                    <div class="back-link" @click="router.get('/planning')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                        Retour aux plannings
+                    </div>
+                    <h1 class="title">Validation des assignations</h1>
+                    <p class="subtitle">Gérez et validez les assignations de planning en attente.</p>
                 </div>
             </div>
 
             <!-- Filtres onglets -->
-            <div class="filter-tabs">
+            <div class="filters">
                 <button
                     v-for="f in filters"
                     :key="f.value"
@@ -105,115 +106,113 @@ function changeStatus(assignment, status) {
                     @click="activeFilter = f.value"
                 >
                     {{ f.label }}
-                    <span class="count">{{ countByStatus(f.value) }}</span>
+                    <span class="badge">{{ countByStatus(f.value) }}</span>
                 </button>
             </div>
 
-            <!-- Tableau PrimeVue -->
-            <div class="table-wrapper">
-                <DataTable
-                    :value="filteredAssignments"
-                    :rows="10"
-                    :paginator="filteredAssignments.length > 10"
-                    stripedRows
-                    emptyMessage="Aucun assignment trouvé."
-                >
-                    <Column selectionMode="multiple" style="width: 3rem" />
-
-                    <!-- Employé -->
-                    <Column header="Employé" style="min-width: 200px">
-                        <template #body="{ data }">
-                            <div class="employee-cell">
-                                <div
-                                    class="avatar"
-                                    :style="{ background: avatarColor(data.employee) }"
-                                >
-                                    {{ employeeInitials(data.employee) }}
+            <!-- Tableau -->
+            <div class="table-card">
+                <table v-if="filteredAssignments.length > 0">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 180px">Employé</th>
+                            <th style="min-width: 120px">Rôle</th>
+                            <th style="min-width: 180px">Modèle</th>
+                            <th style="min-width: 200px">Période</th>
+                            <th style="min-width: 120px">Statut</th>
+                            <th style="min-width: 120px">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="assignment in filteredAssignments" :key="assignment.id">
+                            <!-- Employé -->
+                            <td class="col-employee">
+                                <div class="employee-cell">
+                                    <div
+                                        class="avatar"
+                                        :style="{ background: avatarColor(assignment.employee) }"
+                                    >
+                                        {{ employeeInitials(assignment.employee) }}
+                                    </div>
+                                    <span class="employee-name">{{ employeeFullName(assignment.employee) }}</span>
                                 </div>
-                                <span class="employee-name">{{ employeeFullName(data.employee) }}</span>
-                            </div>
-                        </template>
-                    </Column>
-
-                    <!-- Rôle -->
-                    <Column header="Rôle" style="min-width: 140px">
-                        <template #body="{ data }">
-                            <span class="role-badge">{{ data.employee?.user?.role?.name ?? '—' }}</span>
-                        </template>
-                    </Column>
-
-                    <!-- Modèle -->
-                    <Column header="Modèle" style="min-width: 200px">
-                        <template #body="{ data }">
-                            {{ data.planning_model?.name ?? '—' }}
-                        </template>
-                    </Column>
-
-                    <!-- Période -->
-                    <Column header="Période" style="min-width: 220px">
-                        <template #body="{ data }">
-                            {{ formatDate(data.start_date) }} – {{ formatDate(data.end_date) }}
-                        </template>
-                    </Column>
-
-                    <!-- Statut -->
-                    <Column header="Statut" style="min-width: 130px">
-                        <template #body="{ data }">
-                            <Tag
-                                :severity="statusSeverity(data.status)"
-                                :value="statusLabel(data.status)"
-                            />
-                        </template>
-                    </Column>
-
-                    <!-- Actions -->
-                    <Column header="Actions" style="min-width: 130px">
-                        <template #body="{ data }">
-                            <div class="actions">
-                                <!-- Valider (si en attente) -->
-                                <Button
-                                    v-if="data.status === 'en attente'"
-                                    icon="pi pi-check"
-                                    severity="success"
-                                    variant="text"
-                                    rounded
-                                    title="Valider"
-                                    @click="changeStatus(data, 'validé')"
-                                />
-                                <!-- Suspendre (si validé) -->
-                                <Button
-                                    v-if="data.status === 'validé'"
-                                    icon="pi pi-pause"
-                                    severity="warn"
-                                    variant="text"
-                                    rounded
-                                    title="Suspendre"
-                                    @click="changeStatus(data, 'suspendu')"
-                                />
-                                <!-- Remettre en attente (si suspendu) -->
-                                <Button
-                                    v-if="data.status === 'suspendu'"
-                                    icon="pi pi-undo"
-                                    severity="secondary"
-                                    variant="text"
-                                    rounded
-                                    title="Remettre en attente"
-                                    @click="changeStatus(data, 'en attente')"
-                                />
-                                <!-- Rejeter (si en attente ou validé) -->
-                                <Button
-                                    v-if="['en attente', 'validé'].includes(data.status)"
-                                    icon="pi pi-times"
-                                    severity="danger"
-                                    variant="text"
-                                    rounded
-                                    title="Rejeter"
-                                    @click="changeStatus(data, 'rejeté')"
-                                />
-                            </div>
-                        </template>
-                    </Column>
-                </DataTable>
+                            </td>
+                            <!-- Rôle -->
+                            <td class="col-role">
+                                <span class="role-badge">{{ assignment.employee?.user?.role?.name ?? '—' }}</span>
+                            </td>
+                            <!-- Modèle -->
+                            <td class="col-model">
+                                {{ assignment.planning_model?.name ?? '—' }}
+                            </td>
+                            <!-- Période -->
+                            <td class="col-period">
+                                <div class="period-info">
+                                    <span class="period-date">{{ formatDate(assignment.start_date) }}</span>
+                                    <span v-if="assignment.end_date" class="period-separator">–</span>
+                                    <span v-if="assignment.end_date" class="period-date">{{ formatDate(assignment.end_date) }}</span>
+                                    <span v-else class="period-indefinite">Indéterminé</span>
+                                </div>
+                            </td>
+                            <!-- Statut -->
+                            <td>
+                                <span :class="['status-badge', assignment.status.replace(' ', '-')]">
+                                    {{ statusLabel(assignment.status) }}
+                                </span>
+                            </td>
+                            <!-- Actions -->
+                            <td class="col-actions">
+                                <div class="actions">
+                                    <!-- Valider (si en attente) -->
+                                    <Button
+                                        v-if="assignment.status === 'en attente'"
+                                        icon="pi pi-check"
+                                        severity="success"
+                                        variant="text"
+                                        rounded
+                                        class="action-btn"
+                                        title="Valider"
+                                        @click="changeStatus(assignment, 'validé')"
+                                    />
+                                    <!-- Suspendre (si validé) -->
+                                    <Button
+                                        v-if="assignment.status === 'validé'"
+                                        icon="pi pi-pause"
+                                        severity="warn"
+                                        variant="text"
+                                        rounded
+                                        class="action-btn"
+                                        title="Suspendre"
+                                        @click="changeStatus(assignment, 'suspendu')"
+                                    />
+                                    <!-- Remettre en attente (si suspendu) -->
+                                    <Button
+                                        v-if="assignment.status === 'suspendu'"
+                                        icon="pi pi-undo"
+                                        severity="secondary"
+                                        variant="text"
+                                        rounded
+                                        class="action-btn"
+                                        title="Remettre en attente"
+                                        @click="changeStatus(assignment, 'en attente')"
+                                    />
+                                    <!-- Terminer (si validé) -->
+                                    <Button
+                                        v-if="assignment.status === 'validé'"
+                                        icon="pi pi-stop-circle"
+                                        severity="secondary"
+                                        variant="text"
+                                        rounded
+                                        class="action-btn"
+                                        title="Terminer"
+                                        @click="changeStatus(assignment, 'terminé')"
+                                    />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div v-else class="empty">Aucune assignation trouvée.</div>
             </div>
 
         </div>
@@ -223,42 +222,260 @@ function changeStatus(assignment, status) {
 <style scoped>
 .validation-page {
     font-family: 'DM Sans', 'Segoe UI', sans-serif;
-    padding: 1.5rem 2.5rem;
+    padding: 2rem 2.5rem;
     max-width: 1200px;
     margin: 0 auto;
     color: #111;
 }
-.page-header { margin-bottom: 1.25rem; }
+
+.header {
+    margin-bottom: 1.5rem;
+}
+
+.header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 .back-link {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    font-size: 0.875rem; color: #6b7280; cursor: pointer; transition: color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: color 0.15s;
+    width: fit-content;
 }
-.back-link:hover { color: #111; }
-.filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+
+.back-link:hover {
+    color: #111;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    color: #111;
+}
+
+.subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Filtres */
+.filters {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
 .filter-tab {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.45rem 1rem; border-radius: 20px; border: 1px solid #e5e7eb;
-    background: #fff; font-size: 0.875rem; cursor: pointer;
-    color: #374151; transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    border: none;
+    background: transparent;
+    font-size: 0.875rem;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.15s;
 }
-.filter-tab:hover { background: #f3f4f6; }
-.filter-tab.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 500; }
-.count {
-    background: #f3f4f6; color: #6b7280; border-radius: 20px;
-    padding: 0.05rem 0.5rem; font-size: 0.75rem; font-weight: 500;
+
+.filter-tab:hover {
+    background: #f3f4f6;
 }
-.filter-tab.active .count { background: #dbeafe; color: #2563eb; }
-.table-wrapper { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
-.employee-cell { display: flex; align-items: center; gap: 0.75rem; }
+
+.filter-tab.active {
+    background: #059669;
+    color: #fff;
+}
+
+.filter-tab.active .badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+.badge {
+    background: #f3f4f6;
+    color: #374151;
+    border-radius: 20px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Table Card */
+.table-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead tr {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+th {
+    padding: 0.85rem 1.25rem;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+td {
+    padding: 1rem 1.25rem;
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+tr:not(:last-child) td {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+tr:hover td {
+    background: #fafafa;
+}
+
+/* Columns */
+.col-employee {
+    min-width: 180px;
+}
+
+.col-role {
+    min-width: 120px;
+}
+
+.col-model {
+    min-width: 180px;
+}
+
+.col-period {
+    min-width: 200px;
+}
+
+.col-actions {
+    min-width: 120px;
+}
+
+/* Employee Cell */
+.employee-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .avatar {
-    width: 36px; height: 36px; border-radius: 50%; color: #fff;
-    font-size: 0.8rem; font-weight: 600;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
-.employee-name { font-weight: 500; }
+
+.employee-name {
+    font-weight: 500;
+    color: #111;
+}
+
+/* Role Badge */
 .role-badge {
-    display: inline-block; padding: 0.2rem 0.65rem; border-radius: 20px;
-    background: #d1fae5; color: #065f46; font-size: 0.78rem; font-weight: 500;
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    background: #d1fae5;
+    color: #065f46;
+    font-size: 0.78rem;
+    font-weight: 500;
 }
-.actions { display: flex; align-items: center; gap: 0.25rem; }
+
+/* Period Info */
+.period-info {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.period-date {
+    color: #111;
+    font-weight: 500;
+}
+
+.period-separator {
+    color: #d1d5db;
+}
+
+.period-indefinite {
+    color: #059669;
+    font-size: 0.8rem;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-badge.en-attente {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.validé {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.suspendu {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-badge.terminé {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+}
+
+/* Empty State */
+.empty {
+    text-align: center;
+    color: #9ca3af;
+    padding: 3rem;
+}
 </style>
