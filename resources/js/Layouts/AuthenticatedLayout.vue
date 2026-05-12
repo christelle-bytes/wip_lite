@@ -47,6 +47,13 @@ const markAllAsRead = async () => {
 };
 
 onMounted(() => {
+    // Sécurité : Empêcher le retour en arrière après déconnexion (bfcache)
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
     if (user.value) {
         fetchNotifications();
         // Optionnel: rafraîchir toutes les 5 minutes
@@ -155,6 +162,8 @@ watch(
                         <i class="pi pi-flag mr-3 text-lg" :class="[route().current('campaigns.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Campagnes
                     </Link>
+       
+
                     <Link :href="route('assignments.index')" 
                         :class="[route().current('assignments.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
@@ -186,14 +195,12 @@ watch(
 
                 <!-- CP Specific Links -->
                 <template v-else-if="roleName === 'CP'">
-                    <Link href="/gestion-employees" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
-                        <i class="pi pi-users mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
-                        Employés
-                    </Link>
                     <Link :href="route('campaigns.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
                     </Link>
+                    
+                    
                     <Link :href="route('assignments.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-link mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Affectations
@@ -226,11 +233,11 @@ watch(
                         <i class="pi pi-calendar mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Plannings
                     </Link>
-                    <Link :href="route('index.sup')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('index.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-clock mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Heures
                     </Link>
-                    <Link :href="route('timesheet.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('timesheet.telecon')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Feuille d'heures
                     </Link>
@@ -242,9 +249,9 @@ watch(
                         <i class="pi pi-flag mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
                         Campagnes
                     </Link>
-                    <Link :href="route('timesheet.index')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
+                    <Link :href="route('index.times')" class="group flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg text-slate-500 group-hover:text-slate-300"></i>
-                        Feuille d'heures
+                        Mes Heures
                     </Link>
                 </template>
             </nav>
@@ -356,7 +363,7 @@ watch(
                             <DropdownLink :href="route('profile.edit')" class="hover:bg-slate-50 text-slate-700">
                                 <i class="pi pi-cog mr-2 text-xs text-slate-400"></i> Paramètres
                             </DropdownLink>
-                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50">
+                            <DropdownLink :href="route('logout')" method="post" as="button" class="text-rose-600 hover:bg-rose-50 border-t border-slate-50 w-full text-left" @click="() => window.location.href = '/'">
                                 <i class="pi pi-power-off mr-2 text-xs"></i> Déconnexion
                             </DropdownLink>
                         </template>
