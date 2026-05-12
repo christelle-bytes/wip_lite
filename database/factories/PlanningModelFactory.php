@@ -1,11 +1,11 @@
 <?php
-
+ 
 namespace Database\Factories;
-
+ 
 use App\Models\Employee;
 use App\Models\PlanningModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
-
+ 
 /**
  * @extends Factory<PlanningModel>
  */
@@ -31,7 +31,10 @@ class PlanningModelFactory extends Factory
             'saturday_hours'=>0,
             'sunday_hours'=>0,
             'total_hours'=>$total,
-            'created_by'=>Employee::factory(),
+            'created_by' => Employee::inRandomOrder()->first()?->id ?? Employee::factory(),
         ];
     }
 }
+ 
+ 
+ 

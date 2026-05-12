@@ -133,6 +133,7 @@ const submitEdit = () => {
         }
     });
 };
+console.log(props.supervisors)
 </script>
 
 <template>

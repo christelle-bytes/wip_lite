@@ -22,18 +22,53 @@ class TimesheetController extends Controller
     // les heures des chef plateau
     public function index()
     {
-        // 1. Récupération de base
-        $sup = Employee::with('position')->whereHas('position', function ($query) {
-            $query->where('code', 'SUP');
-        })->get();
+        // 1. Récupération de l'utilisateur connecté
+        $user = auth()->user();
+        $manager = $user->employee;
 
-        $planning = PlanningAssignment::with(['employee', 'planningModel'])
+        // 2. Récupération des superviseurs avec restrictions
+        $supQuery = Employee::with('position')->whereHas('position', function ($query) {
+            $query->where('code', 'SUP');
+        });
+
+        // Si l'utilisateur est un CP, il ne voit que les superviseurs qui lui sont assignés
+        if ($user->hasRole('CP')) {
+            $supQuery->whereHas('assignments', function ($query) use ($manager) {
+                $query->where('manager_id', $manager->id);
+            });
+        }
+        // L'admin peut voir tous les superviseurs (pas de restriction supplémentaire)
+
+        $sup = $supQuery->get();
+
+        $planningQuery = PlanningAssignment::with(['employee', 'planningModel'])
             ->whereHas('employee.position', function ($query) {
                 $query->where('code', 'SUP');
-            })->get();
+            });
+
+        // Appliquer la même restriction pour les plannings
+        if ($user->hasRole('CP')) {
+            $planningQuery->whereHas('employee.assignments', function ($query) use ($manager) {
+                $query->where('manager_id', $manager->id);
+            });
+        }
+
+        $planning = $planningQuery->get();
 
         // 2. Récupération des feuilles avec calcul de complétude
-        $timesheets = Timesheet::with(['employee', 'validator', 'entries'])
+$AlltimesheetsSup = Timesheet::with(['employee', 'validator', 'entries'])
+->whereHas('employee.position', function ($query) {
+                $query->where('code', 'SUP');
+            })
+    ->latest();
+
+if ($user->hasRole('CP')) {
+            $AlltimesheetsSup = $AlltimesheetsSup->whereHas('employee.assignments', function ($query) use ($manager) {
+                $query->where('manager_id', $manager->id);
+            });
+        }
+
+        $timesheets = $AlltimesheetsSup
             ->latest()
             ->get()
             ->map(function ($ts) {
@@ -77,9 +112,7 @@ class TimesheetController extends Controller
         $manager = Auth::user()->employee;
         
         if (!$manager) return redirect()->back()->with('error', "Vous n'êtes assigné à aucun téléconseiller.");
-// ->whereHas('assignments', function ($query) use ($manager) {
-//                 $query->where('manager_id', $manager->id);
-//             })
+
         // 2. Récupérer les téléconseillers assignés à ce manager
         $telecons = Employee::with('position')
             ->whereHas('assignments', function ($query) use ($manager) {
@@ -217,16 +250,36 @@ class TimesheetController extends Controller
             ];
         });
 
-        // Vérifier s'il y a eu des erreurs pendant le map
-        $error = $data->firstWhere('error');
-        if ($error) {
-            return redirect()->back()->with('error', $error['error']);
+        // Séparer les données valides et les erreurs
+        $validData = $data->filter(function ($item) {
+            return !isset($item['error']);
+        });
+
+        $errors = $data->filter(function ($item) {
+            return isset($item['error']);
+        });
+
+        // Créer uniquement les feuilles valides
+        if ($validData->isNotEmpty()) {
+            Timesheet::insert($validData->toArray());
         }
 
-        Timesheet::insert($data->toArray());
+        // Préparer le message de retour
+        $message = [];
+        
+        if ($validData->isNotEmpty()) {
+            $count = $validData->count();
+            $message[] = "{$count} feuille(s) d'heures créée(s) avec succès.";
+        }
+
+        if ($errors->isNotEmpty()) {
+            foreach ($errors as $error) {
+                $message[] = $error['error'];
+            }
+        }
 
         return redirect()->route('timesheet.index')
-            ->with('success', 'Feuille(s) d\'heures créée(s) avec succès.');
+            ->with('message', implode('<br>', $message));
     }
 
 
