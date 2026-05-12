@@ -166,6 +166,7 @@ function formatDate(date) {
                 </div>
             </div>
 
+            <!-- Vue ADMIN / CP / SUP -->
             <template v-if="canManage">
                 <!-- Filtres -->
                 <div class="filters">
@@ -245,120 +246,54 @@ function formatDate(date) {
                         </tbody>
                     </table>
                 </div>
-            </template>
 
-            <!-- Section "Mon Planning" -->
-            <div v-if="props.myAssignments && props.myAssignments.length > 0" class="my-planning-section mt-12">
-                <div class="section-header mb-4">
-                    <h2 class="text-xl font-semibold flex items-center gap-2">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Mon Planning
-                    </h2>
-                    <p class="text-sm text-gray-500">Assignations qui me sont personnellement attribuées.</p>
-                </div>
-
-                <div class="table-card">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Modèle</th>
-                                <th>Période</th>
-                                <th>Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="assignment in props.myAssignments" :key="assignment.id">
-                                <td class="col-name">
-                                    <span class="model-name">{{ assignment.planning_model?.name }}</span>
-                                    <span class="model-desc">{{ assignment.planning_model?.total_hours }}h par semaine</span>
-                                </td>
-                                <td>
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium">Du {{ new Date(assignment.start_date).toLocaleDateString('fr-FR') }}</span>
-                                        <span v-if="assignment.end_date" class="text-xs text-gray-500">Au {{ new Date(assignment.end_date).toLocaleDateString('fr-FR') }}</span>
-                                        <span v-else class="text-xs text-blue-500">Indéterminé</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span :class="['status-badge', assignment.status.replace(' ', '-')]">
-                                        {{ assignment.status }}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-                        <!-- Filter Tabs -->
-                        <div class="flex items-center gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
-                            <button v-for="tab in [{l: 'Tous', v: 'tous', c: countAll}, {l: 'Actifs', v: 'actifs', c: countActifs}, {l: 'Inactifs', v: 'inactifs', c: countInactifs}]"
-                                :key="tab.v" @click="activeFilter = tab.v"
-                                :class="[activeFilter === tab.v ? 'bg-white text-teal-600 shadow-sm border-teal-100' : 'text-slate-400 hover:text-slate-600 border-transparent']"
-                                class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2">
-                                {{ tab.l }}
-                                <span :class="[activeFilter === tab.v ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500', 'px-1.5 py-0.5 rounded text-[8px] font-black']">{{ tab.c }}</span>
-                            </button>
-                        </div>
+                <!-- Section "Mon Planning" pour SUP (visible dans canManage) -->
+                <div v-if="props.myAssignments && props.myAssignments.length > 0" class="my-planning-section mt-12">
+                    <div class="section-header mb-4">
+                        <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Mon Planning
+                        </h2>
+                        <p class="text-sm text-gray-500">Assignations qui me sont personnellement attribuées.</p>
                     </div>
 
-                    <!-- DataTable -->
-                    <div class="overflow-x-auto rounded-2xl border border-slate-50">
-                        <table class="w-full text-left border-collapse">
+                    <div class="table-card">
+                        <table>
                             <thead>
-                                <tr class="bg-slate-50/50">
-                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Modèle</th>
-                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Répartition Hebdomadaire</th>
-                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Total</th>
-                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</th>
-                                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                                <tr>
+                                    <th>Modèle</th>
+                                    <th>Période</th>
+                                    <th>Statut</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-50">
-                                <tr v-for="model in filteredModels" :key="model.id" class="hover:bg-slate-50/30 transition-colors group">
-                                    <td class="px-6 py-4">
-                                        <p class="text-sm font-black text-slate-800">{{ model.name }}</p>
-                                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">{{ model.description || 'Sans description' }}</p>
+                            <tbody>
+                                <tr v-for="assignment in props.myAssignments" :key="assignment.id">
+                                    <td class="col-name">
+                                        <span class="model-name">{{ assignment.planning_model?.name }}</span>
+                                        <span class="model-desc">{{ assignment.planning_model?.total_hours }}h par semaine</span>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex gap-1">
-                                            <div v-for="(day, idx) in days" :key="day" 
-                                                class="flex flex-col items-center gap-1 group/day">
-                                                <span class="text-[8px] font-black text-slate-300 uppercase group-hover/day:text-teal-500 transition-colors">{{ dayLabels[idx] }}</span>
-                                                <div :class="['h-6 w-6 rounded-md flex items-center justify-center text-[9px] font-black', model[day + '_hours'] > 0 ? 'bg-teal-50 text-teal-600 border border-teal-100' : 'bg-slate-50 text-slate-300 border border-slate-100 opacity-40']">
-                                                    {{ model[day + '_hours'] }}
-                                                </div>
-                                            </div>
+                                    <td>
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-medium">Du {{ new Date(assignment.start_date).toLocaleDateString('fr-FR') }}</span>
+                                            <span v-if="assignment.end_date" class="text-xs text-gray-500">Au {{ new Date(assignment.end_date).toLocaleDateString('fr-FR') }}</span>
+                                            <span v-else class="text-xs text-blue-500">Indéterminé</span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <span class="text-sm font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
-                                            {{ days.reduce((sum, d) => sum + (Number(model[d + '_hours']) || 0), 0) }}h
+                                    <td>
+                                        <span :class="['status-badge', assignment.status.replace(' ', '-')]">
+                                            {{ assignment.status }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <span :class="['rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest', model.status === 'actif' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200']">
-                                            {{ model.status === 'actif' ? 'Actif' : 'Inactif' }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="flex items-center justify-end gap-1">
-                                            <Button icon="pi pi-pencil" @click="openEdit(model)" class="p-button-text p-button-secondary p-button-sm rounded-lg hover:text-teal-600" />
-                                            <Button icon="pi pi-trash" @click="deletePlanning(model)" class="p-button-text p-button-danger p-button-sm rounded-lg" />
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-if="filteredModels.length === 0">
-                                    <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">Aucun modèle trouvé.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </template>
+
+            <!-- Vue TC -->
             <template v-else-if="isTC">
-                 <!-- Vue TC : affiche ses propres affectations -->
-                 <div class="header">
+                <div class="header">
                     <h1 class="text-3xl font-black text-slate-900 tracking-tight">Mes Plannings</h1>
                 </div>
 
@@ -376,7 +311,7 @@ function formatDate(date) {
                             </span>
                         </div>
                         <div class="flex gap-1.5">
-                             <div v-for="(day, idx) in days" :key="day" 
+                             <div v-for="(day, idx) in days" :key="day"
                                 class="flex flex-col items-center gap-1 group/day">
                                 <span class="text-[8px] font-black text-slate-300 uppercase">{{ dayLabels[idx] }}</span>
                                 <div :class="['h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-black', assign.planning_model[day + '_hours'] > 0 ? 'bg-teal-50 text-teal-600 border border-teal-100' : 'bg-slate-50 text-slate-300 border border-slate-100 opacity-40']">
@@ -391,10 +326,11 @@ function formatDate(date) {
                     <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">Aucun planning ne vous est assigné</p>
                 </div>
             </template>
+
         </div>
 
         <!-- Dialog PrimeVue création / édition -->
-        <Dialog v-model:visible="showDialog" :header="isEdit ? 'Modifier le modèle' : 'Nouveau modèle'" modal 
+        <Dialog v-model:visible="showDialog" :header="isEdit ? 'Modifier le modèle' : 'Nouveau modèle'" modal
             class="rounded-3xl shadow-2xl border-none" :style="{ width: '500px' }"
             :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
             <div class="space-y-6">
@@ -412,7 +348,7 @@ function formatDate(date) {
                     <div class="grid grid-cols-4 gap-3">
                         <div v-for="(day, idx) in days" :key="day" class="flex flex-col gap-1.5">
                             <label class="text-[9px] font-bold text-slate-500 text-center">{{ dayLabels[idx] }}</label>
-                            <InputNumber v-model="form[day + '_hours']" :min="0" :max="24" 
+                            <InputNumber v-model="form[day + '_hours']" :min="0" :max="24"
                                 inputClass="w-full p-2 text-center rounded-lg border-slate-200 text-sm font-black" />
                         </div>
                         <div class="flex flex-col gap-1.5">
@@ -434,7 +370,7 @@ function formatDate(date) {
         </Dialog>
 
         <!-- Delete Confirmation Dialog -->
-        <Dialog v-model:visible="confirmDeleteVisible" modal header="Supprimer le modèle" 
+        <Dialog v-model:visible="confirmDeleteVisible" modal header="Supprimer le modèle"
             class="rounded-3xl shadow-2xl border-none" :style="{ width: '400px' }"
             :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
             <div v-if="modelToDelete" class="space-y-4">
@@ -442,7 +378,7 @@ function formatDate(date) {
                     <i class="pi pi-trash text-2xl"></i>
                 </div>
                 <p class="text-sm text-slate-600 text-center leading-relaxed">
-                    Êtes-vous sûr de vouloir supprimer le modèle 
+                    Êtes-vous sûr de vouloir supprimer le modèle
                     <span class="font-black text-slate-900">{{ modelToDelete.name }}</span> ?
                 </p>
                 <p class="text-[10px] text-slate-400 text-center font-medium">
