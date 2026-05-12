@@ -82,7 +82,11 @@ const replacementOptions = computed(() =>
 )
 
 // ── Forms ─────────────────────────────────────────────────────────────────────
-const cpForm  = useForm({ employee_id: null, campaign_ids: [], start_date: null })
+const cpForm = useForm({
+    employee_ids: [],
+    campaign_ids: [],
+    start_date: new Date().toISOString().substr(0, 10),
+})
 const supForm = useForm({ employee_id: null, cp_assignment_id: null, start_date: null })
 const tcForm  = useForm({ employee_ids: [], sup_assignment_id: null, start_date: null })
 
@@ -126,7 +130,7 @@ const openDialogForEmployee = (employee) => {
     // Priorité au rôle de l'utilisateur pour l'affectation
     const code = employee.user?.role?.name || employee.position?.code
     if (code === 'CP') {
-        cpForm.reset(); cpForm.employee_id = employee.id
+        cpForm.reset(); cpForm.employee_ids = [employee.id]
         cpDialogVisible.value = true
     } else if (code === 'SUP') {
         supForm.reset(); supForm.employee_id = employee.id
@@ -460,6 +464,15 @@ const totalUnassigned = computed(() =>
                                         </div>
 
                                         <div class="space-y-3 mb-6">
+                                            <div v-if="!employee.user" class="p-2 rounded-lg bg-rose-50 border border-rose-100 mb-3">
+                                                <div class="flex items-start gap-2 text-rose-600">
+                                                    <i class="pi pi-exclamation-circle mt-0.5 text-[10px]"></i>
+                                                    <p class="text-[9px] font-black uppercase tracking-tight leading-tight">
+                                                        Compte utilisateur manquant. Impossible d'assigner cet employé à une campagne.
+                                                    </p>
+                                                </div>
+                                            </div>
+
                                             <div class="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
                                                 <i class="pi pi-envelope text-teal-500 text-[10px]"></i>
                                                 <span class="truncate">{{ employee.email }}</span>
@@ -473,7 +486,7 @@ const totalUnassigned = computed(() =>
                                         <div class="flex gap-2">
                                             <Button @click="openDialogForEmployee(employee)" label="Affecter" icon="pi pi-plus" 
                                                 class="flex-1 bg-teal-600 border-none font-black text-[10px] uppercase tracking-widest p-2.5 rounded-xl shadow-lg shadow-teal-600/10"
-                                                :disabled="employee.status !== 'actif' || code === 'RH' || (isCP && code === 'CP')" />
+                                                :disabled="!employee.user || employee.status !== 'actif' || code === 'RH' || (isCP && code === 'CP')" />
                                             <Button icon="pi pi-eye" class="p-button-secondary p-button-text p-button-sm rounded-xl" 
                                                 @click="router.visit(route('employees.show', employee.id))" />
                                         </div>
@@ -487,19 +500,21 @@ const totalUnassigned = computed(() =>
         </div>
 
         <!-- Styled Dialogs -->
-        <Dialog v-model:visible="cpDialogVisible" modal header="Assigner Chef de Plateau" class="rounded-3xl shadow-2xl border-none" :style="{ width: '450px' }"
+        <Dialog v-model:visible="cpDialogVisible" modal header="Assigner Chef(s) de Plateau" class="rounded-3xl shadow-2xl border-none" :style="{ width: '450px' }"
             :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
             <div class="space-y-6">
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Chef de Plateau</label>
-                    <Dropdown v-model="cpForm.employee_id" :options="cpOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un CP" class="w-full rounded-xl border-slate-200" filter />
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Sélectionner Chef(s) de Plateau</label>
+                    <MultiSelect v-model="cpForm.employee_ids" :options="cpOptions" optionLabel="label" optionValue="value" 
+                        placeholder="Choisir un ou plusieurs CP..." class="w-full rounded-xl border-slate-200" filter />
                 </div>
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Campagnes</label>
-                    <MultiSelect v-model="cpForm.campaign_ids" :options="campaignOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner les campagnes" class="w-full rounded-xl border-slate-200" />
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Sélectionner Campagne(s)</label>
+                    <MultiSelect v-model="cpForm.campaign_ids" :options="campaignOptions" optionLabel="label" optionValue="value" 
+                        placeholder="Choisir une ou plusieurs campagnes..." class="w-full rounded-xl border-slate-200" filter />
                 </div>
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Date de début</label>
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Date d'effet</label>
                     <Calendar v-model="cpForm.start_date" class="w-full" inputClass="p-3 rounded-xl border-slate-200" dateFormat="dd/mm/yy" />
                 </div>
             </div>
