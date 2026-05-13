@@ -47,8 +47,9 @@ const formatH = (v) =>
 
 const formatDate = (d) =>
     new Date(d).toLocaleDateString("fr-FR", {
+        weekday: 'long',
         day: "2-digit",
-        month: "2-digit",
+        month: "short",
         year: "numeric"
     });
 
@@ -70,84 +71,110 @@ const totalHoursOverall = computed(() => {
 
 <template>
     <AuthenticatedLayout>
-        <div class="p-6 space-y-6">
-            <!-- En-tête -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <div class="flex flex-wrap justify-between items-center gap-6">
-                    <div>
-                        <h1 class="text-3xl font-semibold text-slate-800">
-                            Mes Heures
-                        </h1>
-                        <p class="text-slate-500 mt-1">
-                            Consultez le récapitulatif de vos heures travaillées.
-                        </p>
+        <div class="py-6 space-y-8">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 px-6">
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Mes Heures</h1>
+                    <p class="mt-1 text-sm text-slate-500 font-medium">Consultez le récapitulatif détaillé de vos heures travaillées.</p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <FloatLabel variant="on" class="min-w-64">
+                        <Select
+                            v-model="selectedPeriod"
+                            :options="periodOptions"
+                            optionLabel="label"
+                            placeholder="Toutes les périodes"
+                            showClear
+                            class="w-full"
+                        />
+                    </FloatLabel>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6">
+                <div class="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div class="h-12 w-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl shadow-sm">
+                        <i class="pi pi-clock"></i>
                     </div>
-
-                    <div class="flex items-center gap-4">
-                        <FloatLabel variant="on" class="min-w-64">
-                            <Select
-                                v-model="selectedPeriod"
-                                :options="periodOptions"
-                                optionLabel="label"
-                                placeholder="Toutes les périodes"
-                                showClear
-                                class="w-full border-slate-200 shadow-none focus:ring-0 text-sm font-semibold text-slate-700 rounded-xl"
-                            />
-                        </FloatLabel>
-
-                        <div class="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 flex items-center gap-2">
-                            <i class="pi pi-clock"></i>
-                            <span class="font-bold text-lg">{{ formatH(totalHoursOverall) }}</span>
-                        </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total cumulé</p>
+                        <p class="text-2xl font-black text-slate-900">{{ formatH(totalHoursOverall) }}</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div class="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shadow-sm">
+                        <i class="pi pi-calendar"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Périodes</p>
+                        <p class="text-2xl font-black text-slate-900">{{ props.timesheets.length }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Liste des périodes/timesheets -->
-            <div v-if="props.timesheets.length > 0" class="space-y-6">
-                <div v-for="ts in props.timesheets" :key="ts.id" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div v-if="props.timesheets.length > 0" class="px-6 space-y-8">
+                <div v-for="ts in props.timesheets" :key="ts.id" class="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm">
                     <!-- Header de la période -->
-                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
                         <div class="flex items-center gap-4">
-                            <div class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700">
-                                {{ formatDate(ts.period_start) }} → {{ formatDate(ts.period_end) }}
+                            <div class="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                                <i class="pi pi-calendar-plus"></i>
                             </div>
-                            <Tag :value="ts.status" :severity="getStatusSeverity(ts.status)" class="text-[10px] uppercase font-bold" />
+                            <div>
+                                <h2 class="text-xl font-black text-slate-900">
+                                    Période du {{ new Date(ts.period_start).toLocaleDateString('fr-FR') }} au {{ new Date(ts.period_end).toLocaleDateString('fr-FR') }}
+                                </h2>
+                                <div class="flex items-center gap-3 mt-1">
+                                    <Tag :value="ts.status" :severity="getStatusSeverity(ts.status)" class="text-[10px] uppercase font-black px-3 py-1" />
+                                    <span v-if="ts.validator" class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                                        <i class="pi pi-check-circle text-emerald-500"></i>
+                                        Validé par {{ ts.validator.first_name }} {{ ts.validator.last_name }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <div v-if="ts.validator" class="text-xs text-slate-500 flex items-center gap-2">
-                            <i class="pi pi-check-circle text-emerald-500"></i>
-                            Validé par {{ ts.validator.first_name }} {{ ts.validator.last_name }}
+
+                        <div class="px-6 py-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Période</p>
+                            <p class="text-xl font-black text-teal-600">{{ formatH(ts.entries.reduce((acc, e) => acc + parseFloat(e.total_hours || 0), 0)) }}</p>
                         </div>
                     </div>
 
                     <!-- Tableau des entrées -->
-                    <DataTable :value="ts.entries" class="p-datatable-sm" stripedRows>
-                        <Column field="date" header="Date">
+                    <DataTable :value="ts.entries" class="rounded-2xl border border-slate-50 overflow-hidden" rowHover>
+                        <Column field="date" header="Date" style="min-width: 15rem">
                             <template #body="{ data }">
-                                {{ formatDate(data.date) }}
+                                <span class="font-black text-slate-700 capitalize">{{ formatDate(data.date) }}</span>
                             </template>
                         </Column>
-                        <Column field="check_in" header="Entrée" />
-                        <Column field="check_out" header="Sortie" />
-                        <Column field="break_duration" header="Pause">
+                        <Column header="Horaires" style="min-width: 10rem">
                             <template #body="{ data }">
-                                {{ data.break_duration }} min
+                                <span class="font-medium text-slate-600">{{ data.check_in }} - {{ data.check_out }}</span>
                             </template>
                         </Column>
-                        <Column header="Total">
+                        <Column header="Pause">
                             <template #body="{ data }">
-                                <span class="font-bold text-slate-700">{{ formatH(data.total_hours) }}</span>
+                                <span class="text-slate-500">{{ data.break_duration }} min</span>
+                            </template>
+                        </Column>
+                        <Column header="Durée Totale">
+                            <template #body="{ data }">
+                                <span class="font-black text-slate-900">{{ formatH(data.total_hours) }}</span>
                             </template>
                         </Column>
                         <Column header="H. Suppl.">
                             <template #body="{ data }">
-                                <Tag v-if="data.overtime_hours > 0" :value="`+${formatH(data.overtime_hours)}`" severity="warn" />
+                                <Tag v-if="data.overtime_hours > 0" :value="`+${formatH(data.overtime_hours)}`" severity="warn" class="text-[10px] font-black" />
                                 <span v-else class="text-slate-300">-</span>
                             </template>
                         </Column>
                         <Column field="comment" header="Commentaire">
                             <template #body="{ data }">
-                                <span class="text-xs italic text-slate-500">{{ data.comment || '-' }}</span>
+                                <span class="text-xs italic text-slate-400 font-medium">{{ data.comment || '-' }}</span>
                             </template>
                         </Column>
                     </DataTable>
@@ -155,12 +182,12 @@ const totalHoursOverall = computed(() => {
             </div>
 
             <!-- État vide -->
-            <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
-                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                    <i class="pi pi-calendar-times text-3xl"></i>
+            <div v-else class="mx-6 bg-white rounded-[40px] border border-slate-100 p-20 text-center shadow-sm">
+                <div class="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-200 shadow-inner">
+                    <i class="pi pi-calendar-times text-4xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-slate-800">Aucune heure enregistrée</h3>
-                <p class="text-slate-500">Aucune entrée n'a été trouvée pour la période sélectionnée.</p>
+                <h3 class="text-2xl font-black text-slate-900 mb-2">Aucune heure enregistrée</h3>
+                <p class="text-slate-500 font-medium">Aucune entrée n'a été trouvée pour la période sélectionnée.</p>
             </div>
         </div>
     </AuthenticatedLayout>

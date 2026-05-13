@@ -17,7 +17,6 @@ import { computed } from "vue";
 import AuthenticatedLayout from "../../Layouts/AuthenticatedLayout.vue";
 
 // les employées sélectionné
-const selectedSuperior = ref([]);
 
 const props = defineProps({
     superior: Array,
@@ -37,6 +36,24 @@ const form = useForm({
     comment: "",
 });
 
+const typeAbs = ref([
+    { name: "Formation" },
+    { name: "Congé" },
+    { name: "Inccident de travail" },
+    { name: "Autre" },
+]);
+
+// Fonction de formatage des dates
+const formatDate = (date) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleDateString("fr-FR", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
+};
+
+const selectedSuperior = ref([]);
 const submit = () => {
     // Formattage local pour éviter les décalages UTC
     const formatLocalTime = (date) => {
@@ -61,41 +78,10 @@ const submit = () => {
         employee_ids: selectedSuperior.value.map((sup) => sup.id)
     };
 
-    router.post(route("store.sup"), payload, {
-        onSuccess: () => {
-            visible.value = false;
-            form.reset();
-            selectedSuperior.value = [];
-            // Redirection vers la page indexSup après succès
-            router.visit('/timesheets/entry/sup');
-        },
-        onError: (errors) => {
-            // Redirection rollback en cas d'erreur
-            console.error('Erreurs de validation:', errors);
-            setTimeout(() => {
-                router.visit('/timesheets/entry/sup');
-            }, 2000);
-        },
-    });
+    router.post(route("store.sup"), payload);
 };
 
-const typeAbs = ref([
-    { name: "Formation" },
-    { name: "Congé" },
-    { name: "Inccident de travail" },
-    { name: "Autre" },
-]);
 
-// Fonction de formatage des dates
-const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("fr-FR", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-    });
-};
-console.log(props.superior)
 
 
 // Initialisation des filtres adaptés aux Timesheets

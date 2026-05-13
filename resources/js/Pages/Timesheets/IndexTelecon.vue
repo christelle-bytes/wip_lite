@@ -132,16 +132,16 @@ const getStatusSeverity = (status) => {
     <AuthenticatedLayout>
         <div class="py-6 space-y-8">
             <!-- Header Section -->
+            <div class="flex items-center gap-2 mb-2">
+                    <button @click="router.get(route('index.telecon'))" class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-teal-50 hover:text-teal-600 transition-all">
+                        <i class="pi pi-arrow-left text-xs"></i>
+                    </button>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retour à la saisie des heures</span>
+                </div>
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 class="text-3xl font-black text-slate-900 tracking-tight">Gestion des Temps (TC)</h1>
                     <p class="mt-1 text-sm text-slate-500 font-medium">Validation des feuilles d'heures téléconseillers basées sur le superviseur.</p>
-                </div>
-                <div class="flex flex-wrap gap-3">
-                    <Button @click="$inertia.history.back()"
-                        class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
-                        <i class="pi pi-arrow-left"></i> Retour
-                    </Button>
                 </div>
             </div>
 
@@ -182,6 +182,7 @@ const getStatusSeverity = (status) => {
                 </div>
 
                 <div class="overflow-x-auto rounded-3xl border border-slate-50">
+
                     <DataTable v-if="filters" v-model:filters="filters" :value="props.timesheets" paginator :rows="10" 
                         dataKey="id" :globalFilterFields="['employee.first_name', 'employee.last_name', 'status']"
                         class="p-datatable-modern border-none" :pt="{ header: { class: 'hidden' } }">

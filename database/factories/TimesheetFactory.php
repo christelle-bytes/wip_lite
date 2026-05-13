@@ -26,14 +26,14 @@ class TimesheetFactory extends Factory
 
         return [
             'employee_id'  => Employee::whereHas('position', function ($query) {
-                $query->whereIn('code', ['SUP']);
-            })->inRandomOrder()->first()?->id,
+                $query->whereIn('code', ['RH', 'CP']);
+            }),
             'period_start' => $startDate,
             'period_end'   => $endDate,
             'status'       => $status,
             'validated_by' => $status === 'validated' ? Employee::whereHas('position', function ($query) {
                 $query->whereIn('code', ['RH', 'CP']);
-            })->inRandomOrder()->first()?->id : null,
+            }) : null,
         ];
     }
 }

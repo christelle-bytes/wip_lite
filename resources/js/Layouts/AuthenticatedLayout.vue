@@ -172,20 +172,20 @@ watch(
                     </Link>
 
                     <Link :href="route('index.sup')"
-                        :class="[route().current('index.sup') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        :class="[route().current('index.sup') || route().current('timesheet.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
                         <i class="pi pi-clock mr-3 text-lg"
-                            :class="[route().current('index.sup') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                            :class="[route().current('index.sup') || route().current('timesheet.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Heures
                     </Link>
 
-                    <Link :href="route('timesheet.index')"
+                    <!-- <Link :href="route('timesheet.index')"
                         :class="[route().current('timesheet.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg"
                             :class="[route().current('timesheet.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Feuille d'heures
-                    </Link>
+                    </Link> -->
 
                     <Link :href="route('admin.logs')"
                         :class="[route().current('admin.logs') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
@@ -223,19 +223,17 @@ watch(
                     </Link>
 
                     <Link :href="route('index.sup')"
-                        :class="[route().current('index.sup') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        :class="[route().current('index.sup') || route().current('timesheet.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
                         <i class="pi pi-clock mr-3 text-lg"
-                            :class="[route().current('index.sup') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
-                        Heures
-                    </Link>
-
-                    <Link :href="route('timesheet.index')"
-                        :class="[route().current('timesheet.*') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
-                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
-                        <i class="pi pi-file-edit mr-3 text-lg"
-                            :class="[route().current('timesheet.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
-                        Feuille d'heures
+                            :class="[route().current('index.sup') || route().current('timesheet.*') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        <span class="flex-1">Heures</span>
+                        <!-- Bouton Feuilles d'heures imbriqué -->
+                        <!-- <Link :href="route('timesheet.index')"
+                            class="ml-2 p-1.5 rounded-md hover:bg-slate-700/50 text-slate-500 hover:text-teal-400 transition-colors tooltip"
+                            title="Feuilles d'heures">
+                            <i class="pi pi-file-edit text-sm"></i>
+                        </Link> -->
                     </Link>
                 </template>
 
@@ -266,19 +264,26 @@ watch(
                     </Link>
 
                     <Link :href="route('index.telecon')"
-                        :class="[route().current('index.telecon') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        :class="[route().current('index.telecon') || route().current('timesheet.telecon') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
                         <i class="pi pi-clock mr-3 text-lg"
-                            :class="[route().current('index.telecon') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                            :class="[route().current('index.telecon') || route().current('timesheet.telecon') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Heures
                     </Link>
 
-                    <Link :href="route('timesheet.telecon')"
+                    <!-- <Link :href="route('timesheet.telecon')"
                         :class="[route().current('timesheet.telecon') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
                         class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
                         <i class="pi pi-file-edit mr-3 text-lg"
                             :class="[route().current('timesheet.telecon') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
                         Feuille d'heures
+                    </Link> -->
+                    <Link :href="route('index.times')"
+                        :class="[route().current('index.times') ? 'bg-teal-600/10 text-teal-400 border-l-4 border-teal-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100']"
+                        class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="pi pi-file-edit mr-3 text-lg"
+                            :class="[route().current('index.times') ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-300']"></i>
+                        Mes Heures
                     </Link>
                 </template>
 

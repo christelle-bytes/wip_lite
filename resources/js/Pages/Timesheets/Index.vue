@@ -130,16 +130,18 @@ const validation = (id) => {
     <AuthenticatedLayout>
         <div class="py-6 space-y-8">
             <!-- Header Section -->
+             <div class="flex items-center gap-2 mb-2">
+                    <button @click="router.get(route('index.sup'))" class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-teal-50 hover:text-teal-600 transition-all">
+                        <i class="pi pi-arrow-left text-xs"></i>
+                    </button>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retour à la saisie des heures</span>
+                </div>
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 class="text-3xl font-black text-slate-900 tracking-tight">Feuilles d'Heures</h1>
                     <p class="mt-1 text-sm text-slate-500 font-medium">Suivez la saisie et validez les temps de travail de vos équipes.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
-                    <Button @click="$inertia.history.back()"
-                        class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
-                        <i class="pi pi-arrow-left"></i> Retour
-                    </Button>
                     <Button @click="visible = true"
                         class="bg-teal-600 border-none text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg shadow-teal-600/20 transition-all flex items-center gap-2">
                         <i class="pi pi-plus"></i> Nouvelle feuille

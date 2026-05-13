@@ -56,7 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/timesheetEntry_supStore', [TimesheetEntryController::class, 'storeSup'])->middleware('timesheetEntry.access:Admin,CP,SUP')->name('store.sup');
 
     // la vue du teleconseiller
-    Route::get('/myTimesheet', [TimesheetEntryController::class, 'myTimesheet'])->middleware('timesheetEntry.access:TC')->name('index.times');
+    Route::get('/myTimesheet', [TimesheetEntryController::class, 'myTimesheet'])->middleware('timesheetEntry.access:SUP,TC')->name('index.times');
 });
 
 Route::middleware('auth')->group(function () {

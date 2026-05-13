@@ -32,13 +32,7 @@ class TimesheetEntryController extends Controller
         $targetMonth = $request->input('month', Carbon::now()->format('Y-m'));
 
         $query = Employee::query()
-            ->with(['position', 'timesheet' => function ($q) use ($startDate, $endDate) {
-                if ($startDate && $endDate) {
-                    $q->where('period_start', $startDate)
-                      ->where('period_end', $endDate);
-                }
-                $q->with('entries');
-            }])
+            ->with(['position', 'timesheet.entries'])
             ->whereHas('position', fn($q) => $q->where('code', 'SUP'))
             ->where('status', 'actif');
 
@@ -52,12 +46,27 @@ class TimesheetEntryController extends Controller
 
         $supervisors = $query->get();
 
-        // Filtrer les entrées pour ne garder que celles du superviseur lui-même
-        // (car sa timesheet contient aussi les entrées de ses TCs)
-        $supervisors->each(function ($sup) {
-            $sup->timesheet->each(function ($ts) use ($sup) {
-                $filteredEntries = $ts->entries->where('employee_id', $sup->id)->values();
-                $ts->setRelation('entries', $filteredEntries);
+        // Optimisation du payload : on garde toutes les périodes (pour le filtre local JS)
+        // mais on ne garde les entrées que pour la période actuellement sélectionnée
+        $supervisors->each(function ($sup) use ($startDate, $endDate) {
+            $sup->timesheet->each(function ($ts) use ($sup, $startDate, $endDate) {
+                // On ne garde que les entrées qui concernent ce superviseur
+                $allEntriesForSup = $ts->entries->where('employee_id', $sup->id);
+                
+                // Si une période spécifique est demandée pour l'affichage, 
+                // on vide les entrées des autres périodes pour alléger le JSON
+                if ($startDate && $endDate) {
+                    $tsStart = $ts->period_start->format('Y-m-d');
+                    $tsEnd = $ts->period_end->format('Y-m-d');
+                    
+                    if ($tsStart !== $startDate || $tsEnd !== $endDate) {
+                        $ts->setRelation('entries', collect());
+                    } else {
+                        $ts->setRelation('entries', $allEntriesForSup->values());
+                    }
+                } else {
+                    $ts->setRelation('entries', $allEntriesForSup->values());
+                }
             });
         });
  
@@ -252,85 +261,7 @@ if ($user->hasRole('CP')) {
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
- 
-        $validated = $request->validate([
-            'employee_ids'    => 'required|array',
-            'employee_ids.*'  => 'exists:employees,id',
-            'date'           => 'required|date',
-            'check_in'       => 'nullable',
-            'check_out'      => 'nullable',
-            'break_duration' => 'nullable|integer',
-            'absence_type'   => 'nullable|string',
-            'comment'        => 'nullable|string',
-        ]);
- 
-        $entries = [];
-        foreach ($validated['employee_ids'] as $id) {
-            // 1. Récupérer la timesheet active pour cet employé à cette date
-            $timesheet = Timesheet::where('employee_id', $id)
-                ->where('period_start', '<=', $validated['date'])
-                ->where('period_end', '>=', $validated['date'])
-                ->first();
- 
-            if (!$timesheet) continue;
- 
-            // Sécurité : Ne pas modifier si validé
-            if ($timesheet->status === 'validated') {
-                return redirect()->back()->with('error', "La feuille de temps pour cette période est déjà validée.");
-            }
- 
-            $startTime = Carbon::parse($validated['check_in']);
-            $endTime = Carbon::parse($validated['check_out']);
- 
-            // 2. Vérifier que l'heure d'entrée est avant l'heure de sortie
-            if ($startTime->greaterThanOrEqualTo($endTime)) {
-                return redirect()->back()->with('error', "L'heure d'arrivée doit être antérieure à l'heure de départ.");
-            }
- 
-            // Calcul de la durée en minutes, moins la pause
-            $durationInMinutes = $startTime->diffInMinutes($endTime, false);
-            $breakMinutes = $validated['break_duration'] ?? 0;
- 
-            // Conversion en heures décimales (ex: 8.5)
-            $totalHours = max(0, ($durationInMinutes - $breakMinutes) / 60);
- 
-            // 3. Récupérer le planning de l'employé
-            $planningAssignment = PlanningAssignment::where('employee_id', $id)->first();
- 
-            $plannedHours = 0;
-            if ($planningAssignment && $planningAssignment->planningModel) {
-                $dayColumn = strtolower(Carbon::parse($validated['date'])->format('l')) . '_hours';
-                $plannedHours = $planningAssignment->planningModel->$dayColumn ?? 0;
-            }
- 
-            // 4. Calcul de l'overtime
-            $diff = $totalHours - $plannedHours;
-            $overtime = $diff > 0 ? $diff : 0;
- 
-            // Logique Upsert
-            TimesheetEntry::updateOrCreate(
-                [
-                    'employee_id' => $id,
-                    'date'        => Carbon::parse($validated['date'])->format('Y-m-d'),
-                ],
-                [
-                    'timesheet_id'   => $timesheet->id,
-                    'check_in'       => $startTime->format('H:i:s'),
-                    'check_out'      => $endTime->format('H:i:s'),
-                    'break_duration' => $breakMinutes,
-                    'total_hours'    => $totalHours,
-                    'planned_hours'  => $plannedHours,
-                    'overtime_hours' => $overtime,
-                    'comment'        => $validated['comment'] ?? null,
-                    'updated_at'     => now(),
-                ]
-            );
-        }
- 
-        return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour.');
-    }
+   
  
     // saisie des heures d'un supervisor
     public function storeSup(Request $request)
@@ -388,6 +319,15 @@ if ($user->hasRole('CP')) {
             // 4. Calcul de l'overtime
             $diff = $totalHours - $plannedHours;
             $overtime = $diff > 0 ? $diff : 0;
+
+            // --- CONTRÔLE DES DOUBLONS ---
+            $existingEntry = TimesheetEntry::where('employee_id', $id)
+                ->where('date', Carbon::parse($validated['date'])->format('Y-m-d'))
+                ->exists();
+
+            if ($existingEntry) {
+                return redirect()->back()->with('error', "Une entrée existe déjà pour le collaborateur le " . Carbon::parse($validated['date'])->format('d/m/Y'));
+            }
  
             // Logique Upsert
             TimesheetEntry::updateOrCreate(
@@ -407,9 +347,9 @@ if ($user->hasRole('CP')) {
                     'updated_at'     => now(),
                 ]
             );
+            return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour.');
         }
  
-        return redirect()->back()->with('success', 'Entrées enregistrées/mises à jour.');
     }
  
     // saisie des heures d'un teleconseiller
@@ -464,6 +404,18 @@ if ($user->hasRole('CP')) {
         $totalHours = max(0, ($durationInMinutes - $breakMinutes) / 60);
  
         foreach ($authorized_tc_ids as $tcId) {
+            // --- CONTRÔLE DES DOUBLONS ---
+            $existingEntry = TimesheetEntry::where('employee_id', $tcId)
+                ->where('date', Carbon::parse($validated['date'])->format('Y-m-d'))
+                ->exists();
+
+                // dd($managerEmployeeId);
+                // dd($existingEntry);
+
+            if ($existingEntry) {
+                return redirect()->back()->with('error', "Une entrée existe déjà pour un des téléconseillers à la date du " . Carbon::parse($validated['date'])->format('d/m/Y'));
+            }
+
             // Trouver la timesheet du TC pour cette date
             $timesheet = Timesheet::where('employee_id', $managerEmployeeId)
                 ->where('period_start', '<=', $validated['date'])
