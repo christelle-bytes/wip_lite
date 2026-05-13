@@ -1,12 +1,71 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Dropdown from 'primevue/dropdown';
+import { useToast } from 'primevue/usetoast';
+import Toast from 'primevue/toast';
 
 const props = defineProps({
     employee: Object,
     from: String
 });
+
+const toast = useToast();
+const loading = ref(false);
+const deactivateDialog = ref(false);
+const replacementId = ref(null);
+const availableReplacements = ref([]);
+
+const confirmDeactivate = async () => {
+  replacementId.value = null;
+  availableReplacements.value = [];
+  
+  try {
+    const response = await fetch(`/employees/${props.employee.id}/replacements`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (response.ok) {
+      availableReplacements.value = await response.json();
+    }
+  } catch (err) {
+    console.error('Erreur chargement remplaçants:', err);
+  }
+  
+  deactivateDialog.value = true;
+};
+
+const deactivateEmployee = async () => {
+  loading.value = true;
+  try {
+    const response = await fetch(`/employees/${props.employee.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({
+        replacement_id: replacementId.value
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Erreur de désactivation');
+    }
+    
+    toast.add({ severity: 'success', summary: 'Désactivé', detail: 'Employé désactivé', life: 3000 });
+    deactivateDialog.value = false;
+    
+    // Rediriger ou rafraîchir
+    router.reload();
+  } catch (err) {
+    toast.add({ severity: 'error', summary: 'Erreur', detail: err.message || 'Impossible de désactiver', life: 3000 });
+  } finally {
+    loading.value = false;
+  }
+};
 
 const backRoute = computed(() => {
     return props.from === 'assignments' ? route('assignments.index') : route('employees.gestion');
@@ -63,11 +122,49 @@ const getStatusClass = (status) => {
                     {{ backLabel }}
                 </Link>
                 <div class="flex gap-3">
+                    <button v-if="employee.status === 'actif'" @click="confirmDeactivate" class="px-5 py-2.5 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-100 transition-all shadow-sm">
+                        <i class="pi pi-user-minus mr-2"></i> Désactiver l'employé
+                    </button>
                     <button @click="$inertia.visit(route('employees.gestion'))" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm">
                         <i class="pi pi-pencil mr-2"></i> Modifier le profil
                     </button>
                 </div>
             </div>
+
+            <Toast />
+
+            <!-- Deactivate Dialog -->
+            <Dialog v-model:visible="deactivateDialog" header="Confirmer la Désactivation" modal class="rounded-3xl shadow-2xl border-none" :style="{ width: '400px' }"
+                :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
+                <div class="space-y-6 text-center">
+                    <div class="h-16 w-16 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mx-auto">
+                        <i class="pi pi-user-minus text-2xl"></i>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Libérer <span class="font-black text-slate-900">"{{ employee.first_name }} {{ employee.last_name }}"</span> ?
+                    </p>
+
+                    <div v-if="availableReplacements.length > 0" class="space-y-4 pt-4 border-t border-slate-100 text-left">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Remplacer par (Optionnel)</label>
+                            <Dropdown v-model="replacementId" :options="availableReplacements" 
+                                :optionLabel="(e) => `${e.first_name} ${e.last_name} (${e.matricule})`" 
+                                optionValue="id" 
+                                placeholder="Choisir un remplaçant..." 
+                                class="w-full rounded-xl border-slate-200" filter showClear />
+                            <p class="text-[10px] text-slate-400 italic leading-tight">
+                                Si sélectionné, tous les subordonnés seront automatiquement transférés au nouveau responsable.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <template #footer>
+                    <div class="flex gap-3 w-full">
+                        <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-black text-xs uppercase" @click="deactivateDialog = false" />
+                        <Button :label="replacementId ? 'Remplacer' : 'Désactiver'" class="flex-1 bg-rose-600 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg shadow-rose-600/20" @click="deactivateEmployee" :loading="loading" />
+                    </div>
+                </template>
+            </Dialog>
 
             <!-- Header Profile Card -->
             <div class="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm relative overflow-hidden">
