@@ -28,15 +28,12 @@ class UserController extends Controller
     public function create(): Response
     {
         $roles = Role::pluck('name', 'id');
-        
+
         // Récupérer les employés qui n'ont pas encore de compte utilisateur avec leur position
         $employees = Employee::with('position')
-            ->where(function($query) {
-                $query->whereNull('user_id')
-                      ->orWhereDoesntHave('user');
-            })
-            ->where('status', 'actif')
-            ->get();
+        ->whereDoesntHave('user')   // ✅ Condition simple et fiable
+        ->where('status', 'actif')
+        ->get();
 
         return Inertia::render('Users/Create', [
             'roles' => $roles,
@@ -49,14 +46,14 @@ class UserController extends Controller
         $data = $request->validated();
         $role = Role::findOrFail($data['role_id']);
         $roleName = strtoupper($role->name);
-        
+
         $employeeIds = (array) $data['employee_ids'];
         $count = 0;
         $mismatches = [];
 
         foreach ($employeeIds as $employeeId) {
             $employee = Employee::with('position')->findOrFail($employeeId);
-            
+
             // Vérification de sécurité : l'employé ne doit pas déjà avoir de compte
             if ($employee->user_id || User::where('email', $employee->email)->exists()) {
                 continue;
@@ -84,8 +81,8 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', "Aucun compte n'a pu être créé.");
         }
 
-        $message = $count === 1 
-            ? "1 compte utilisateur a été créé avec succès." 
+        $message = $count === 1
+            ? "1 compte utilisateur a été créé avec succès."
             : "{$count} comptes utilisateurs ont été créés avec succès.";
 
         if (!empty($mismatches)) {
