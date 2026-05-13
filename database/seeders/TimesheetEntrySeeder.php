@@ -13,6 +13,21 @@ class TimesheetEntrySeeder extends Seeder
      */
     public function run(): void
     {
-        TimesheetEntry::factory(12)->create();
+        $timesheets = \App\Models\Timesheet::all();
+
+        if ($timesheets->isEmpty()) {
+            return;
+        }
+
+        foreach ($timesheets as $timesheet) {
+            // Créer 5 entrées pour chaque feuille de temps (ex: du lundi au vendredi)
+            for ($i = 0; $i < 5; $i++) {
+                TimesheetEntry::factory()->create([
+                    'timesheet_id' => $timesheet->id,
+                    'employee_id'  => $timesheet->employee_id,
+                    'date'         => $timesheet->period_start->copy()->addDays($i),
+                ]);
+            }
+        }
     }
 }

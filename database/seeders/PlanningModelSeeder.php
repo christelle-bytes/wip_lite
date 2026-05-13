@@ -15,17 +15,16 @@ class PlanningModelSeeder extends Seeder
      */
     public function run(): void
     {
-        if (Employee::count() === 0) {
-            // Ici, on suppose que votre EmployeeFactory gère déjà la création d'une position
-            Employee::factory(10)->create();
+        // On récupère les IDs de tous les employés existants
+        $employees = Employee::all();
+
+        if ($employees->isEmpty()) {
+            $employees = Employee::factory(10)->create();
         }
 
-        // 2. On récupère les IDs de tous les employés existants
-        $employeeIds = Employee::pluck('id');
-
-        // 3. On crée les 15 plannings en forçant l'utilisation d'un ID existant
+        // On crée les 15 plannings en utilisant des employés existants pour 'created_by'
         PlanningModel::factory(15)->create([
-            'created_by' => $employeeIds->random(),
+            'created_by' => $employees->random()->id,
         ]);
     }
 }
