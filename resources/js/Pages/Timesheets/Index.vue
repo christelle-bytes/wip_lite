@@ -98,7 +98,6 @@ const initFilters = () => {
 };
 
 onMounted(() => {
-    console.log(props)
     initFilters();
 });
 

@@ -288,7 +288,7 @@ if ($user->hasRole('CP')) {
         }
 
         return redirect()->back()
-            ->with('error', implode('<br>', $message));
+            ->with('info', implode('<br>', $message));
     }
 
 
