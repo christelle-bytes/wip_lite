@@ -31,7 +31,12 @@ class PlanningModelFactory extends Factory
             'saturday_hours'=>0,
             'sunday_hours'=>0,
             'total_hours'=>$total,
-            'created_by' => Employee::inRandomOrder()->first()?->id ?? Employee::factory(),
+            'created_by' => function () {
+            return Employee::whereHas('position', function ($query) {
+                $query->whereIn('code', ['RH', 'CP']);
+            })->inRandomOrder()->first()?->id 
+            ?? Employee::factory(); // Fallback si aucun n'existe
+        },
         ];
     }
 }

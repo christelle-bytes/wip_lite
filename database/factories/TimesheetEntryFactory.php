@@ -24,7 +24,7 @@ class TimesheetEntryFactory extends Factory
     $checkOut = (clone $checkIn)->modify('+' . fake()->numberBetween(4, 10) . ' hours');
 
     return [
-        'timesheet_id'   => Timesheet::factory(),
+        'timesheet_id'   => Timesheet::inRandomOrder()->first()->id,
         'employee_id'    => \App\Models\Employee::factory(), // Utiliser une factory séparée pour l'employé
         'date'           => fake()->date(),
         'check_in'       => $checkIn,
