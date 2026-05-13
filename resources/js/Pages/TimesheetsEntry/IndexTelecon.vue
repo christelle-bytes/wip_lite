@@ -166,6 +166,11 @@ const submitEdit = () => {
                     </div>
 
                     <div class="flex items-center gap-4">
+                        <Button @click="$inertia.history.back()"
+                            class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
+                            <i class="pi pi-arrow-left"></i> Retour
+                        </Button>
+                        
                         <FloatLabel variant="on" class="min-w-64">
                             <Select
                                 v-model="selectedPeriod"

@@ -66,7 +66,16 @@ const submit = () => {
             visible.value = false;
             form.reset();
             selectedSuperior.value = [];
-        }
+            // Redirection vers la page indexSup après succès
+            router.visit('/timesheets/entry/sup');
+        },
+        onError: (errors) => {
+            // Redirection rollback en cas d'erreur
+            console.error('Erreurs de validation:', errors);
+            setTimeout(() => {
+                router.visit('/timesheets/entry/sup');
+            }, 2000);
+        },
     });
 };
 
@@ -128,6 +137,10 @@ const createEntry = () => {
                     <p class="mt-1 text-sm text-slate-500 font-medium">Créez des entrées groupées pour vos collaborateurs.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
+                    <Button @click="$inertia.history.back()"
+                        class="bg-slate-100 border-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
+                        <i class="pi pi-arrow-left"></i> Retour
+                    </Button>
                     <Button
                         label="Nouvelle saisie"
                         icon="pi pi-plus"

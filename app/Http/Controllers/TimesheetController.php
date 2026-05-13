@@ -211,16 +211,25 @@ if ($user->hasRole('CP')) {
         $data = collect($validated['employee_id'])->map(function ($id) use ($periodStart, $periodEnd, $validated) {
             $employee = Employee::find($id);
 
-            // 1. Vérifier s'il y a déjà une feuille en "draft" (brouillon) pour cet employé
-            $hasDraft = Timesheet::where('employee_id', $id)
-                ->where('status', 'draft')
-                ->exists();
+            // 0. Récupérer et vérifier le planning de l'employé
+            $planningAssignment = PlanningAssignment::where('employee_id', $id)
+                ->where('status', 'validé')
+                ->where('start_date', '<=', $periodStart)
+                ->where(function($query) use ($periodEnd) {
+                    $query->where('end_date', '>=', $periodEnd)
+                          ->orWhereNull('end_date');
+                })
+                ->first();
 
-            if ($hasDraft) {
+            // Vérifier si l'employé a un planning valide
+            if (!$planningAssignment) {
                 return [
-                    'error' => "L'employé {$employee->first_name} {$employee->last_name} a déjà une feuille de temps en cours (Brouillon). Veuillez la soumettre avant d'en créer une nouvelle."
+                    'error' => "L'employé {$employee->first_name} {$employee->last_name} n'a pas de planning valide pour cette période."
                 ];
             }
+
+            // 
+
 
             // 2. Vérifier si une feuille existe déjà pour cet employé sur cette période (Chevauchement)
             $existing = Timesheet::where('employee_id', $id)
@@ -278,8 +287,8 @@ if ($user->hasRole('CP')) {
             }
         }
 
-        return redirect()->route('timesheet.index')
-            ->with('message', implode('<br>', $message));
+        return redirect()->back()
+            ->with('error', implode('<br>', $message));
     }
 
 
