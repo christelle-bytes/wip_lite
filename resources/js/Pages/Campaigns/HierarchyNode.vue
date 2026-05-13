@@ -19,12 +19,6 @@
                     <span class="text-[10px] text-slate-400 font-medium">ID: #{{ node.employee_id }}</span>
                 </div>
             </div>
-            
-            <div v-if="$page.props.auth.user.role.name.toUpperCase() === 'ADMIN'" class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                 <Link :href="route('assignments.release', node.id)" method="patch" as="button" class="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all" title="Libérer l'affectation">
-                    <i class="pi pi-trash text-xs"></i>
-                </Link>
-            </div>
         </div>
 
         <div v-if="node.tree_children && node.tree_children.length" class="space-y-4 mt-4">
