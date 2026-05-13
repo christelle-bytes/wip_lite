@@ -24,8 +24,10 @@ class DatabaseSeeder extends Seeder
             AssignmentSeeder::class,
             PlanningModelSeeder::class,
             PlanningAssignmentSeeder::class,
+            PlanningModelStatusSeeder::class,
             TimesheetSeeder::class,
             TimesheetEntrySeeder::class,
+            NotificationTestSeeder::class,
         ]);
     }
 }

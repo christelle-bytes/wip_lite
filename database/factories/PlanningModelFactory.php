@@ -31,7 +31,7 @@ class PlanningModelFactory extends Factory
             'saturday_hours'=>0,
             'sunday_hours'=>0,
             'total_hours'=>$total,
-            'created_by' => Employee::inRandomOrder()->first()?->id ?? Employee::factory(),
+            'created_by' => Employee::has('position')->inRandomOrder()->first()?->id ?? Employee::factory(),
         ];
     }
 }

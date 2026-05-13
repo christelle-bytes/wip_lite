@@ -26,9 +26,8 @@ class AssignmentController extends Controller
             // Toutes les campagnes actives (peuvent avoir plusieurs CPs)
             $activeCampaigns = Campaign::where('status', 'active')->get();
 
-            // Fetch unassigned CPs: either by position OR by user role
+            // Fetch CPs: CP can be on multiple campaigns, so we don't check for existing active assignments
             $unassignedCPs = Employee::where('status', 'actif')
-                ->whereDoesntHave('assignments', fn($q) => $q->where('status', 'actif'))
                 ->where(function($query) use ($cpPosition) {
                     $query->where('position_id', $cpPosition->id)
                           ->orWhereHas('user.role', fn($q) => $q->where('name', 'CP'));
@@ -335,7 +334,7 @@ class AssignmentController extends Controller
         return back()->with('success', "$createdCount affectation(s) de Chef de Plateau effectuée(s) avec succès.");
     }
 
-    // ─── Affecter un SUP à un CP/campagne (Admin ou CP) ───────────────────────
+    // ─── Affecter un ou plusieurs SUP à un CP/campagne (Admin ou CP) ───────────────────────
     public function assignSUP(Request $request)
     {
         $user     = Auth::user();
@@ -346,7 +345,8 @@ class AssignmentController extends Controller
         }
 
         $data = $request->validate([
-            'employee_id'      => 'required|exists:employees,id',
+            'employee_ids'     => 'required|array|min:1',
+            'employee_ids.*'   => 'exists:employees,id',
             'cp_assignment_id' => 'required|exists:assignments,id',
             'start_date'       => 'required|date',
         ]);
@@ -363,25 +363,30 @@ class AssignmentController extends Controller
             }
         }
 
-        $alreadyAssigned = Assignment::where('employee_id', $data['employee_id'])
-            ->where('status', 'actif')
-            ->exists();
-        if ($alreadyAssigned) {
-            return back()->withErrors([
-                'employee_id' => 'Ce Superviseur est déjà affecté à une campagne.'
-            ]);
+        $createdCount = 0;
+        foreach ($data['employee_ids'] as $employeeId) {
+            $alreadyAssigned = Assignment::where('employee_id', $employeeId)
+                ->where('status', 'actif')
+                ->exists();
+                
+            if (!$alreadyAssigned) {
+                Assignment::create([
+                    'employee_id' => $employeeId,
+                    'campaign_id' => $cpAssignment->campaign_id,
+                    'position_id' => $supPosition->id,
+                    'manager_id'  => $cpAssignment->employee_id,
+                    'status'      => 'actif',
+                    'start_date'  => $data['start_date'],
+                ]);
+                $createdCount++;
+            }
         }
 
-        Assignment::create([
-            'employee_id' => $data['employee_id'],
-            'campaign_id' => $cpAssignment->campaign_id,
-            'position_id' => $supPosition->id,
-            'manager_id'  => $cpAssignment->employee_id,
-            'status'      => 'actif',
-            'start_date'  => $data['start_date'],
-        ]);
+        if ($createdCount === 0) {
+            return back()->withErrors(['employee_ids' => 'Tous les superviseurs sélectionnés sont déjà affectés.']);
+        }
 
-        return back()->with('success', 'Superviseur affecté avec succès.');
+        return back()->with('success', "$createdCount Superviseur(s) affecté(s) avec succès.");
     }
 
     // ─── Affecter un ou plusieurs TC à un SUP (Admin ou CP) ───────────────────

@@ -13,6 +13,24 @@ class PlanningAssignmentSeeder extends Seeder
      */
     public function run(): void
     {
-        PlanningAssignment::factory(15)->create();
+        $planningModels = \App\Models\PlanningModel::all();
+        $employees = \App\Models\Employee::all();
+
+        if ($planningModels->isEmpty() || $employees->isEmpty()) {
+            return;
+        }
+
+        foreach ($planningModels as $model) {
+            // Assigner chaque modèle à 1-3 employés aléatoires
+            $assignedEmployees = $employees->random(rand(1, 3));
+            
+            foreach ($assignedEmployees as $employee) {
+                PlanningAssignment::factory()->create([
+                    'planning_model_id' => $model->id,
+                    'employee_id' => $employee->id,
+                    'validated_by' => rand(0, 1) ? $employees->random()->id : null,
+                ]);
+            }
+        }
     }
 }

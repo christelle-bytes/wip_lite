@@ -21,10 +21,18 @@ class PositionFactory extends Factory
      */
     public function definition(): array
     {
-        return [
+        $positions = [
+            ['name' => 'Ressource Humaine', 'code' => 'RH'],
+            ['name' => 'Chef Plateau',       'code' => 'CP'],
+            ['name' => 'Superviseur',        'code' => 'SUP'],
+            ['name' => 'Teleconseiller',     'code' => 'TC'],
+        ];
 
-            'name' => fake()->randomElement(['Ressource Humaine','Chef Plateau', 'Superviseur', 'Teleconseiller']),
-            'code' => fake()->randomElement(['RH','CP', 'SUP', 'TC']),
+        $pos = fake()->randomElement($positions);
+
+        return [
+            'name' => $pos['name'],
+            'code' => $pos['code'],
             'description' => fake()->sentence(10),
         ];
     }

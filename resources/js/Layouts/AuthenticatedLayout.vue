@@ -59,7 +59,22 @@ onMounted(() => {
     }
 });
 
+// Rafraîchir les notifications lors de la navigation
+watch(() => page.url, () => {
+    if (user.value) {
+        fetchNotifications();
+    }
+});
+
 const user = computed(() => page.props.auth.user);
+
+// Sécurité : redirection immédiate si la session est perdue
+watch(user, (newUser) => {
+    if (!newUser) {
+        window.location.href = route('login');
+    }
+}, { immediate: true });
+
 const roleName = computed(() => user.value?.role?.name?.toUpperCase() || '');
 const flash = computed(() => page.props.flash);
 

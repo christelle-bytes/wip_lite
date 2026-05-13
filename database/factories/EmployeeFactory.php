@@ -35,8 +35,8 @@ class EmployeeFactory extends Factory
             'email'       => $this->faker->unique()->safeEmail(),
             'address'     => $this->faker->address(),
  
-            // Lie à un poste (Position) existant ou en crée un
-            'position_id' => Position::factory(),
+            // Lie à un poste (Position) existant ou en crée un via PositionFactory
+            'position_id' => Position::inRandomOrder()->first()?->id ?? Position::factory(),
  
             'salary_base' => $this->faker->randomFloat(2, 1200, 4500),
  

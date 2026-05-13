@@ -10,12 +10,7 @@ const toast = useToast();
 const flash = computed(() => page.props.flash);
 
 onMounted(() => {
-    // Empêcher l'utilisation du cache du navigateur (bfcache) pour la sécurité
-    window.addEventListener('pageshow', (event) => {
-        if (event.persisted) {
-            window.location.reload();
-        }
-    });
+    //
 });
 
 watch(
