@@ -9,9 +9,6 @@ class PositionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Supprime toutes les positions existantes
-        Position::query()->delete();
-
         $positions = [
             ['name' => 'Ressource Humaine', 'code' => 'RH', 'description' => 'L\'Administrateur du système et chargé des affectations, la création de compte...'],
             ['name' => 'Chef Plateau',       'code' => 'CP', 'description' => 'Dirige les campagnes et controlle les anctions des superviseurs et des tc...'],
@@ -20,9 +17,9 @@ class PositionSeeder extends Seeder
         ];
 
         foreach ($positions as $position) {
-            Position::create($position);
+            Position::firstOrCreate(['code' => $position['code']], $position);
         }
 
-        $this->command->info('✅ 4 positions ont été créées avec succès.');
+        $this->command->info('✅ Les positions ont été synchronisées.');
     }
 }

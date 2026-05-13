@@ -20,9 +20,11 @@
                 <MultiSelect 
                   id="employee_ids"
                   v-model="form.employee_ids" 
-                  :options="employees" 
+                  :options="groupedEmployees" 
                   optionLabel="full_name"
                   optionValue="id"
+                  optionGroupLabel="label"
+                  optionGroupChildren="items"
                   filter 
                   placeholder="Sélectionner un ou plusieurs employés..." 
                   :maxSelectedLabels="3" 
@@ -30,17 +32,35 @@
                   required
                 >
                   <template #option="slotProps">
-                    <div class="flex flex-col">
-                      <span class="font-bold">{{ slotProps.option.first_name }} {{ slotProps.option.last_name }}</span>
-                      <span class="text-[10px] text-slate-500 uppercase tracking-tighter">#{{ slotProps.option.matricule }} - {{ slotProps.option.email }}</span>
+                    <div class="flex items-center justify-between w-full">
+                      <div class="flex flex-col">
+                        <span class="font-bold text-slate-900">{{ slotProps.option.first_name }} {{ slotProps.option.last_name }}</span>
+                        <span class="text-[10px] text-slate-500 uppercase tracking-tighter">#{{ slotProps.option.matricule }} - {{ slotProps.option.email }}</span>
+                      </div>
+                      <span :class="getPositionClass(slotProps.option.position?.code)" 
+                        class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border">
+                        {{ slotProps.option.position?.code || 'N/A' }}
+                      </span>
                     </div>
                   </template>
                 </MultiSelect>
                 <InputError :message="form.errors.employee_ids" class="mt-2" />
-                <p v-if="form.employee_ids.length > 0" class="mt-2 text-[11px] text-teal-600 font-bold">
-                  <i class="pi pi-users mr-1"></i>
-                  {{ form.employee_ids.length }} employé(s) sélectionné(s)
-                </p>
+                
+                <div v-if="form.employee_ids.length > 0" class="mt-3 space-y-2">
+                  <p class="text-[11px] text-teal-600 font-bold flex items-center gap-1">
+                    <i class="pi pi-users"></i>
+                    {{ form.employee_ids.length }} employé(s) sélectionné(s)
+                  </p>
+                  
+                  <!-- Warning if positions are mixed or don't match role -->
+                  <div v-if="roleMismatchWarning" class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                    <i class="pi pi-exclamation-triangle text-amber-500 mt-0.5"></i>
+                    <div>
+                      <p class="text-[10px] font-black text-amber-800 uppercase tracking-widest">Attention : Incohérence détectée</p>
+                      <p class="text-[11px] text-amber-700 mt-1">{{ roleMismatchWarning }}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -103,17 +123,62 @@ const props = defineProps({
   employees: Array,
 });
 
-// Préparer les données des employés pour le MultiSelect
-const employees = computed(() => {
-  return props.employees.map(emp => ({
-    ...emp,
-    full_name: `${emp.first_name} ${emp.last_name} (#${emp.matricule})`
-  }));
+// Grouper les employés par position pour le MultiSelect
+const groupedEmployees = computed(() => {
+  const groups = {};
+  
+  props.employees.forEach(emp => {
+    const posName = emp.position?.name || 'Sans position';
+    if (!groups[posName]) {
+      groups[posName] = {
+        label: posName,
+        items: []
+      };
+    }
+    groups[posName].items.push({
+      ...emp,
+      full_name: `${emp.first_name} ${emp.last_name} (#${emp.matricule})`
+    });
+  });
+
+  return Object.values(groups);
 });
 
 const form = useForm({
   employee_ids: [],
   role_id: '',
+});
+
+// Styles pour les badges de position
+const getPositionClass = (code) => {
+  switch (code) {
+    case 'RH': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+    case 'CP': return 'bg-amber-50 text-amber-600 border-amber-100';
+    case 'SUP': return 'bg-teal-50 text-teal-600 border-teal-100';
+    case 'TC': return 'bg-slate-50 text-slate-600 border-slate-100';
+    default: return 'bg-gray-50 text-gray-600 border-gray-100';
+  }
+};
+
+// Alerte si le rôle sélectionné ne correspond pas aux positions des employés
+const roleMismatchWarning = computed(() => {
+  if (!form.role_id || form.employee_ids.length === 0) return null;
+  
+  const selectedRoleName = props.roles[form.role_id]?.toUpperCase();
+  const selectedEmployees = props.employees.filter(emp => form.employee_ids.includes(emp.id));
+  
+  const mismatched = selectedEmployees.filter(emp => {
+    const posCode = emp.position?.code?.toUpperCase();
+    // Cas spécial pour Admin qui correspond souvent à RH
+    if (selectedRoleName === 'ADMIN' && posCode === 'RH') return false;
+    return posCode !== selectedRoleName;
+  });
+
+  if (mismatched.length > 0) {
+    return `Vous allez attribuer le rôle "${selectedRoleName}" à des employés dont la position est différente (${mismatched.map(m => m.position?.code).join(', ')}).`;
+  }
+
+  return null;
 });
 
 const submit = () => {

@@ -15,80 +15,119 @@
           </Link>
       </div>
 
-      <!-- Table Card -->
-      <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-slate-50 border-y border-slate-100">
-                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Utilisateur (Email)</th>
-                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Rôle</th>
-                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Status PWD</th>
-                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Compte</th>
-                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-50">
-              <tr v-for="user in props.users.data" :key="user.id" 
-                :class="['hover:bg-slate-50/50 transition-colors group', !user.is_active ? 'opacity-60 grayscale-[0.5]' : '']">
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-3">
-                    <div :class="['h-8 w-8 rounded-lg flex items-center justify-center font-black text-[10px]', user.is_active ? 'bg-slate-100 text-slate-500' : 'bg-slate-200 text-slate-400']">
-                      {{ user.email.charAt(0).toUpperCase() }}
-                    </div>
-                    <span :class="['text-sm font-bold', user.is_active ? 'text-slate-700' : 'text-slate-500 line-through decoration-slate-300']">{{ user.email }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <span :class="['rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-widest', getRoleColor(user.role?.name)]">
-                    {{ user.role?.name || 'Inconnu' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <span v-if="user.must_change_password" class="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
-                    À changer
-                  </span>
-                  <span v-else class="text-[9px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
-                    OK
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <span :class="['rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest', user.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100']">
-                    {{ user.is_active ? 'Actif' : 'Désactivé' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-right">
-                  <button v-if="user.id !== $page.props.auth.user.id" @click="confirmToggle(user)" 
-                    :class="['p-2 rounded-lg transition-all', user.is_active ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-teal-500 hover:bg-teal-50']"
-                    :title="user.is_active ? 'Désactiver le compte' : 'Activer le compte'">
-                    <i :class="['pi', user.is_active ? 'pi-user-minus' : 'pi-user-plus']"></i>
-                  </button>
-                  <span v-else class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-100 rounded-md">
-                    <i class="pi pi-user mr-1"></i> Vous
-                  </span>
-                </td>
-              </tr>
-              <tr v-if="props.users.data.length === 0">
-                <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">
-                  Aucun utilisateur trouvé.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <!-- Filters Section -->
+      <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-end gap-4">
+          <!-- Search -->
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Rechercher</label>
+            <div class="relative">
+              <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input v-model="filters['global'].value" type="text" placeholder="Rechercher par email, rôle..." 
+                class="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-teal-500/20 transition-all">
+            </div>
+          </div>
 
-        <!-- Pagination -->
-        <div v-if="props.users.links && props.users.links.length > 3" class="p-6 bg-slate-50 border-t border-slate-100 flex justify-center gap-2">
-          <Link v-for="(link, index) in props.users.links" :key="index"
-            :href="link.url || '#'"
-            v-html="link.label"
-            :class="[
-              'px-4 py-2 rounded-xl text-xs font-bold transition-all',
-              link.active ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20' : 'bg-white border border-slate-200 text-slate-500 hover:border-teal-500 hover:text-teal-600',
-              !link.url ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
-            ]"
-          />
+          <!-- Role Filter -->
+          <div class="w-48">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Rôle</label>
+            <select v-model="filters['role.id'].value" 
+              class="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-teal-500/20 transition-all">
+              <option :value="null">Tous les rôles</option>
+              <option v-for="role in props.roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+            </select>
+          </div>
+
+          <!-- Status Filter -->
+          <div class="w-48">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">État du compte</label>
+            <select v-model="filters['is_active'].value" 
+              class="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-teal-500/20 transition-all">
+              <option :value="null">Tous les états</option>
+              <option :value="true">Comptes Actifs</option>
+              <option :value="false">Comptes Désactivés</option>
+            </select>
+          </div>
+
+          <!-- Reset -->
+          <button @click="resetFilters" 
+            class="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition-all" title="Réinitialiser les filtres">
+            <i class="pi pi-filter-slash"></i>
+          </button>
         </div>
+      </div>
+
+      <!-- Table Card -->
+      <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden p-4">
+        <DataTable :value="props.users" dataKey="id" 
+          v-model:filters="filters"
+          :globalFilterFields="['email', 'role.name']"
+          paginator :rows="10"
+          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+          currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} utilisateurs"
+          :class="'p-datatable-sm'"
+          :rowClass="(data) => !data.is_active ? 'opacity-60 grayscale-[0.5]' : ''"
+          responsiveLayout="scroll">
+          
+          <Column field="email" header="Utilisateur (Email)" headerClass="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 px-6 py-4">
+            <template #body="slotProps">
+              <div class="flex items-center gap-3">
+                <div :class="['h-8 w-8 rounded-lg flex items-center justify-center font-black text-[10px]', slotProps.data.is_active ? 'bg-slate-100 text-slate-500' : 'bg-slate-200 text-slate-400']">
+                  {{ slotProps.data.email.charAt(0).toUpperCase() }}
+                </div>
+                <span :class="['text-sm font-bold', slotProps.data.is_active ? 'text-slate-700' : 'text-slate-500 line-through decoration-slate-300']">
+                  {{ slotProps.data.email }}
+                </span>
+              </div>
+            </template>
+          </Column>
+
+          <Column field="role.name" header="Rôle" headerClass="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center px-6 py-4" class="text-center">
+            <template #body="slotProps">
+              <span :class="['rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-widest', getRoleColor(slotProps.data.role?.name)]">
+                {{ slotProps.data.role?.name || 'Inconnu' }}
+              </span>
+            </template>
+          </Column>
+
+          <Column field="must_change_password" header="Status PWD" headerClass="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center px-6 py-4" class="text-center">
+            <template #body="slotProps">
+              <span v-if="slotProps.data.must_change_password" class="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+                À changer
+              </span>
+              <span v-else class="text-[9px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
+                OK
+              </span>
+            </template>
+          </Column>
+
+          <Column field="is_active" header="Compte" headerClass="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center px-6 py-4" class="text-center">
+            <template #body="slotProps">
+              <span :class="['rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest', slotProps.data.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100']">
+                {{ slotProps.data.is_active ? 'Actif' : 'Désactivé' }}
+              </span>
+            </template>
+          </Column>
+
+          <Column header="Actions" headerClass="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right px-6 py-4" class="text-right">
+            <template #body="slotProps">
+              <button v-if="slotProps.data.id !== $page.props.auth.user.id" @click="confirmToggle(slotProps.data)" 
+                :class="['p-2 rounded-lg transition-all', slotProps.data.is_active ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-teal-500 hover:bg-teal-50']"
+                :title="slotProps.data.is_active ? 'Désactiver le compte' : 'Activer le compte'">
+                <i :class="['pi', slotProps.data.is_active ? 'pi-user-minus' : 'pi-user-plus']"></i>
+              </button>
+              <span v-else class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-100 rounded-md">
+                <i class="pi pi-user mr-1"></i> Vous
+              </span>
+            </template>
+          </Column>
+
+          <template #empty>
+            <div class="px-6 py-12 text-center text-slate-400 italic">
+              Aucun utilisateur trouvé.
+            </div>
+          </template>
+        </DataTable>
       </div>
     </div>
 
@@ -126,10 +165,21 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
-import { ref } from 'vue';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import { ref, reactive } from 'vue';
+import { FilterMatchMode } from '@primevue/core/api';
 
 const props = defineProps({
-  users: Object,
+  users: Array,
+  roles: Array,
+});
+
+// Configuration des filtres réactifs de PrimeVue
+const filters = reactive({
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  'role.id': { value: null, matchMode: FilterMatchMode.EQUALS },
+  is_active: { value: null, matchMode: FilterMatchMode.EQUALS },
 });
 
 const confirmVisible = ref(false);
@@ -141,6 +191,12 @@ const getRoleColor = (role) => {
   if (name === 'cp') return 'bg-slate-900 text-white';
   if (name === 'sup') return 'bg-teal-100 text-teal-700';
   return 'bg-slate-100 text-slate-600';
+};
+
+const resetFilters = () => {
+  filters.global.value = null;
+  filters['role.id'].value = null;
+  filters.is_active.value = null;
 };
 
 const confirmToggle = (user) => {

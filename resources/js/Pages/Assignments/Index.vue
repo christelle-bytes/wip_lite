@@ -87,7 +87,7 @@ const cpForm = useForm({
     campaign_ids: [],
     start_date: new Date().toISOString().substr(0, 10),
 })
-const supForm = useForm({ employee_id: null, cp_assignment_id: null, start_date: null })
+const supForm = useForm({ employee_ids: [], cp_assignment_id: null, start_date: new Date().toISOString().substr(0, 10) })
 const tcForm  = useForm({ employee_ids: [], sup_assignment_id: null, start_date: null })
 
 // ── Options dropdowns ─────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ const openDialogForEmployee = (employee) => {
         cpForm.reset(); cpForm.employee_ids = [employee.id]
         cpDialogVisible.value = true
     } else if (code === 'SUP') {
-        supForm.reset(); supForm.employee_id = employee.id
+        supForm.reset(); supForm.employee_ids = [employee.id]
         supDialogVisible.value = true
     } else if (code === 'TC') {
         tcForm.reset(); tcForm.employee_ids = [employee.id]
@@ -527,12 +527,12 @@ const totalUnassigned = computed(() =>
         </Dialog>
 
         <!-- Similar styling for SUP and TC Dialogs... -->
-        <Dialog v-model:visible="supDialogVisible" modal header="Assigner Superviseur" class="rounded-3xl shadow-2xl border-none" :style="{ width: '450px' }"
+        <Dialog v-model:visible="supDialogVisible" modal header="Assigner Superviseur(s)" class="rounded-3xl shadow-2xl border-none" :style="{ width: '450px' }"
             :pt="{ header: { class: 'bg-slate-50 p-6 rounded-t-3xl border-b border-slate-100' }, content: { class: 'p-8 bg-white' }, footer: { class: 'p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100' } }">
             <div class="space-y-6">
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Superviseur</label>
-                    <Dropdown v-model="supForm.employee_id" :options="supOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un SUP" class="w-full rounded-xl border-slate-200" filter />
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Superviseur(s)</label>
+                    <MultiSelect v-model="supForm.employee_ids" :options="supOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner le(s) SUP" class="w-full rounded-xl border-slate-200" filter />
                 </div>
                 <div class="flex flex-col gap-2">
                     <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Manager (CP)</label>

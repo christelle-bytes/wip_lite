@@ -32,6 +32,8 @@ const employeeDialog = ref(false);
 const deactivateDialog = ref(false);
 const employee = ref({ status: 'actif', position_id: null, salary_base: null, first_name: '', last_name: '', email: '', phone: '', address: '' });
 const employeeToDeactivate = ref(null);
+const replacementId = ref(null);
+const availableReplacements = ref([]);
 const errors = ref({});
 
 const statusOptions = [
@@ -205,14 +207,30 @@ const saveEmployee = async () => {
   }
 };
 
-const confirmDeactivate = (data) => {
+const confirmDeactivate = async (data) => {
   employeeToDeactivate.value = data;
+  replacementId.value = null;
+  availableReplacements.value = [];
+  
+  // Charger les remplaçants possibles
+  try {
+    const response = await fetch(`/employees/${data.id}/replacements`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (response.ok) {
+      availableReplacements.value = await response.json();
+    }
+  } catch (err) {
+    console.error('Erreur chargement remplaçants:', err);
+  }
+  
   deactivateDialog.value = true;
 };
 
 const cancelDeactivate = () => {
   deactivateDialog.value = false;
   employeeToDeactivate.value = null;
+  replacementId.value = null;
 };
 
 const deactivateEmployee = async () => {
@@ -222,8 +240,12 @@ const deactivateEmployee = async () => {
     const response = await fetch(`/employees/${employeeToDeactivate.value.id}`, {
       method: 'DELETE',
       headers: {
+        'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
       },
+      body: JSON.stringify({
+        replacement_id: replacementId.value
+      })
     });
     const data = await response.json();
     if (!response.ok) {
@@ -235,6 +257,7 @@ const deactivateEmployee = async () => {
     }
     toast.add({ severity: 'success', summary: 'Désactivé', detail: 'Employé désactivé', life: 3000 });
     deactivateDialog.value = false;
+    replacementId.value = null;
   } catch (err) {
     toast.add({ severity: 'error', summary: 'Erreur', detail: err.message || 'Impossible de désactiver', life: 3000 });
   } finally {
@@ -456,14 +479,27 @@ const getStatusText = (status) => {
                     <i class="pi pi-user-minus text-2xl"></i>
                 </div>
                 <p class="text-sm text-slate-600 leading-relaxed">
-                    Voulez-vous vraiment désactiver <br>
-                    <span class="font-black text-slate-900">"{{ displayEmployeeName }}"</span> ?
+                    Libérer <span class="font-black text-slate-900">"{{ displayEmployeeName }}"</span> ?
                 </p>
+
+                <div v-if="availableReplacements.length > 0" class="space-y-4 pt-4 border-t border-slate-100 text-left">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Remplacer par (Optionnel)</label>
+                        <Dropdown v-model="replacementId" :options="availableReplacements" 
+                            :optionLabel="(e) => `${e.first_name} ${e.last_name} (${e.matricule})`" 
+                            optionValue="id" 
+                            placeholder="Choisir un remplaçant..." 
+                            class="w-full rounded-xl border-slate-200" filter showClear />
+                        <p class="text-[10px] text-slate-400 italic leading-tight">
+                            Si sélectionné, tous les subordonnés seront automatiquement transférés au nouveau responsable.
+                        </p>
+                    </div>
+                </div>
             </div>
             <template #footer>
                 <div class="flex gap-3 w-full">
                     <Button label="Annuler" class="flex-1 p-button-text p-button-secondary font-black text-xs uppercase" @click="cancelDeactivate" />
-                    <Button label="Désactiver" class="flex-1 bg-rose-600 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg shadow-rose-600/20" @click="deactivateEmployee" :loading="loading" />
+                    <Button :label="replacementId ? 'Remplacer' : 'Désactiver'" class="flex-1 bg-rose-600 border-none font-black text-xs uppercase p-3 rounded-xl shadow-lg shadow-rose-600/20" @click="deactivateEmployee" :loading="loading" />
                 </div>
             </template>
         </Dialog>
