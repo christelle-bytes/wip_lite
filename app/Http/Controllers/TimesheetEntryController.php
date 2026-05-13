@@ -409,8 +409,7 @@ if ($user->hasRole('CP')) {
                 ->where('date', Carbon::parse($validated['date'])->format('Y-m-d'))
                 ->exists();
 
-                // dd($managerEmployeeId);
-                // dd($existingEntry);
+                
 
             if ($existingEntry) {
                 return redirect()->back()->with('error', "Une entrée existe déjà pour un des téléconseillers à la date du " . Carbon::parse($validated['date'])->format('d/m/Y'));
