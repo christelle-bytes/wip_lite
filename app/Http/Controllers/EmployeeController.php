@@ -1,18 +1,18 @@
 <?php
- 
+
 namespace App\Http\Controllers;
- 
+
 use App\Models\Employee;
 use App\Models\Assignment;
 use App\Models\User;
 use Illuminate\Http\Request;
- 
+
 class EmployeeController extends Controller
 {
     public function index() {
         return Employee::with('position')->orderBy('created_at', 'desc')->paginate(50);
     }
- 
+
     public function store(Request $request){
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -25,28 +25,28 @@ class EmployeeController extends Controller
             'salary_base' => 'required|numeric|min:0',
             'status' => 'required|in:actif,suspendu,inactif',
         ]);
- 
+
         // ***********************************************************************************************Generration  automatiquement le matricule
         $validated['matricule'] = $this->generateMatricule();
-       
-        $validated['user_id'] = auth()->id() ?? 1;  
- 
+
+        $validated['user_id'] = null;
+
         $employee = Employee::create($validated);
         return $employee->load('position');
     }
- 
+
     public function show($id){
         $employee = Employee::with(['position', 'assignments.campaign', 'assignments.position', 'assignments.manager'])->findOrFail($id);
-       
+
         return \Inertia\Inertia::render('Employees/Show', [
             'employee' => $employee
         ]);
     }
- 
+
     public function update(Request $request, $id){
         try {
             $employee = Employee::findOrFail($id);
- 
+
             $validated = $request->validate([
                 'first_name' => 'sometimes|string|max:255',
                 'last_name' => 'sometimes|string|max:255',
@@ -58,14 +58,14 @@ class EmployeeController extends Controller
                 'salary_base' => 'sometimes|numeric|min:0',
                 'status' => 'sometimes|in:actif,suspendu,inactif',
             ]);
- 
+
             $employee->update($validated);
             return response()->json(['message'=> 'Mis à jour avec succès', 'employee' => $employee->load('position')], 200);
         } catch (\Exception $e) {
             return response()->json(['error'=> 'Erreur lors de la mise à jour'], 500);
         }
     }
- 
+
     public function destroy(Request $request, $id){
         try {
             $employee = Employee::findOrFail($id);
@@ -73,7 +73,7 @@ class EmployeeController extends Controller
 
             // 1. Gérer la hiérarchie dans les affectations
             $activeAssignments = $employee->activeAssignments;
-            
+
             foreach ($activeAssignments as $assignment) {
                 if ($replacementId) {
                     // Transférer les subordonnés au remplaçant
@@ -81,14 +81,14 @@ class EmployeeController extends Controller
                         ->where('campaign_id', $assignment->campaign_id)
                         ->where('status', 'actif')
                         ->update(['manager_id' => $replacementId]);
-                    
+
                     // Créer une nouvelle affectation pour le remplaçant si nécessaire
                     // (Optionnel : on peut considérer que le remplaçant doit déjà être libre ou on l'affecte ici)
                     $alreadyAssigned = Assignment::where('employee_id', $replacementId)
                         ->where('campaign_id', $assignment->campaign_id)
                         ->where('status', 'actif')
                         ->exists();
-                    
+
                     if (!$alreadyAssigned) {
                         Assignment::create([
                             'employee_id' => $replacementId,
@@ -131,34 +131,33 @@ class EmployeeController extends Controller
     public function getAvailableReplacements($id)
     {
         $employee = Employee::findOrFail($id);
-        
+
         // Employés ayant la même position, étant actifs et n'étant pas l'employé lui-même
         $replacements = Employee::where('position_id', $employee->position_id)
             ->where('status', 'actif')
             ->where('id', '!=', $id)
             ->get();
-            
+
         return response()->json($replacements);
     }
- 
+
     private function generateMatricule()
     {
         $year = date('Y');
         $lastEmployee = Employee::where('matricule', 'like', $year.'%')
             ->orderBy('matricule', 'desc')
             ->first();
- 
+
         if ($lastEmployee) {
             $lastNumber = (int) substr($lastEmployee->matricule, 4);
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
         }
- 
+
         return $year . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 }
- 
- 
- 
- 
+
+
+
