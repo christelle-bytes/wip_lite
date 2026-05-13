@@ -25,7 +25,9 @@ class TimesheetEntryFactory extends Factory
 
     return [
         'timesheet_id'   => Timesheet::inRandomOrder()->first()->id,
-        'employee_id'    => \App\Models\Employee::factory(), // Utiliser une factory séparée pour l'employé
+        'employee_id'    => Employee::whereHas('position', function ($query) {
+                $query->whereIn('code', ['SUP', 'TC']);
+            })->inRandomOrder()->first()?->id ,// Utiliser une factory séparée pour l'employé
         'date'           => fake()->date(),
         'check_in'       => $checkIn,
         'check_out'      => $checkOut,

@@ -22,7 +22,9 @@ class PlanningAssignmentFactory extends Factory
         $status = fake()->randomElement(['en attente', 'validé', 'suspendu', 'terminé']);
         return [
             'planning_model_id'=>PlanningModel::inRandomOrder()->first()?->id,
-            'employee_id'=>Employee::inRandomOrder()->first()?->id,
+            'employee_id'=>Employee::whereHas('position', function ($query) {
+                $query->whereIn('code', ['SUP', 'CP']);
+            })->inRandomOrder()->first()?->id,
             'start_date'=>fake()->date(),
             'status'=>$status,
             'validated_by'=>$status == 'validé' ? Employee::whereHas('position', function ($query) {
